@@ -15,8 +15,18 @@ public class DayZInventoryPackets {
     public static final ResourceLocation OPEN_INVENTORY_PACKET = DayZInventory.id("open_inventory");
     public static final ResourceLocation PICKUP_ITEM_PACKET = DayZInventory.id("pickup_item");
     public static final ResourceLocation QUICK_PICKUP_ITEM_PACKET = DayZInventory.id("quick_pickup_item");
+    public static final ResourceLocation OPEN_CONTAINER_PACKET = DayZInventory.id("open_container");
 
     public static void registerServerReceivers() {
+        ServerPlayNetworking.registerGlobalReceiver(OPEN_CONTAINER_PACKET, (server, player, handler, buf, responseSender) -> {
+            net.minecraft.core.BlockPos pos = buf.readBlockPos();
+            server.execute(() -> {
+                if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 25.0) {
+                    DayZInventory.openContainerInventory(player, pos);
+                }
+            });
+        });
+
         ServerPlayNetworking.registerGlobalReceiver(OPEN_INVENTORY_PACKET, (server, player, handler, buf, responseSender) -> {
             server.execute(() -> {
                 DayZInventory.openPlayerInventory(player);
