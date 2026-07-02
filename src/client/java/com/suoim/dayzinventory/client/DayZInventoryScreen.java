@@ -243,6 +243,20 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         Slot offhandSlot = this.menu.slots.get(containerSize + 40);
         ((SlotAccessor) offhandSlot).setX(middleColumnX + 129 - leftPos);
         ((SlotAccessor) offhandSlot).setY(35);
+
+        // 6. Position Crafting Slots (Result is index 41, Inputs are 42 to 45)
+        Slot craftResultSlot = this.menu.slots.get(containerSize + 41);
+        ((SlotAccessor) craftResultSlot).setX(rightColumnX + 97 - leftPos);
+        ((SlotAccessor) craftResultSlot).setY(126);
+
+        for (int r = 0; r < 2; r++) {
+            for (int c = 0; c < 2; c++) {
+                int index = containerSize + 42 + c + r * 2;
+                Slot slot = this.menu.slots.get(index);
+                ((SlotAccessor) slot).setX(rightColumnX + 25 + c * 18 - leftPos);
+                ((SlotAccessor) slot).setY(117 + r * 18);
+            }
+        }
     }
 
     private boolean isMouseOverVicinity(double mouseX, double mouseY) {
@@ -456,13 +470,17 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     private Slot getSlotAt(double mouseX, double mouseY) {
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         
-        // Replicates click/hover hit check over the virtual Hands slot in the middle column
+        // Replicates click/hover hit check over the virtual Hands slot in the middle column (absolute coordinates)
         int middleColumnX = getColumnX(1);
-        int handsSlotX = middleColumnX + 72;
-        int handsSlotY = topPos + imageHeight - 44;
-        if (mouseX >= (handsSlotX - 4) && mouseX < (handsSlotX + 22) 
-                && mouseY >= (handsSlotY - 4) && mouseY < (handsSlotY + 22)) {
-            return this.menu.slots.get(containerSize + 27);
+        int handsPanelY = topPos + imageHeight - 75;
+        Slot handsSlot = this.menu.slots.get(containerSize + 27);
+        ItemStack handsStack = handsSlot.getItem();
+        int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
+        int bodyHeight = handsStack.isEmpty() ? 55 : 43;
+
+        if (mouseX >= (middleColumnX - 4) && mouseX < (middleColumnX + 166) 
+                && mouseY >= bodyY && mouseY < (bodyY + bodyHeight)) {
+            return handsSlot;
         }
 
         for (Slot slot : this.menu.slots) {
@@ -589,6 +607,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + 5, 170, 17); // Header
         drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + 26, 170, 62); // Main inventory
         drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + imageHeight - 34, 170, 26); // Hotbar
+        
+        // Right Column (Crafting Menu between Inventory and Hotbar)
+        drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + 92, 170, 90);
+        guiGraphics.fill(rightColumnX - 4, topPos + 107, rightColumnX + 166, topPos + 108, 0x26FFFFFF); // separator
+        guiGraphics.drawString(this.font, "CRAFTING", rightColumnX + 81 - (this.font.width("CRAFTING") / 2), topPos + 96, 0xFFDFDFDF, false);
+        guiGraphics.drawString(this.font, "->", rightColumnX + 72, topPos + 130, 0xFFDFDFDF, false);
 
         // 2. Draw Column Header Texts centered with shadows
         int leftTextX = leftColumnX + (162 - this.font.width("VICINITY")) / 2;
@@ -603,8 +627,6 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // 3. Draw Hands Panel at the bottom of the middle column
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         int handsPanelY = topPos + imageHeight - 75;
-        int handsSlotX = middleColumnX + 72;
-        int handsSlotY = topPos + imageHeight - 44;
         
         // Single unified panel for the entire Hands area
         drawSectionPanel(guiGraphics, middleColumnX - 4, handsPanelY, 170, 70);
@@ -615,6 +637,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         
         Slot handsSlot = this.menu.slots.get(containerSize + 27);
         ItemStack handsStack = handsSlot.getItem();
+        int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
+        int bodyHeight = handsStack.isEmpty() ? 55 : 43;
+
         if (!handsStack.isEmpty()) {
             String handsItemName = handsStack.getHoverName().getString().toUpperCase();
             // Separate subheader using another thin line
@@ -622,23 +647,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             guiGraphics.drawString(this.font, handsItemName, middleColumnX + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
         }
 
-        // Draw a larger slot background for the Hands slot!
-        drawDayZSlotLarge(guiGraphics, handsSlotX - 4, handsSlotY - 4, 26, 26);
-
-        // Draw custom 26x26 hover highlight for the Hands slot
-        boolean hoverHands = scaledMouseX >= handsSlotX - 4 && scaledMouseX < handsSlotX + 22 
-            && scaledMouseY >= handsSlotY - 4 && scaledMouseY < handsSlotY + 22;
+        // Draw custom hover highlight for the Hands slot body (covers the entire translucent area)
+        boolean hoverHands = scaledMouseX >= middleColumnX - 4 && scaledMouseX < middleColumnX + 166 
+            && scaledMouseY >= bodyY && scaledMouseY < (bodyY + bodyHeight);
         if (hoverHands) {
-            guiGraphics.fill(handsSlotX - 3, handsSlotY - 3, handsSlotX + 23, handsSlotY + 23, 0x30FFFFFF);
+            guiGraphics.fill(middleColumnX - 3, bodyY + 1, middleColumnX + 165, bodyY + bodyHeight - 1, 0x30FFFFFF);
         }
 
-        // Render the 1.5x scaled hand item icon manually
+        // Render the 2.0x scaled hand item icon manually centered in the attachment container body
         if (!handsStack.isEmpty()) {
             guiGraphics.pose().pushPose();
-            // Draw at 1.5x scale centered in the 26x26 slot.
-            // Outer bounds starts at handsSlotX - 4. Inner starts at handsSlotX - 3.
-            guiGraphics.pose().translate(handsSlotX - 3, handsSlotY - 3, 100);
-            guiGraphics.pose().scale(1.5F, 1.5F, 1.0F);
+            // Centered in 170x43 body: scaled item is 32x32 size.
+            // X: middleColumnX - 4 + (170 - 32)/2 = middleColumnX + 65.
+            // Y: bodyY + (43 - 32)/2 = bodyY + 5.
+            guiGraphics.pose().translate(middleColumnX + 65, bodyY + 5, 100);
+            guiGraphics.pose().scale(2.0F, 2.0F, 1.0F);
             guiGraphics.renderFakeItem(handsStack, 0, 0);
             guiGraphics.renderItemDecorations(this.font, handsStack, 0, 0);
             guiGraphics.pose().popPose();
@@ -688,8 +711,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // 4. Draw Modern DayZ-style Slot Backgrounds & Borders behind visible slots
         for (Slot slot : this.menu.slots) {
             if (slot.x >= 0) {
-                // Slot 0 of the hotbar is rendered normally as a small slot in the right column.
-                // We draw the standard outline behind it there.
+                // Draws default slot frames for inventory, crafting grid, armor, hotbar.
                 drawDayZSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
             }
         }
