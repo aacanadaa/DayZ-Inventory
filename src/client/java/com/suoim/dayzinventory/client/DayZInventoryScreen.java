@@ -392,26 +392,28 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 return true;
             } else if (releasedOverSurvivor) {
                 // Dragged onto survivor panel -> auto equip if equippable
-                ItemStack draggedItem = this.draggedSlot.getItem();
-                net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(draggedItem);
-                int targetSlotIdx = -1;
-                if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
-                    targetSlotIdx = containerSize + 36;
-                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.CHEST) {
-                    targetSlotIdx = containerSize + 37;
-                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.LEGS) {
-                    targetSlotIdx = containerSize + 38;
-                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.FEET) {
-                    targetSlotIdx = containerSize + 39;
-                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.OFFHAND) {
-                    targetSlotIdx = containerSize + 40;
-                }
-                
-                if (targetSlotIdx != -1) {
-                    Slot armorSlot = this.menu.slots.get(targetSlotIdx);
-                    this.slotClicked(armorSlot, targetSlotIdx, 0, net.minecraft.world.inventory.ClickType.PICKUP);
-                    this.draggedSlot = null;
-                    return true;
+                ItemStack draggedItem = this.menu.getCarried();
+                if (!draggedItem.isEmpty()) {
+                    net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(draggedItem);
+                    int targetSlotIdx = -1;
+                    if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
+                        targetSlotIdx = containerSize + 36;
+                    } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.CHEST) {
+                        targetSlotIdx = containerSize + 37;
+                    } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.LEGS) {
+                        targetSlotIdx = containerSize + 38;
+                    } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.FEET) {
+                        targetSlotIdx = containerSize + 39;
+                    } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.OFFHAND) {
+                        targetSlotIdx = containerSize + 40;
+                    }
+                    
+                    if (targetSlotIdx != -1) {
+                        Slot armorSlot = this.menu.slots.get(targetSlotIdx);
+                        this.slotClicked(armorSlot, targetSlotIdx, 0, net.minecraft.world.inventory.ClickType.PICKUP);
+                        this.draggedSlot = null;
+                        return true;
+                    }
                 }
             } else if (scaledX < leftPos || scaledY < topPos || scaledX > leftPos + imageWidth || scaledY > topPos + imageHeight) {
                 // Drop item outside bounds

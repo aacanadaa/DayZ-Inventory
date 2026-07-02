@@ -54,6 +54,15 @@ public class DayZInventoryPackets {
                                         newStack.setCount(toAdd);
                                         slot.set(newStack);
                                         stack.shrink(toAdd);
+                                    } else if (slot.getMaxStackSize() == 1) {
+                                        ItemStack oldStack = slotStack.copy();
+                                        ItemStack newStack = stack.copy();
+                                        newStack.setCount(1);
+                                        slot.set(newStack);
+                                        stack.shrink(1);
+                                        if (!player.getInventory().add(oldStack)) {
+                                            player.drop(oldStack, false);
+                                        }
                                     } else if (slotStack.is(stack.getItem()) && java.util.Objects.equals(slotStack.getTag(), stack.getTag())) {
                                         int max = Math.min(slot.getMaxStackSize(slotStack), slotStack.getMaxStackSize());
                                         int addable = max - slotStack.getCount();
