@@ -352,32 +352,35 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int middleColumnX = getColumnX(1);
         int rightColumnX = getColumnX(2);
 
-        // 1. Dark screen background overlay
-        guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xD8050505);
+        // 1. Draw Classic Minecraft Container Background Panel (with 3D borders)
+        drawMinecraftPanel(guiGraphics, leftPos, topPos, imageWidth, imageHeight);
 
-        // 2. Sleek column dividing lines
-        int line1X = (leftColumnX + 162 + middleColumnX) / 2;
-        int line2X = (middleColumnX + 162 + rightColumnX) / 2;
-        guiGraphics.fill(line1X, topPos + 5, line1X + 1, topPos + imageHeight - 5, 0x40FFFFFF);
-        guiGraphics.fill(line2X, topPos + 5, line2X + 1, topPos + imageHeight - 5, 0x40FFFFFF);
+        // 2. Draw Recessed Column Dividers (3D grooved vertical lines)
+        drawMinecraftSeparator(guiGraphics, (leftColumnX + 162 + middleColumnX) / 2, topPos + 5, imageHeight - 10);
+        drawMinecraftSeparator(guiGraphics, (middleColumnX + 162 + rightColumnX) / 2, topPos + 5, imageHeight - 10);
 
-        // 3. Column Headers
-        guiGraphics.fill(leftColumnX - 4, topPos + 5, leftColumnX + 162 + 4, topPos + 22, 0xFF1C1C1C);
-        guiGraphics.drawString(this.font, "VICINITY", leftColumnX, topPos + 9, 0xFFFFFFFF, false);
+        // 3. Draw Recessed Header Panels
+        // Left Column: VICINITY (gray recessed)
+        drawMinecraftRecessedPanel(guiGraphics, leftColumnX, topPos + 5, 162, 17, 0xFF8B8B8B);
+        int leftTextX = leftColumnX + (162 - this.font.width("VICINITY")) / 2;
+        guiGraphics.drawString(this.font, "VICINITY", leftTextX, topPos + 9, 0xFFFFFFFF, true);
 
-        guiGraphics.fill(middleColumnX - 4, topPos + 5, middleColumnX + 162 + 4, topPos + 22, 0xFF1C1C1C);
-        guiGraphics.drawString(this.font, "SURVIVOR", middleColumnX, topPos + 9, 0xFFFFFFFF, false);
+        // Middle Column: SURVIVOR (gray recessed)
+        drawMinecraftRecessedPanel(guiGraphics, middleColumnX, topPos + 5, 162, 17, 0xFF8B8B8B);
+        int middleTextX = middleColumnX + (162 - this.font.width("SURVIVOR")) / 2;
+        guiGraphics.drawString(this.font, "SURVIVOR", middleTextX, topPos + 9, 0xFFFFFFFF, true);
 
-        guiGraphics.fill(rightColumnX - 4, topPos + 5, rightColumnX + 162 + 4, topPos + 22, 0xFF9E0B0B);
-        guiGraphics.drawString(this.font, "INVENTORY", rightColumnX, topPos + 9, 0xFFFFFFFF, false);
+        // Right Column: INVENTORY (red recessed)
+        drawMinecraftRecessedPanel(guiGraphics, rightColumnX, topPos + 5, 162, 17, 0xFF8B0000);
+        int rightTextX = rightColumnX + (162 - this.font.width("INVENTORY")) / 2;
+        guiGraphics.drawString(this.font, "INVENTORY", rightTextX, topPos + 9, 0xFFFFFFFF, true);
 
         // 4. Hands Mirror Slot
         int handsSlotX = middleColumnX + 72;
         int handsSlotY = topPos + imageHeight - 50;
 
-        guiGraphics.drawString(this.font, "HANDS", middleColumnX + 66, handsSlotY - 12, 0xAAAAAAFF, false);
-        guiGraphics.fill(handsSlotX, handsSlotY, handsSlotX + 18, handsSlotY + 18, 0x80101010);
-        drawSlotBorder(guiGraphics, handsSlotX, handsSlotY);
+        guiGraphics.drawString(this.font, "HANDS", handsSlotX + 9 - (this.font.width("HANDS") / 2), handsSlotY - 11, 0xFF373737, false);
+        drawMinecraftSlot(guiGraphics, handsSlotX, handsSlotY);
 
         if (this.minecraft != null && this.minecraft.player != null) {
             ItemStack handsStack = this.minecraft.player.getMainHandItem();
@@ -388,7 +391,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             
             // Draw 3D Player entity
             int renderX = middleColumnX + 81;
-            int renderY = topPos + imageHeight - 75;
+            int renderY = topPos + imageHeight - 65;
             float f = (float) Math.atan((double) ((renderX - mouseX) / 40.0F));
             float g = (float) Math.atan((double) ((topPos + 80 - mouseY) / 40.0F));
             Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
@@ -424,11 +427,10 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.minecraft.player.yHeadRot = backupHeadRot;
         }
 
-        // 5. Draw Slot Backgrounds & Borders behind visible slots
+        // 5. Draw 3D Recessed Slot Backgrounds & Borders behind visible slots
         for (Slot slot : this.menu.slots) {
             if (slot.x >= 0) {
-                guiGraphics.fill(leftPos + slot.x - 1, topPos + slot.y - 1, leftPos + slot.x + 17, topPos + slot.y + 17, 0x80101010);
-                drawSlotBorder(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
+                drawMinecraftSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
             }
         }
 
@@ -442,8 +444,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             int maxScroll = contentHeight - viewportHeight;
             int barHeight = Math.max(20, (viewportHeight * viewportHeight) / contentHeight);
             int barTop = topPos + 25 + (int) ((scrollAmount * (viewportHeight - barHeight)) / maxScroll);
-            guiGraphics.fill(leftColumnX + 163, topPos + 25, leftColumnX + 165, topPos + 25 + viewportHeight, 0xFF151515); // background
-            guiGraphics.fill(leftColumnX + 163, barTop, leftColumnX + 165, barTop + barHeight, 0xFF555555); // thumb
+            guiGraphics.fill(leftColumnX + 163, topPos + 25, leftColumnX + 165, topPos + 25 + viewportHeight, 0xFF373737); // recessed track
+            guiGraphics.fill(leftColumnX + 163, barTop, leftColumnX + 165, barTop + barHeight, 0xFFFFFFFF); // active thumb (white)
         }
     }
 
@@ -457,12 +459,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         int relY = 5;
 
-        // Draw Ground Items header
-        guiGraphics.drawString(this.font, "Ground Items", leftColumnX + 4, startY + relY - (int) scrollAmount, 0x88FFFFFF, false);
+        // Draw Ground Items subheader in classic Minecraft text style
+        guiGraphics.drawString(this.font, "Ground Items", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFF373737, false);
         relY += 15;
 
         if (vicinityItems.isEmpty()) {
-            guiGraphics.drawString(this.font, "No items nearby", leftColumnX + 4, startY + relY - (int) scrollAmount, 0x44FFFFFF, false);
+            guiGraphics.drawString(this.font, "No items nearby", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFF777777, false);
             relY += 15;
         } else {
             for (int i = 0; i < vicinityItems.size(); i++) {
@@ -478,10 +480,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 if (itemY + 18 >= startY && itemY <= endY) {
                     ItemStack stack = itemEntity.getItem();
 
+                    drawMinecraftSlot(guiGraphics, itemX, itemY);
+                    
                     boolean hovering = mouseX >= itemX && mouseX < itemX + 18 && mouseY >= itemY && mouseY <= itemY + 18;
-                    int bgColor = hovering ? 0x40FFFFFF : 0x80101010;
-                    guiGraphics.fill(itemX, itemY, itemX + 18, itemY + 18, bgColor);
-                    drawSlotBorder(guiGraphics, itemX, itemY);
+                    if (hovering) {
+                        guiGraphics.fill(itemX + 1, itemY + 1, itemX + 17, itemY + 17, 0x80FFFFFF); // Classic hover
+                    }
 
                     guiGraphics.renderFakeItem(stack, itemX + 1, itemY + 1);
                     guiGraphics.renderItemDecorations(this.font, stack, itemX + 1, itemY + 1);
@@ -491,19 +495,56 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             relY += rows * 18;
         }
 
-        // Draw Container header
+        // Draw Container subheader
         if (this.menu.getContainerInventory() != null) {
             relY += 10;
-            guiGraphics.drawString(this.font, "Container", leftColumnX + 4, startY + relY - (int) scrollAmount, 0x88FFFFFF, false);
+            guiGraphics.drawString(this.font, "Container", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFF373737, false);
         }
 
         guiGraphics.disableScissor();
     }
 
-    private void drawSlotBorder(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.fill(x, y, x + 18, y + 1, 0xFF333333); // top
-        guiGraphics.fill(x, y + 17, x + 18, y + 18, 0xFF333333); // bottom
-        guiGraphics.fill(x, y, x + 1, y + 18, 0xFF333333); // left
-        guiGraphics.fill(x + 17, y, x + 18, y + 18, 0xFF333333); // right
+    private void drawMinecraftPanel(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        // Light gray background fill
+        guiGraphics.fill(x, y, x + width, y + height, 0xC0C6C6C6);
+        
+        // Outer black border
+        guiGraphics.fill(x, y, x + width, y + 1, 0xFF000000); // top
+        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0xFF000000); // bottom
+        guiGraphics.fill(x, y, x + 1, y + height, 0xFF000000); // left
+        guiGraphics.fill(x + width - 1, y, x + width, y + height, 0xFF000000); // right
+        
+        // Highlight (top/left)
+        guiGraphics.fill(x + 1, y + 1, x + width - 1, y + 3, 0xFFFFFFFF);
+        guiGraphics.fill(x + 1, y + 1, x + 3, y + height - 1, 0xFFFFFFFF);
+        
+        // Shadow (bottom/right)
+        guiGraphics.fill(x + 1, y + height - 3, x + width - 1, y + height - 1, 0xFF555555);
+        guiGraphics.fill(x + width - 3, y + 1, x + width - 1, y + height - 1, 0xFF555555);
+    }
+
+    private void drawMinecraftSeparator(GuiGraphics guiGraphics, int x, int y, int height) {
+        guiGraphics.fill(x, y, x + 1, y + height, 0xFF555555); // shadow
+        guiGraphics.fill(x + 1, y, x + 2, y + height, 0xFFFFFFFF); // highlight
+    }
+
+    private void drawMinecraftRecessedPanel(GuiGraphics guiGraphics, int x, int y, int width, int height, int fillColor) {
+        guiGraphics.fill(x, y, x + width, y + height, fillColor);
+        // Top/Left shadows
+        guiGraphics.fill(x, y, x + width, y + 1, 0xFF373737);
+        guiGraphics.fill(x, y, x + 1, y + height, 0xFF373737);
+        // Bottom/Right highlights
+        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0xFFFFFFFF);
+        guiGraphics.fill(x + width - 1, y, x + width, y + height, 0xFFFFFFFF);
+    }
+
+    private void drawMinecraftSlot(GuiGraphics guiGraphics, int x, int y) {
+        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0xFF8B8B8B); // inner gray
+        // Shadow
+        guiGraphics.fill(x, y, x + 17, y + 1, 0xFF373737); // top shadow
+        guiGraphics.fill(x, y, x + 1, y + 17, 0xFF373737); // left shadow
+        // Highlight
+        guiGraphics.fill(x + 17, y, x + 18, y + 18, 0xFFFFFFFF); // right highlight
+        guiGraphics.fill(x, y + 17, x + 17, y + 18, 0xFFFFFFFF); // bottom highlight
     }
 }
