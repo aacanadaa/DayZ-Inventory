@@ -327,6 +327,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
 
+        int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
+        int middleColumnX = getColumnX(1);
+        boolean releasedOverSurvivor = scaledX >= (middleColumnX - 4) && scaledX <= (middleColumnX + 166) 
+                && scaledY >= (topPos + 25) && scaledY <= (topPos + imageHeight - 5);
+
         // Custom drag release for vicinity items
         if (this.draggedStack != null) {
             Slot hoveredSlot = this.getSlotAt(scaledX, scaledY);
@@ -336,13 +341,34 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 buf.writeInt(hoveredSlot.index);
                 buf.writeInt(this.draggedStack.getCount());
                 ClientPlayNetworking.send(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
+            } else if (releasedOverSurvivor) {
+                // Auto equip ground item if equippable
+                net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(this.draggedStack);
+                int targetSlotIdx = -1;
+                if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
+                    targetSlotIdx = containerSize + 36;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.CHEST) {
+                    targetSlotIdx = containerSize + 37;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.LEGS) {
+                    targetSlotIdx = containerSize + 38;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.FEET) {
+                    targetSlotIdx = containerSize + 39;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.OFFHAND) {
+                    targetSlotIdx = containerSize + 40;
+                }
+                
+                if (targetSlotIdx != -1) {
+                    FriendlyByteBuf buf = PacketByteBufs.create();
+                    buf.writeInt(this.draggedEntity.getId());
+                    buf.writeInt(targetSlotIdx);
+                    buf.writeInt(this.draggedStack.getCount());
+                    ClientPlayNetworking.send(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
+                }
             } else {
-                int middleColumnX = getColumnX(1);
                 int handsSlotX = middleColumnX + 72;
                 int handsSlotY = topPos + imageHeight - 50;
                 if (scaledX >= handsSlotX && scaledX <= handsSlotX + 18 && scaledY >= handsSlotY && scaledY <= handsSlotY + 18) {
                     if (this.minecraft != null && this.minecraft.player != null) {
-                        int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
                         int activeSlotIdx = containerSize + 27 + this.minecraft.player.getInventory().selected;
                         FriendlyByteBuf buf = PacketByteBufs.create();
                         buf.writeInt(this.draggedEntity.getId());
@@ -364,6 +390,29 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 this.slotClicked(releaseSlot, releaseSlot.index, 0, net.minecraft.world.inventory.ClickType.PICKUP);
                 this.draggedSlot = null;
                 return true;
+            } else if (releasedOverSurvivor) {
+                // Dragged onto survivor panel -> auto equip if equippable
+                ItemStack draggedItem = this.draggedSlot.getItem();
+                net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(draggedItem);
+                int targetSlotIdx = -1;
+                if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
+                    targetSlotIdx = containerSize + 36;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.CHEST) {
+                    targetSlotIdx = containerSize + 37;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.LEGS) {
+                    targetSlotIdx = containerSize + 38;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.FEET) {
+                    targetSlotIdx = containerSize + 39;
+                } else if (equipSlot == net.minecraft.world.entity.EquipmentSlot.OFFHAND) {
+                    targetSlotIdx = containerSize + 40;
+                }
+                
+                if (targetSlotIdx != -1) {
+                    Slot armorSlot = this.menu.slots.get(targetSlotIdx);
+                    this.slotClicked(armorSlot, targetSlotIdx, 0, net.minecraft.world.inventory.ClickType.PICKUP);
+                    this.draggedSlot = null;
+                    return true;
+                }
             } else if (scaledX < leftPos || scaledY < topPos || scaledX > leftPos + imageWidth || scaledY > topPos + imageHeight) {
                 // Drop item outside bounds
                 this.slotClicked(null, -999, 0, net.minecraft.world.inventory.ClickType.PICKUP);
