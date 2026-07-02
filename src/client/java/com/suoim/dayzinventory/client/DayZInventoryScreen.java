@@ -394,6 +394,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     @Override
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+        if (getSlotAt(mouseX, mouseY) != null) {
+            return false;
+        }
         if (isMouseOverVicinity(mouseX, mouseY)) {
             return true;
         }
