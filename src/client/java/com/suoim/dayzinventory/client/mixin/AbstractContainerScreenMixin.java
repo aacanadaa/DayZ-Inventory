@@ -2,6 +2,7 @@ package com.suoim.dayzinventory.client.mixin;
 
 import com.suoim.dayzinventory.client.DayZInventoryScreen;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
@@ -24,7 +25,15 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
         if ((Object) this instanceof DayZInventoryScreen dayZScreen) {
             if (this.menu instanceof DayZInventoryScreenHandler handler) {
                 int containerSize = handler.getContainerInventory() != null ? handler.getContainerInventory().getContainerSize() : 0;
-                if (slot.index == containerSize + 27) {
+                
+                int selectedSlot = 0;
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player != null) {
+                    selectedSlot = mc.player.getInventory().selected;
+                }
+                int handsSlotIdx = containerSize + 27 + selectedSlot;
+
+                if (slot.index == handsSlotIdx) {
                     // Check if hovering over physical slot in right column (absolute coordinates)
                     boolean hoveringPhysical = mouseX >= (this.leftPos + slot.x) && mouseX < (this.leftPos + slot.x + 18) 
                         && mouseY >= (this.topPos + slot.y) && mouseY < (this.topPos + slot.y + 18);
