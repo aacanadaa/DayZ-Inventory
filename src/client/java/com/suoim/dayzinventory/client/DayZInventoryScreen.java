@@ -33,16 +33,19 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     // Custom slot dragging state
     private Slot draggedSlot = null;
 
-    // Nearby containers list
+    // Nearby containers list with icons
     public static class ContainerBlockInfo {
         public final net.minecraft.core.BlockPos pos;
         public final String name;
-        public ContainerBlockInfo(net.minecraft.core.BlockPos pos, String name) {
+        public final ItemStack icon;
+        public ContainerBlockInfo(net.minecraft.core.BlockPos pos, String name, ItemStack icon) {
             this.pos = pos;
             this.name = name;
+            this.icon = icon;
         }
     }
     private final List<ContainerBlockInfo> nearbyContainers = new ArrayList<>();
+    private ContainerBlockInfo hoveredContainer = null;
 
     public DayZInventoryScreen(DayZInventoryScreenHandler handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
@@ -123,7 +126,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                     
                     if (isContainer) {
                         String displayName = state.getBlock().getName().getString();
-                        this.nearbyContainers.add(new ContainerBlockInfo(pos, displayName));
+                        ItemStack iconStack = new ItemStack(state.getBlock().asItem());
+                        this.nearbyContainers.add(new ContainerBlockInfo(pos, displayName, iconStack));
                     }
                 }
             }
@@ -146,7 +150,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
 
         if (!nearbyContainers.isEmpty()) {
-            height += 25 + nearbyContainers.size() * 18;
+            height += 25 + nearbyContainers.size() * 20;
         }
         
         return height;
@@ -306,8 +310,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             if (!nearbyContainers.isEmpty()) {
                 relY += 25; // Skip header
                 for (int i = 0; i < nearbyContainers.size(); i++) {
-                    int btnY = relY + i * 18;
-                    if (clickY >= btnY && clickY < btnY + 16) {
+                    int btnY = relY + i * 20;
+                    if (clickY >= btnY && clickY < btnY + 18) {
                         ContainerBlockInfo container = nearbyContainers.get(i);
                         this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                         FriendlyByteBuf buf = PacketByteBufs.create();
@@ -463,6 +467,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int scaledMouseX = (int) (mouseX / scale);
         int scaledMouseY = (int) (mouseY / scale);
 
+        // Reset hovered container state
+        this.hoveredContainer = null;
+
         // Push pose and apply scale
         guiGraphics.pose().pushPose();
         guiGraphics.pose().scale(scale, scale, 1.0f);
@@ -499,6 +506,17 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
         
         guiGraphics.pose().popPose();
+
+        // Render unscaled Container Details Tooltip at 1x global scale if hovered
+        if (this.hoveredContainer != null && this.minecraft != null && this.minecraft.player != null) {
+            List<Component> tooltipText = new ArrayList<>();
+            tooltipText.add(Component.literal(this.hoveredContainer.name).withStyle(net.minecraft.ChatFormatting.YELLOW));
+            tooltipText.add(Component.literal("Location: " + this.hoveredContainer.pos.getX() + ", " + this.hoveredContainer.pos.getY() + ", " + this.hoveredContainer.pos.getZ()).withStyle(net.minecraft.ChatFormatting.GRAY));
+            double dist = Math.sqrt(this.minecraft.player.distanceToSqr(this.hoveredContainer.pos.getX() + 0.5, this.hoveredContainer.pos.getY() + 0.5, this.hoveredContainer.pos.getZ() + 0.5));
+            tooltipText.add(Component.literal("Distance: " + String.format("%.1f", dist) + "m").withStyle(net.minecraft.ChatFormatting.GREEN));
+            
+            guiGraphics.renderComponentTooltip(this.font, tooltipText, mouseX, mouseY);
+        }
     }
 
     @Override
@@ -668,16 +686,24 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             relY += rows * 18;
         }
 
-        // Draw Container subheader
+        // Draw Container subheader with dynamic block name and coordinates
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         if (containerSize > 0) {
             relY += 10;
-            guiGraphics.drawString(this.font, "Container", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFFDFDFDF, false);
+            String containerTitle = "Container";
+            net.minecraft.core.BlockPos openPos = this.menu.getContainerPos();
+            if (openPos != null && this.minecraft != null && this.minecraft.level != null) {
+                net.minecraft.world.level.block.state.BlockState state = this.minecraft.level.getBlockState(openPos);
+                if (state != null && !state.isAir()) {
+                    containerTitle += " - " + state.getBlock().getName().getString() + " (" + openPos.getX() + ", " + openPos.getY() + ", " + openPos.getZ() + ")";
+                }
+            }
+            guiGraphics.drawString(this.font, containerTitle, leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFFDFDFDF, false);
             int rows = (int) Math.ceil(containerSize / 9.0);
             relY += 15 + rows * 18;
         }
 
-        // Draw Nearby Storages dropdown list
+        // Draw Nearby Storages dropdown list with block icons and tooltips
         if (!nearbyContainers.isEmpty()) {
             relY += 10;
             guiGraphics.drawString(this.font, "Nearby Storages", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFFDFDFDF, false);
@@ -685,18 +711,23 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
             for (int i = 0; i < nearbyContainers.size(); i++) {
                 ContainerBlockInfo container = nearbyContainers.get(i);
-                int itemY = startY + relY + i * 18 - (int) scrollAmount;
+                int itemY = startY + relY + i * 20 - (int) scrollAmount;
                 
-                if (itemY + 16 >= startY && itemY <= endY) {
-                    drawSectionPanel(guiGraphics, leftColumnX, itemY, 162, 16);
+                if (itemY + 18 >= startY && itemY <= endY) {
+                    drawSectionPanel(guiGraphics, leftColumnX, itemY, 162, 18);
                     
-                    boolean hovering = mouseX >= leftColumnX && mouseX < leftColumnX + 162 && mouseY >= itemY && mouseY <= itemY + 16;
+                    boolean hovering = mouseX >= leftColumnX && mouseX < leftColumnX + 162 && mouseY >= itemY && mouseY <= itemY + 18;
                     if (hovering) {
-                        guiGraphics.fill(leftColumnX + 1, itemY + 1, leftColumnX + 161, itemY + 15, 0x30FFFFFF);
+                        guiGraphics.fill(leftColumnX + 1, itemY + 1, leftColumnX + 161, itemY + 17, 0x30FFFFFF);
+                        this.hoveredContainer = container; // set hovered container for tooltip render
                     }
                     
-                    String btnText = container.name;
-                    guiGraphics.drawString(this.font, btnText, leftColumnX + 6, itemY + 4, 0xFFFFFFFF, false);
+                    // Render 3D Block icon
+                    guiGraphics.renderFakeItem(container.icon, leftColumnX + 2, itemY + 1);
+                    
+                    double dist = Math.sqrt(this.minecraft.player.distanceToSqr(container.pos.getX() + 0.5, container.pos.getY() + 0.5, container.pos.getZ() + 0.5));
+                    String btnText = container.name + " (" + String.format("%.1fm", dist) + ")";
+                    guiGraphics.drawString(this.font, btnText, leftColumnX + 22, itemY + 5, 0xFFFFFFFF, false);
                 }
             }
         }
