@@ -3,7 +3,10 @@
 	"package": "com.suoim.dayzinventory.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"ChestBlockMixin",
+		"BarrelBlockMixin",
+		"ItemEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
