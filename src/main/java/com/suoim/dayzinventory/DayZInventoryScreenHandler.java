@@ -125,7 +125,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     public void slotsChanged(Container container) {
         super.slotsChanged(container);
         if (!this.playerInventory.player.level().isClientSide) {
-            net.minecraft.world.inventory.CraftingMenu.slotChangedCraftingGrid(this, this.playerInventory.player.level(), this.playerInventory.player, this.craftSlots, this.resultSlots);
+            net.minecraft.world.inventory.DayZInventoryCraftingHelper.updateCraftingGrid(this, this.playerInventory.player.level(), this.playerInventory.player, this.craftSlots, this.resultSlots);
         }
     }
 
