@@ -47,6 +47,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     private final List<ContainerBlockInfo> nearbyContainers = new ArrayList<>();
     private ContainerBlockInfo hoveredContainer = null;
 
+    // Mouse cursor position restoration state
+    private static double lastMouseX = -1;
+    private static double lastMouseY = -1;
+    private static boolean needsMouseRestore = false;
+
     public DayZInventoryScreen(DayZInventoryScreenHandler handler, Inventory inventory, Component title) {
         super(handler, inventory, title);
         this.imageWidth = 540;
@@ -134,7 +139,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
     }
 
-    private int getColumnX(int colIndex) {
+    public int getColumnX(int colIndex) {
         int remaining = this.imageWidth - 486; // 486 is 3 * 162
         int gap = remaining / 4;
         return leftPos + gap + colIndex * (162 + gap);
@@ -207,20 +212,13 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             }
         }
 
-        // 3. Position Player Hotbar Slots
-        // Hotbar Slot 0 is moved to the Hands panel in the middle column!
-        Slot handsSlot = this.menu.slots.get(containerSize + 27);
-        int handsSlotX = middleColumnX + 72;
-        int handsSlotY = topPos + imageHeight - 44;
-        ((SlotAccessor) handsSlot).setX(handsSlotX - leftPos);
-        ((SlotAccessor) handsSlot).setY(handsSlotY - topPos);
-
-        // Hotbar Slots 1 to 8 remain in the right column hotbar row (centered)
-        for (int col = 0; col < 8; col++) {
-            int index = containerSize + 27 + 1 + col;
+        // 3. Position Player Hotbar Slots (9 slots)
+        // All 9 hotbar slots are positioned normally in the right column row.
+        for (int col = 0; col < 9; col++) {
+            int index = containerSize + 27 + col;
             Slot slot = this.menu.slots.get(index);
             SlotAccessor accessor = (SlotAccessor) slot;
-            accessor.setX(rightColumnX + 9 + col * 18 - leftPos);
+            accessor.setX(rightColumnX + col * 18 - leftPos);
             accessor.setY(imageHeight - 30);
         }
 
@@ -316,6 +314,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                         boolean isOpen = openPos != null && openPos.equals(container.pos);
                         
                         this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                        
+                        // Save cursor positions right before container view changes
+                        lastMouseX = this.minecraft.mouseHandler.xpos();
+                        lastMouseY = this.minecraft.mouseHandler.ypos();
+                        needsMouseRestore = true;
+
                         if (isOpen) {
                             // Collapse it
                             ClientPlayNetworking.send(DayZInventoryPackets.OPEN_INVENTORY_PACKET, PacketByteBufs.create());
@@ -336,6 +340,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 int headerY = groundGridHeight + 10;
                 if (clickY >= headerY && clickY < headerY + 18 && clickX >= 147 && clickX < 161) {
                     this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    
+                    // Save cursor positions right before container closes
+                    lastMouseX = this.minecraft.mouseHandler.xpos();
+                    lastMouseY = this.minecraft.mouseHandler.ypos();
+                    needsMouseRestore = true;
+
                     ClientPlayNetworking.send(DayZInventoryPackets.OPEN_INVENTORY_PACKET, PacketByteBufs.create());
                     return true;
                 }
@@ -400,8 +410,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 this.slotClicked(releaseSlot, releaseSlot.index, 0, net.minecraft.world.inventory.ClickType.PICKUP);
                 this.draggedSlot = null;
                 return true;
-            } else if (releasedOverSurvivor) {
-                // Dragged onto survivor panel -> auto equip if equippable
+            } else if (releasedOverSurvivor && releaseSlot != this.draggedSlot) {
+                // Dragged onto survivor panel -> auto equip if equippable (skip if dropping back on the source slot)
                 ItemStack draggedItem = this.menu.getCarried();
                 if (!draggedItem.isEmpty()) {
                     net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(draggedItem);
@@ -445,25 +455,26 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     private Slot getSlotAt(double mouseX, double mouseY) {
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
+        
+        // Replicates click/hover hit check over the virtual Hands slot in the middle column
+        int middleColumnX = getColumnX(1);
+        int handsSlotX = middleColumnX + 72;
+        int handsSlotY = topPos + imageHeight - 44;
+        if (mouseX >= (handsSlotX - 4) && mouseX < (handsSlotX + 22) 
+                && mouseY >= (handsSlotY - 4) && mouseY < (handsSlotY + 22)) {
+            return this.menu.slots.get(containerSize + 27);
+        }
+
         for (Slot slot : this.menu.slots) {
             if (slot.x >= 0) {
-                if (slot.index == containerSize + 27) {
-                    if (mouseX >= (leftPos + slot.x - 4) && mouseX < (leftPos + slot.x + 22) 
-                            && mouseY >= (topPos + slot.y - 4) && mouseY < (topPos + slot.y + 22)) {
-                        return slot;
-                    }
-                } else {
-                    if (mouseX >= (leftPos + slot.x) && mouseX < (leftPos + slot.x + 18) 
-                            && mouseY >= (topPos + slot.y) && mouseY < (topPos + slot.y + 18)) {
-                        return slot;
-                    }
+                if (mouseX >= (leftPos + slot.x) && mouseX < (leftPos + slot.x + 18) 
+                        && mouseY >= (topPos + slot.y) && mouseY < (topPos + slot.y + 18)) {
+                    return slot;
                 }
             }
         }
         return null;
     }
-
-
 
     @Override
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
@@ -478,6 +489,16 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        // Restore cursor positions on render frame tick if requested
+        if (needsMouseRestore && this.minecraft != null) {
+            needsMouseRestore = false;
+            org.lwjgl.glfw.GLFW.glfwSetCursorPos(this.minecraft.getWindow().getWindow(), lastMouseX, lastMouseY);
+            
+            // Re-calculate scaled mouseX and mouseY so hover checks resolve correctly on this frame
+            mouseX = (int) (lastMouseX * (double) this.minecraft.getWindow().getGuiScaledWidth() / (double) this.minecraft.getWindow().getWidth());
+            mouseY = (int) (lastMouseY * (double) this.minecraft.getWindow().getGuiScaledHeight() / (double) this.minecraft.getWindow().getHeight());
+        }
+
         // Draw the background dim overlay at full physical 1x scale
         this.renderBackground(guiGraphics);
 
@@ -537,8 +558,6 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
     }
 
-
-
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         // Disable default label rendering (we render custom headers in renderBg)
@@ -550,6 +569,10 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int middleColumnX = getColumnX(1);
         int rightColumnX = getColumnX(2);
         int viewportHeight = imageHeight - 40;
+
+        float scale = getGuiScale();
+        int scaledMouseX = (int) (mouseX / scale);
+        int scaledMouseY = (int) (mouseY / scale);
 
         // 1. Draw Section Panels (separate translucent dark rectangles with outlines)
         
@@ -580,6 +603,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // 3. Draw Hands Panel at the bottom of the middle column
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         int handsPanelY = topPos + imageHeight - 75;
+        int handsSlotX = middleColumnX + 72;
+        int handsSlotY = topPos + imageHeight - 44;
         
         // Single unified panel for the entire Hands area
         drawSectionPanel(guiGraphics, middleColumnX - 4, handsPanelY, 170, 70);
@@ -595,6 +620,28 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             // Separate subheader using another thin line
             guiGraphics.fill(middleColumnX - 4, handsPanelY + 27, middleColumnX + 166, handsPanelY + 28, 0x26FFFFFF);
             guiGraphics.drawString(this.font, handsItemName, middleColumnX + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
+        }
+
+        // Draw a larger slot background for the Hands slot!
+        drawDayZSlotLarge(guiGraphics, handsSlotX - 4, handsSlotY - 4, 26, 26);
+
+        // Draw custom 26x26 hover highlight for the Hands slot
+        boolean hoverHands = scaledMouseX >= handsSlotX - 4 && scaledMouseX < handsSlotX + 22 
+            && scaledMouseY >= handsSlotY - 4 && scaledMouseY < handsSlotY + 22;
+        if (hoverHands) {
+            guiGraphics.fill(handsSlotX - 3, handsSlotY - 3, handsSlotX + 23, handsSlotY + 23, 0x30FFFFFF);
+        }
+
+        // Render the 1.5x scaled hand item icon manually
+        if (!handsStack.isEmpty()) {
+            guiGraphics.pose().pushPose();
+            // Draw at 1.5x scale centered in the 26x26 slot.
+            // Outer bounds starts at handsSlotX - 4. Inner starts at handsSlotX - 3.
+            guiGraphics.pose().translate(handsSlotX - 3, handsSlotY - 3, 100);
+            guiGraphics.pose().scale(1.5F, 1.5F, 1.0F);
+            guiGraphics.renderFakeItem(handsStack, 0, 0);
+            guiGraphics.renderItemDecorations(this.font, handsStack, 0, 0);
+            guiGraphics.pose().popPose();
         }
 
         if (this.minecraft != null && this.minecraft.player != null) {
@@ -641,17 +688,13 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // 4. Draw Modern DayZ-style Slot Backgrounds & Borders behind visible slots
         for (Slot slot : this.menu.slots) {
             if (slot.x >= 0) {
-                if (slot.index == containerSize + 27) {
-                    // Draw a larger slot background for the Hands slot!
-                    drawDayZSlotLarge(guiGraphics, leftPos + slot.x - 4, topPos + slot.y - 4, 26, 26);
-                } else {
-                    drawDayZSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
-                }
+                // Slot 0 of the hotbar is rendered normally as a small slot in the right column.
+                // We draw the standard outline behind it there.
+                drawDayZSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
             }
         }
 
         // 5. Draw Vicinity List (Ground Items + Container slots titles + Nearby Storages)
-        float scale = getGuiScale();
         renderVicinityList(guiGraphics, mouseX, mouseY, scale);
 
         // 6. Draw Scrollbar

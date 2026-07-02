@@ -108,6 +108,25 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
                 return true;
             }
         });
+
+        // 6. Add Crafting Slots (index containerSize + 41 is Result, containerSize + 42 to + 45 are inputs)
+        this.addSlot(new net.minecraft.world.inventory.ResultSlot(playerInventory.player, this.craftSlots, this.resultSlots, 0, 0, 0));
+        for (int r = 0; r < 2; r++) {
+            for (int c = 0; c < 2; c++) {
+                this.addSlot(new Slot(this.craftSlots, c + r * 2, 0, 0));
+            }
+        }
+    }
+
+    private final net.minecraft.world.inventory.CraftingContainer craftSlots = new net.minecraft.world.inventory.TransientCraftingContainer(this, 2, 2);
+    private final net.minecraft.world.inventory.ResultContainer resultSlots = new net.minecraft.world.inventory.ResultContainer();
+
+    @Override
+    public void slotsChanged(Container container) {
+        super.slotsChanged(container);
+        if (!this.playerInventory.player.level().isClientSide) {
+            net.minecraft.world.inventory.CraftingMenu.slotChangedCraftingGrid(this, this.playerInventory.player.level(), this.playerInventory.player, this.craftSlots, this.resultSlots);
+        }
     }
 
     public @Nullable Container getContainerInventory() {
@@ -132,6 +151,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         if (this.containerInventory != null && !player.level().isClientSide) {
             this.containerInventory.stopOpen(player);
         }
+        this.clearContainer(player, this.craftSlots);
     }
 
     @Override
@@ -176,6 +196,11 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
                     if (!this.moveItemStackTo(itemStack2, 0, containerSize, false)) {
                         return ItemStack.EMPTY;
                     }
+                }
+            } else if (index >= containerSize + 41) {
+                // From crafting slots to player inventory/hotbar
+                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, true)) {
+                    return ItemStack.EMPTY;
                 }
             } else {
                 // From armor/offhand to player inventory/hotbar
