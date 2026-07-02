@@ -141,16 +141,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     private int getScrollContentHeight() {
-        int height = 5 + 15 + (vicinityItems.isEmpty() ? 15 : (int) Math.ceil(vicinityItems.size() / 9.0) * 18);
+        int totalCount = vicinityItems.size() + nearbyContainers.size();
+        int rows = (int) Math.ceil(totalCount / 9.0);
+        int height = 5 + (rows == 0 ? 18 : rows * 18);
         
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         if (containerSize > 0) {
-            int rows = (int) Math.ceil(containerSize / 9.0);
-            height += 25 + rows * 18;
-        }
-
-        if (!nearbyContainers.isEmpty()) {
-            height += 25 + nearbyContainers.size() * 20;
+            int containerRows = (int) Math.ceil(containerSize / 9.0);
+            height += 10 + 18 + containerRows * 18 + 5;
         }
         
         return height;
@@ -158,7 +156,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     private void updateSlotPositions() {
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
-        int groundSectionHeight = 5 + 15 + (vicinityItems.isEmpty() ? 15 : (int) Math.ceil(vicinityItems.size() / 9.0) * 18);
+        int totalCount = vicinityItems.size() + nearbyContainers.size();
+        int rows = (int) Math.ceil(totalCount / 9.0);
+        int groundGridHeight = 5 + (rows == 0 ? 18 : rows * 18);
         
         int viewportHeight = this.imageHeight - 40;
         int contentHeight = getScrollContentHeight();
@@ -174,10 +174,13 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int middleColumnX = getColumnX(1);
         int rightColumnX = getColumnX(2);
 
+        // Renders active container grid directly below vicinity items grid
+        int containerRelY = groundGridHeight + 10 + 18;
+
         // 1. Position Container Slots
         for (int i = 0; i < containerSize; i++) {
             Slot slot = this.menu.slots.get(i);
-            int relY = groundSectionHeight + 25 + (i / 9) * 18;
+            int relY = containerRelY + (i / 9) * 18;
             int relX = (i % 9) * 18;
             
             int slotX = leftColumnX + relX;
@@ -204,12 +207,20 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             }
         }
 
-        // 3. Position Player Hotbar Slots (9 slots)
-        for (int col = 0; col < 9; col++) {
-            int index = containerSize + 27 + col;
+        // 3. Position Player Hotbar Slots
+        // Hotbar Slot 0 is moved to the Hands panel in the middle column!
+        Slot handsSlot = this.menu.slots.get(containerSize + 27);
+        int handsSlotX = middleColumnX + 72;
+        int handsSlotY = topPos + imageHeight - 44;
+        ((SlotAccessor) handsSlot).setX(handsSlotX - leftPos);
+        ((SlotAccessor) handsSlot).setY(handsSlotY - topPos);
+
+        // Hotbar Slots 1 to 8 remain in the right column hotbar row (centered)
+        for (int col = 0; col < 8; col++) {
+            int index = containerSize + 27 + 1 + col;
             Slot slot = this.menu.slots.get(index);
             SlotAccessor accessor = (SlotAccessor) slot;
-            accessor.setX(rightColumnX + col * 18 - leftPos);
+            accessor.setX(rightColumnX + 9 + col * 18 - leftPos);
             accessor.setY(imageHeight - 30);
         }
 
@@ -274,16 +285,19 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             double clickX = scaledX - leftColumnX;
             double clickY = scaledY - startY + scrollAmount;
             
-            // 1. Ground items
-            int relY = 5 + 15;
-            if (!vicinityItems.isEmpty()) {
-                int rows = (int) Math.ceil(vicinityItems.size() / 9.0);
-                int groundGridHeight = rows * 18;
-                if (clickY >= relY && clickY < relY + groundGridHeight) {
-                    int col = (int) (clickX / 18);
-                    int row = (int) ((clickY - relY) / 18);
-                    int index = row * 9 + col;
-                    if (index >= 0 && index < vicinityItems.size()) {
+            // 1. Vicinity Grid Row check
+            int totalCount = vicinityItems.size() + nearbyContainers.size();
+            int rows = (int) Math.ceil(totalCount / 9.0);
+            int groundGridHeight = 5 + (rows == 0 ? 18 : rows * 18);
+            
+            if (clickY >= 5 && clickY < groundGridHeight) {
+                int col = (int) (clickX / 18);
+                int row = (int) ((clickY - 5) / 18);
+                int index = row * 9 + col;
+                
+                if (index >= 0 && index < totalCount) {
+                    if (index < vicinityItems.size()) {
+                        // Ground Item Clicked
                         ItemEntity itemEntity = vicinityItems.get(index);
                         if (Screen.hasShiftDown()) {
                             FriendlyByteBuf buf = PacketByteBufs.create();
@@ -294,31 +308,36 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                             this.draggedStack = itemEntity.getItem().copy();
                         }
                         return true;
-                    }
-                }
-                relY += groundGridHeight;
-            }
-            
-            // 2. Container slots
-            int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
-            if (containerSize > 0) {
-                int rows = (int) Math.ceil(containerSize / 9.0);
-                relY += 25 + rows * 18;
-            }
-            
-            // 3. Nearby Storage Buttons
-            if (!nearbyContainers.isEmpty()) {
-                relY += 25; // Skip header
-                for (int i = 0; i < nearbyContainers.size(); i++) {
-                    int btnY = relY + i * 20;
-                    if (clickY >= btnY && clickY < btnY + 18) {
-                        ContainerBlockInfo container = nearbyContainers.get(i);
+                    } else {
+                        // Container Item Clicked
+                        int containerIndex = index - vicinityItems.size();
+                        ContainerBlockInfo container = nearbyContainers.get(containerIndex);
+                        net.minecraft.core.BlockPos openPos = this.menu.getContainerPos();
+                        boolean isOpen = openPos != null && openPos.equals(container.pos);
+                        
                         this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-                        FriendlyByteBuf buf = PacketByteBufs.create();
-                        buf.writeBlockPos(container.pos);
-                        ClientPlayNetworking.send(DayZInventoryPackets.OPEN_CONTAINER_PACKET, buf);
+                        if (isOpen) {
+                            // Collapse it
+                            ClientPlayNetworking.send(DayZInventoryPackets.OPEN_INVENTORY_PACKET, PacketByteBufs.create());
+                        } else {
+                            // Expand it
+                            FriendlyByteBuf buf = PacketByteBufs.create();
+                            buf.writeBlockPos(container.pos);
+                            ClientPlayNetworking.send(DayZInventoryPackets.OPEN_CONTAINER_PACKET, buf);
+                        }
                         return true;
                     }
+                }
+            }
+
+            // 2. Active open container close button header click
+            int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
+            if (containerSize > 0) {
+                int headerY = groundGridHeight + 10;
+                if (clickY >= headerY && clickY < headerY + 18 && clickX >= 147 && clickX < 161) {
+                    this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                    ClientPlayNetworking.send(DayZInventoryPackets.OPEN_INVENTORY_PACKET, PacketByteBufs.create());
+                    return true;
                 }
             }
         }
@@ -367,19 +386,6 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                     buf.writeInt(targetSlotIdx);
                     buf.writeInt(this.draggedStack.getCount());
                     ClientPlayNetworking.send(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
-                }
-            } else {
-                int handsSlotX = middleColumnX + 72;
-                int handsSlotY = topPos + imageHeight - 50;
-                if (scaledX >= handsSlotX && scaledX <= handsSlotX + 18 && scaledY >= handsSlotY && scaledY <= handsSlotY + 18) {
-                    if (this.minecraft != null && this.minecraft.player != null) {
-                        int activeSlotIdx = containerSize + 27 + this.minecraft.player.getInventory().selected;
-                        FriendlyByteBuf buf = PacketByteBufs.create();
-                        buf.writeInt(this.draggedEntity.getId());
-                        buf.writeInt(activeSlotIdx);
-                        buf.writeInt(this.draggedStack.getCount());
-                        ClientPlayNetworking.send(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
-                    }
                 }
             }
             this.draggedEntity = null;
@@ -438,14 +444,26 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     private Slot getSlotAt(double mouseX, double mouseY) {
+        int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         for (Slot slot : this.menu.slots) {
-            if (slot.x >= 0 && mouseX >= (leftPos + slot.x) && mouseX < (leftPos + slot.x + 18) 
-                    && mouseY >= (topPos + slot.y) && mouseY < (topPos + slot.y + 18)) {
-                return slot;
+            if (slot.x >= 0) {
+                if (slot.index == containerSize + 27) {
+                    if (mouseX >= (leftPos + slot.x - 4) && mouseX < (leftPos + slot.x + 22) 
+                            && mouseY >= (topPos + slot.y - 4) && mouseY < (topPos + slot.y + 22)) {
+                        return slot;
+                    }
+                } else {
+                    if (mouseX >= (leftPos + slot.x) && mouseX < (leftPos + slot.x + 18) 
+                            && mouseY >= (topPos + slot.y) && mouseY < (topPos + slot.y + 18)) {
+                        return slot;
+                    }
+                }
             }
         }
         return null;
     }
+
+
 
     @Override
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
@@ -490,17 +508,17 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             int startY = topPos + 25;
             double clickX = scaledMouseX - leftColumnX;
             double clickY = scaledMouseY - startY + scrollAmount;
-            int relY = 5 + 15;
-            if (!vicinityItems.isEmpty()) {
-                int rows = (int) Math.ceil(vicinityItems.size() / 9.0);
-                int groundGridHeight = rows * 18;
-                if (clickY >= relY && clickY < relY + groundGridHeight) {
-                    int col = (int) (clickX / 18);
-                    int row = (int) ((clickY - relY) / 18);
-                    int index = row * 9 + col;
-                    if (index >= 0 && index < vicinityItems.size()) {
-                        guiGraphics.renderTooltip(this.font, vicinityItems.get(index).getItem(), scaledMouseX, scaledMouseY);
-                    }
+            
+            int totalCount = vicinityItems.size() + nearbyContainers.size();
+            int rows = (int) Math.ceil(totalCount / 9.0);
+            int groundGridHeight = 5 + (rows == 0 ? 18 : rows * 18);
+            
+            if (clickY >= 5 && clickY < groundGridHeight) {
+                int col = (int) (clickX / 18);
+                int row = (int) ((clickY - 5) / 18);
+                int index = row * 9 + col;
+                if (index >= 0 && index < vicinityItems.size()) {
+                    guiGraphics.renderTooltip(this.font, vicinityItems.get(index).getItem(), scaledMouseX, scaledMouseY);
                 }
             }
         }
@@ -518,6 +536,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             guiGraphics.renderComponentTooltip(this.font, tooltipText, mouseX, mouseY);
         }
     }
+
+
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
@@ -557,21 +577,27 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int rightTextX = rightColumnX + (162 - this.font.width("INVENTORY")) / 2;
         guiGraphics.drawString(this.font, "INVENTORY", rightTextX, topPos + 9, 0xFFFFFFFF, true);
 
-        // 3. Hands Mirror Slot & Panel
-        int handsSlotX = middleColumnX + 72;
-        int handsSlotY = topPos + imageHeight - 50;
-
-        drawSectionPanel(guiGraphics, handsSlotX - 4, handsSlotY - 4, 26, 26);
-        guiGraphics.drawString(this.font, "HANDS", handsSlotX + 9 - (this.font.width("HANDS") / 2), handsSlotY - 11, 0xFFDFDFDF, false);
-        drawDayZSlot(guiGraphics, handsSlotX, handsSlotY);
+        // 3. Draw Hands Panel at the bottom of the middle column
+        int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
+        int handsPanelY = topPos + imageHeight - 75;
+        
+        // Single unified panel for the entire Hands area
+        drawSectionPanel(guiGraphics, middleColumnX - 4, handsPanelY, 170, 70);
+        
+        // Separate header section using a thin line
+        guiGraphics.fill(middleColumnX - 4, handsPanelY + 15, middleColumnX + 166, handsPanelY + 16, 0x26FFFFFF); // 15% opacity white border line
+        guiGraphics.drawString(this.font, "HANDS", middleColumnX + 81 - (this.font.width("HANDS") / 2), handsPanelY + 4, 0xFFDFDFDF, false);
+        
+        Slot handsSlot = this.menu.slots.get(containerSize + 27);
+        ItemStack handsStack = handsSlot.getItem();
+        if (!handsStack.isEmpty()) {
+            String handsItemName = handsStack.getHoverName().getString().toUpperCase();
+            // Separate subheader using another thin line
+            guiGraphics.fill(middleColumnX - 4, handsPanelY + 27, middleColumnX + 166, handsPanelY + 28, 0x26FFFFFF);
+            guiGraphics.drawString(this.font, handsItemName, middleColumnX + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
+        }
 
         if (this.minecraft != null && this.minecraft.player != null) {
-            ItemStack handsStack = this.minecraft.player.getMainHandItem();
-            if (!handsStack.isEmpty()) {
-                guiGraphics.renderFakeItem(handsStack, handsSlotX + 1, handsSlotY + 1);
-                guiGraphics.renderItemDecorations(this.font, handsStack, handsSlotX + 1, handsSlotY + 1);
-            }
-            
             // Draw 3D Player entity (larger scale, centered and placed higher)
             int renderX = middleColumnX + 81;
             int renderY = topPos + 135;
@@ -615,7 +641,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // 4. Draw Modern DayZ-style Slot Backgrounds & Borders behind visible slots
         for (Slot slot : this.menu.slots) {
             if (slot.x >= 0) {
-                drawDayZSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
+                if (slot.index == containerSize + 27) {
+                    // Draw a larger slot background for the Hands slot!
+                    drawDayZSlotLarge(guiGraphics, leftPos + slot.x - 4, topPos + slot.y - 4, 26, 26);
+                } else {
+                    drawDayZSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
+                }
             }
         }
 
@@ -650,16 +681,15 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         int relY = 5;
 
-        // Draw Ground Items subheader in light gray
-        guiGraphics.drawString(this.font, "Ground Items", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFFDFDFDF, false);
-        relY += 15;
-
-        if (vicinityItems.isEmpty()) {
+        // 1. Draw unified Vicinity grid slots (Ground items first, then nearby container icons)
+        int totalCount = vicinityItems.size() + nearbyContainers.size();
+        int rows = (int) Math.ceil(totalCount / 9.0);
+        
+        if (totalCount == 0) {
             guiGraphics.drawString(this.font, "No items nearby", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFF888888, false);
             relY += 15;
         } else {
-            for (int i = 0; i < vicinityItems.size(); i++) {
-                ItemEntity itemEntity = vicinityItems.get(i);
+            for (int i = 0; i < totalCount; i++) {
                 int col = i % 9;
                 int row = i / 9;
                 int relX = col * 18;
@@ -669,67 +699,72 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 int itemY = startY + rowRelY - (int) scrollAmount;
 
                 if (itemY + 18 >= startY && itemY <= endY) {
-                    ItemStack stack = itemEntity.getItem();
-
                     drawDayZSlot(guiGraphics, itemX, itemY);
                     
                     boolean hovering = mouseX >= itemX && mouseX < itemX + 18 && mouseY >= itemY && mouseY <= itemY + 18;
                     if (hovering) {
-                        guiGraphics.fill(itemX + 1, itemY + 1, itemX + 17, itemY + 17, 0x80FFFFFF); // Classic hover
+                        guiGraphics.fill(itemX + 1, itemY + 1, itemX + 17, itemY + 17, 0x80FFFFFF); // Hover highlight
                     }
 
-                    guiGraphics.renderFakeItem(stack, itemX + 1, itemY + 1);
-                    guiGraphics.renderItemDecorations(this.font, stack, itemX + 1, itemY + 1);
+                    if (i < vicinityItems.size()) {
+                        // Ground Item Icon
+                        ItemStack stack = vicinityItems.get(i).getItem();
+                        guiGraphics.renderFakeItem(stack, itemX + 1, itemY + 1);
+                        guiGraphics.renderItemDecorations(this.font, stack, itemX + 1, itemY + 1);
+                    } else {
+                        // Container Icon
+                        int containerIndex = i - vicinityItems.size();
+                        ContainerBlockInfo container = nearbyContainers.get(containerIndex);
+                        guiGraphics.renderFakeItem(container.icon, itemX + 1, itemY + 1);
+                        
+                        if (hovering) {
+                            this.hoveredContainer = container; // Set hovered for tooltip details
+                        }
+                        
+                        // Draw chevron overlay: active open/closed status indicators
+                        net.minecraft.core.BlockPos openPos = this.menu.getContainerPos();
+                        boolean isOpen = openPos != null && openPos.equals(container.pos);
+                        String chevron = isOpen ? "^" : "v";
+                        
+                        guiGraphics.pose().pushPose();
+                        guiGraphics.pose().translate(0, 0, 200.0F);
+                        guiGraphics.drawString(this.font, chevron, itemX + 11, itemY + 9, 0xFFFFFFFF, true);
+                        guiGraphics.pose().popPose();
+                    }
                 }
             }
-            int rows = (int) Math.ceil(vicinityItems.size() / 9.0);
             relY += rows * 18;
         }
 
-        // Draw Container subheader with dynamic block name and coordinates
+        // 2. Draw expanded active container slots grid below vicinity grid
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
-        if (containerSize > 0) {
+        net.minecraft.core.BlockPos openPos = this.menu.getContainerPos();
+        
+        if (containerSize > 0 && openPos != null) {
             relY += 10;
-            String containerTitle = "Container";
-            net.minecraft.core.BlockPos openPos = this.menu.getContainerPos();
-            if (openPos != null && this.minecraft != null && this.minecraft.level != null) {
+            int headerY = startY + relY - (int) scrollAmount;
+            
+            // Find container block name from registry/block pos
+            String containerName = "Container";
+            if (this.minecraft != null && this.minecraft.level != null) {
                 net.minecraft.world.level.block.state.BlockState state = this.minecraft.level.getBlockState(openPos);
                 if (state != null && !state.isAir()) {
-                    containerTitle += " - " + state.getBlock().getName().getString() + " (" + openPos.getX() + ", " + openPos.getY() + ", " + openPos.getZ() + ")";
+                    containerName = state.getBlock().getName().getString().toUpperCase();
                 }
             }
-            guiGraphics.drawString(this.font, containerTitle, leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFFDFDFDF, false);
-            int rows = (int) Math.ceil(containerSize / 9.0);
-            relY += 15 + rows * 18;
-        }
-
-        // Draw Nearby Storages dropdown list with block icons and tooltips
-        if (!nearbyContainers.isEmpty()) {
-            relY += 10;
-            guiGraphics.drawString(this.font, "Nearby Storages", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFFDFDFDF, false);
-            relY += 15;
-
-            for (int i = 0; i < nearbyContainers.size(); i++) {
-                ContainerBlockInfo container = nearbyContainers.get(i);
-                int itemY = startY + relY + i * 20 - (int) scrollAmount;
+            
+            if (headerY + 18 >= startY && headerY <= endY) {
+                // Renders the header panel of expanded active container
+                drawSectionPanel(guiGraphics, leftColumnX - 1, headerY, 162, 18);
+                guiGraphics.drawString(this.font, containerName, leftColumnX + 5, headerY + 5, 0xFFDFDFDF, false);
                 
-                if (itemY + 18 >= startY && itemY <= endY) {
-                    drawSectionPanel(guiGraphics, leftColumnX, itemY, 162, 18);
-                    
-                    boolean hovering = mouseX >= leftColumnX && mouseX < leftColumnX + 162 && mouseY >= itemY && mouseY <= itemY + 18;
-                    if (hovering) {
-                        guiGraphics.fill(leftColumnX + 1, itemY + 1, leftColumnX + 161, itemY + 17, 0x30FFFFFF);
-                        this.hoveredContainer = container; // set hovered container for tooltip render
-                    }
-                    
-                    // Render 3D Block icon
-                    guiGraphics.renderFakeItem(container.icon, leftColumnX + 2, itemY + 1);
-                    
-                    double dist = Math.sqrt(this.minecraft.player.distanceToSqr(container.pos.getX() + 0.5, container.pos.getY() + 0.5, container.pos.getZ() + 0.5));
-                    String btnText = container.name + " (" + String.format("%.1fm", dist) + ")";
-                    guiGraphics.drawString(this.font, btnText, leftColumnX + 22, itemY + 5, 0xFFFFFFFF, false);
-                }
+                // Draw a close button 'x' on header bar right
+                boolean hoverClose = mouseX >= leftColumnX + 147 && mouseX < leftColumnX + 161 && mouseY >= headerY && mouseY <= headerY + 18;
+                int closeColor = hoverClose ? 0xFFE04040 : 0xFF888888;
+                guiGraphics.drawString(this.font, "x", leftColumnX + 150, headerY + 4, closeColor, false);
             }
+            
+            relY += 18; // Shift past the drawer header bar to leave space for slot grid
         }
 
         guiGraphics.disableScissor();
@@ -755,5 +790,16 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         guiGraphics.fill(x, y + 17, x + 18, y + 18, 0x26FFFFFF); // bottom
         guiGraphics.fill(x, y, x + 1, y + 18, 0x26FFFFFF); // left
         guiGraphics.fill(x + 17, y, x + 18, y + 18, 0x26FFFFFF); // right
+    }
+
+    private void drawDayZSlotLarge(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        // Flat modern semi-transparent slot fill
+        guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x1AFFFFFF); // 10% white opacity
+        
+        // Thin borders representing flat slot edges
+        guiGraphics.fill(x, y, x + width, y + 1, 0x26FFFFFF); // top
+        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0x26FFFFFF); // bottom
+        guiGraphics.fill(x, y, x + 1, y + height, 0x26FFFFFF); // left
+        guiGraphics.fill(x + width - 1, y, x + width, y + height, 0x26FFFFFF); // right
     }
 }
