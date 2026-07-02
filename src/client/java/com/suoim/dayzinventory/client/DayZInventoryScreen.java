@@ -37,9 +37,15 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     @Override
     protected void init() {
+        // Dynamically scale based on window size
+        this.imageWidth = Math.max(500, Math.min(560, this.width - 20));
+        this.imageHeight = Math.max(220, Math.min(230, this.height - 20));
+        
         super.init();
+        
         this.leftPos = (this.width - this.imageWidth) / 2;
         this.topPos = (this.height - this.imageHeight) / 2;
+        
         this.updateVicinityList();
         this.updateSlotPositions();
     }
@@ -70,8 +76,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         this.vicinityItems.addAll(entities);
     }
 
+    private int getColumnX(int colIndex) {
+        int remaining = this.imageWidth - 486; // 486 is 3 * 162 (standard column widths)
+        int gap = remaining / 4;
+        return leftPos + gap + colIndex * (162 + gap);
+    }
+
     private int getScrollContentHeight() {
-        int groundSectionHeight = 5 + 15 + (vicinityItems.isEmpty() ? 15 : vicinityItems.size() * 22);
+        int groundSectionHeight = 5 + 15 + (vicinityItems.isEmpty() ? 15 : (int) Math.ceil(vicinityItems.size() / 9.0) * 18);
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         if (containerSize > 0) {
             int rows = (int) Math.ceil(containerSize / 9.0);
@@ -82,11 +94,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     private void updateSlotPositions() {
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
-        int groundSectionHeight = 5 + 15 + (vicinityItems.isEmpty() ? 15 : vicinityItems.size() * 22);
+        int groundSectionHeight = 5 + 15 + (vicinityItems.isEmpty() ? 15 : (int) Math.ceil(vicinityItems.size() / 9.0) * 18);
         
-        // Clamp scroll amount
+        int viewportHeight = this.imageHeight - 40;
         int contentHeight = getScrollContentHeight();
-        double maxScroll = Math.max(0, contentHeight - 190);
+        double maxScroll = Math.max(0, contentHeight - viewportHeight);
         if (this.scrollAmount > maxScroll) {
             this.scrollAmount = maxScroll;
         }
@@ -94,19 +106,23 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.scrollAmount = 0.0;
         }
 
+        int leftColumnX = getColumnX(0);
+        int middleColumnX = getColumnX(1);
+        int rightColumnX = getColumnX(2);
+
         // 1. Position Container Slots
         for (int i = 0; i < containerSize; i++) {
             Slot slot = this.menu.slots.get(i);
             int relY = groundSectionHeight + 25 + (i / 9) * 18;
-            int relX = 9 + (i % 9) * 18;
+            int relX = (i % 9) * 18;
             
-            int slotX = leftPos + relX;
+            int slotX = leftColumnX + relX;
             int slotY = topPos + 25 + relY - (int) this.scrollAmount;
 
             SlotAccessor accessor = (SlotAccessor) slot;
-            // Viewport is Y range [topPos + 25, topPos + 215]
-            if (slotY >= topPos + 25 && slotY + 18 <= topPos + 215) {
-                accessor.setX(relX);
+            // Viewport is Y range [topPos + 25, topPos + 25 + viewportHeight]
+            if (slotY >= topPos + 25 && slotY + 18 <= topPos + 25 + viewportHeight) {
+                accessor.setX(slotX - leftPos);
                 accessor.setY(25 + relY - (int) this.scrollAmount);
             } else {
                 accessor.setX(-2000);
@@ -120,7 +136,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 int index = containerSize + col + row * 9;
                 Slot slot = this.menu.slots.get(index);
                 SlotAccessor accessor = (SlotAccessor) slot;
-                accessor.setX(369 + col * 18);
+                accessor.setX(rightColumnX + col * 18 - leftPos);
                 accessor.setY(30 + row * 18);
             }
         }
@@ -130,35 +146,37 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             int index = containerSize + 27 + col;
             Slot slot = this.menu.slots.get(index);
             SlotAccessor accessor = (SlotAccessor) slot;
-            accessor.setX(369 + col * 18);
-            accessor.setY(180);
+            accessor.setX(rightColumnX + col * 18 - leftPos);
+            accessor.setY(imageHeight - 30);
         }
 
         // 4. Position Armor Slots (Helmet, Chestplate, Leggings, Boots)
         Slot helmetSlot = this.menu.slots.get(containerSize + 36);
-        ((SlotAccessor) helmetSlot).setX(195);
+        ((SlotAccessor) helmetSlot).setX(middleColumnX + 15 - leftPos);
         ((SlotAccessor) helmetSlot).setY(35);
 
         Slot chestSlot = this.menu.slots.get(containerSize + 37);
-        ((SlotAccessor) chestSlot).setX(195);
+        ((SlotAccessor) chestSlot).setX(middleColumnX + 15 - leftPos);
         ((SlotAccessor) chestSlot).setY(60);
 
         Slot legsSlot = this.menu.slots.get(containerSize + 38);
-        ((SlotAccessor) legsSlot).setX(195);
+        ((SlotAccessor) legsSlot).setX(middleColumnX + 15 - leftPos);
         ((SlotAccessor) legsSlot).setY(85);
 
         Slot bootsSlot = this.menu.slots.get(containerSize + 39);
-        ((SlotAccessor) bootsSlot).setX(195);
+        ((SlotAccessor) bootsSlot).setX(middleColumnX + 15 - leftPos);
         ((SlotAccessor) bootsSlot).setY(110);
 
         // 5. Position Offhand Slot
         Slot offhandSlot = this.menu.slots.get(containerSize + 40);
-        ((SlotAccessor) offhandSlot).setX(327);
+        ((SlotAccessor) offhandSlot).setX(middleColumnX + 129 - leftPos);
         ((SlotAccessor) offhandSlot).setY(35);
     }
 
     private boolean isMouseOverVicinity(double mouseX, double mouseY) {
-        return mouseX >= leftPos + 5 && mouseX <= leftPos + 180 && mouseY >= topPos + 25 && mouseY <= topPos + 215;
+        int leftColumnX = getColumnX(0);
+        int viewportHeight = this.imageHeight - 40;
+        return mouseX >= leftColumnX && mouseX <= leftColumnX + 162 && mouseY >= topPos + 25 && mouseY <= topPos + 25 + viewportHeight;
     }
 
     @Override
@@ -174,29 +192,33 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (isMouseOverVicinity(mouseX, mouseY)) {
+            int leftColumnX = getColumnX(0);
             int startY = topPos + 25;
-            double clickRelY = mouseY - startY + scrollAmount;
+            double clickX = mouseX - leftColumnX;
+            double clickY = mouseY - startY + scrollAmount;
             int relY = 5 + 15; // Ground Items title height offset
             
             if (!vicinityItems.isEmpty()) {
-                for (ItemEntity itemEntity : vicinityItems) {
-                    int rowY = startY + relY - (int) scrollAmount;
-                    if (mouseY >= rowY && mouseY <= rowY + 20 && rowY >= startY && rowY + 20 <= topPos + 215) {
-                        if (mouseX >= leftPos + 9 && mouseX <= leftPos + 171) {
-                            if (Screen.hasShiftDown()) {
-                                // Quick pickup
-                                FriendlyByteBuf buf = PacketByteBufs.create();
-                                buf.writeInt(itemEntity.getId());
-                                ClientPlayNetworking.send(DayZInventoryPackets.QUICK_PICKUP_ITEM_PACKET, buf);
-                            } else {
-                                // Start dragging
-                                this.draggedEntity = itemEntity;
-                                this.draggedStack = itemEntity.getItem().copy();
-                            }
-                            return true;
+                int rows = (int) Math.ceil(vicinityItems.size() / 9.0);
+                int groundGridHeight = rows * 18;
+                if (clickY >= relY && clickY < relY + groundGridHeight) {
+                    int col = (int) (clickX / 18);
+                    int row = (int) ((clickY - relY) / 18);
+                    int index = row * 9 + col;
+                    if (index >= 0 && index < vicinityItems.size()) {
+                        ItemEntity itemEntity = vicinityItems.get(index);
+                        if (Screen.hasShiftDown()) {
+                            // Quick pickup
+                            FriendlyByteBuf buf = PacketByteBufs.create();
+                            buf.writeInt(itemEntity.getId());
+                            ClientPlayNetworking.send(DayZInventoryPackets.QUICK_PICKUP_ITEM_PACKET, buf);
+                        } else {
+                            // Start dragging
+                            this.draggedEntity = itemEntity;
+                            this.draggedStack = itemEntity.getItem().copy();
                         }
+                        return true;
                     }
-                    relY += 22;
                 }
             }
         }
@@ -215,8 +237,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 ClientPlayNetworking.send(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
             } else {
                 // Check if released over "Hands" slot
-                int handsSlotX = leftPos + 261;
-                int handsSlotY = topPos + 175;
+                int middleColumnX = getColumnX(1);
+                int handsSlotX = middleColumnX + 72;
+                int handsSlotY = topPos + imageHeight - 50;
                 if (mouseX >= handsSlotX && mouseX <= handsSlotX + 18 && mouseY >= handsSlotY && mouseY <= handsSlotY + 18) {
                     if (this.minecraft != null && this.minecraft.player != null) {
                         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
@@ -269,18 +292,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         // Render tooltip for vicinity items
         if (this.draggedStack == null && isMouseOverVicinity(mouseX, mouseY)) {
+            int leftColumnX = getColumnX(0);
             int startY = topPos + 25;
+            double clickX = mouseX - leftColumnX;
+            double clickY = mouseY - startY + scrollAmount;
             int relY = 5 + 15;
             if (!vicinityItems.isEmpty()) {
-                for (ItemEntity itemEntity : vicinityItems) {
-                    int rowY = startY + relY - (int) scrollAmount;
-                    if (mouseY >= rowY && mouseY <= rowY + 20 && rowY >= startY && rowY + 20 <= topPos + 215) {
-                        if (mouseX >= leftPos + 9 && mouseX <= leftPos + 171) {
-                            guiGraphics.renderTooltip(this.font, itemEntity.getItem(), mouseX, mouseY);
-                            break;
-                        }
+                int rows = (int) Math.ceil(vicinityItems.size() / 9.0);
+                int groundGridHeight = rows * 18;
+                if (clickY >= relY && clickY < relY + groundGridHeight) {
+                    int col = (int) (clickX / 18);
+                    int row = (int) ((clickY - relY) / 18);
+                    int index = row * 9 + col;
+                    if (index >= 0 && index < vicinityItems.size()) {
+                        guiGraphics.renderTooltip(this.font, vicinityItems.get(index).getItem(), mouseX, mouseY);
                     }
-                    relY += 22;
                 }
             }
         }
@@ -293,37 +319,48 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+        int leftColumnX = getColumnX(0);
+        int middleColumnX = getColumnX(1);
+        int rightColumnX = getColumnX(2);
+
         // 1. Dark screen background overlay
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xD8050505);
 
         // 2. Sleek column dividing lines
-        guiGraphics.fill(leftPos + 180, topPos + 5, leftPos + 181, topPos + imageHeight - 5, 0x40FFFFFF);
-        guiGraphics.fill(leftPos + 360, topPos + 5, leftPos + 361, topPos + imageHeight - 5, 0x40FFFFFF);
+        int line1X = (leftColumnX + 162 + middleColumnX) / 2;
+        int line2X = (middleColumnX + 162 + rightColumnX) / 2;
+        guiGraphics.fill(line1X, topPos + 5, line1X + 1, topPos + imageHeight - 5, 0x40FFFFFF);
+        guiGraphics.fill(line2X, topPos + 5, line2X + 1, topPos + imageHeight - 5, 0x40FFFFFF);
 
         // 3. Column Headers
-        guiGraphics.fill(leftPos + 5, topPos + 5, leftPos + 175, topPos + 22, 0xFF1C1C1C);
-        guiGraphics.drawString(this.font, "VICINITY", leftPos + 10, topPos + 9, 0xFFFFFFFF, false);
+        guiGraphics.fill(leftColumnX - 4, topPos + 5, leftColumnX + 162 + 4, topPos + 22, 0xFF1C1C1C);
+        guiGraphics.drawString(this.font, "VICINITY", leftColumnX, topPos + 9, 0xFFFFFFFF, false);
 
-        guiGraphics.fill(leftPos + 185, topPos + 5, leftPos + 355, topPos + 22, 0xFF1C1C1C);
-        guiGraphics.drawString(this.font, "SURVIVOR", leftPos + 190, topPos + 9, 0xFFFFFFFF, false);
+        guiGraphics.fill(middleColumnX - 4, topPos + 5, middleColumnX + 162 + 4, topPos + 22, 0xFF1C1C1C);
+        guiGraphics.drawString(this.font, "SURVIVOR", middleColumnX, topPos + 9, 0xFFFFFFFF, false);
 
-        guiGraphics.fill(leftPos + 365, topPos + 5, leftPos + 535, topPos + 22, 0xFF9E0B0B);
-        guiGraphics.drawString(this.font, "INVENTORY", leftPos + 370, topPos + 9, 0xFFFFFFFF, false);
+        guiGraphics.fill(rightColumnX - 4, topPos + 5, rightColumnX + 162 + 4, topPos + 22, 0xFF9E0B0B);
+        guiGraphics.drawString(this.font, "INVENTORY", rightColumnX, topPos + 9, 0xFFFFFFFF, false);
 
         // 4. Hands Mirror Slot
-        guiGraphics.drawString(this.font, "HANDS", leftPos + 258, topPos + 162, 0xAAAAAAFF, false);
-        guiGraphics.fill(leftPos + 261, topPos + 175, leftPos + 279, topPos + 193, 0x80101010);
-        drawSlotBorder(guiGraphics, leftPos + 261, topPos + 175);
+        int handsSlotX = middleColumnX + 72;
+        int handsSlotY = topPos + imageHeight - 50;
+
+        guiGraphics.drawString(this.font, "HANDS", middleColumnX + 66, handsSlotY - 12, 0xAAAAAAFF, false);
+        guiGraphics.fill(handsSlotX, handsSlotY, handsSlotX + 18, handsSlotY + 18, 0x80101010);
+        drawSlotBorder(guiGraphics, handsSlotX, handsSlotY);
 
         if (this.minecraft != null && this.minecraft.player != null) {
             ItemStack handsStack = this.minecraft.player.getMainHandItem();
             if (!handsStack.isEmpty()) {
-                guiGraphics.renderFakeItem(handsStack, leftPos + 262, topPos + 176);
-                guiGraphics.renderItemDecorations(this.font, handsStack, leftPos + 262, topPos + 176);
+                guiGraphics.renderFakeItem(handsStack, handsSlotX + 1, handsSlotY + 1);
+                guiGraphics.renderItemDecorations(this.font, handsStack, handsSlotX + 1, handsSlotY + 1);
             }
             
             // Draw 3D Player entity
-            float f = (float) Math.atan((double) ((leftPos + 270 - mouseX) / 40.0F));
+            int renderX = middleColumnX + 81;
+            int renderY = topPos + imageHeight - 75;
+            float f = (float) Math.atan((double) ((renderX - mouseX) / 40.0F));
             float g = (float) Math.atan((double) ((topPos + 80 - mouseY) / 40.0F));
             Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
             Quaternionf cameraPose = (new Quaternionf()).rotateX(g * 20.0F * ((float) Math.PI / 180.0F));
@@ -343,9 +380,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
             InventoryScreen.renderEntityInInventory(
                 guiGraphics,
-                leftPos + 270,
-                topPos + 150,
-                45,
+                renderX,
+                renderY,
+                (int) (imageHeight * 0.2), // Auto scales scale factor
                 pose,
                 cameraPose,
                 this.minecraft.player
@@ -371,64 +408,64 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         // 7. Draw Scrollbar
         int contentHeight = getScrollContentHeight();
-        if (contentHeight > 190) {
-            int maxScroll = contentHeight - 190;
-            int barHeight = Math.max(20, (190 * 190) / contentHeight);
-            int barTop = topPos + 25 + (int) ((scrollAmount * (190 - barHeight)) / maxScroll);
-            guiGraphics.fill(leftPos + 176, topPos + 25, leftPos + 178, topPos + 215, 0xFF151515); // background
-            guiGraphics.fill(leftPos + 176, barTop, leftPos + 178, barTop + barHeight, 0xFF555555); // thumb
+        int viewportHeight = imageHeight - 40;
+        if (contentHeight > viewportHeight) {
+            int maxScroll = contentHeight - viewportHeight;
+            int barHeight = Math.max(20, (viewportHeight * viewportHeight) / contentHeight);
+            int barTop = topPos + 25 + (int) ((scrollAmount * (viewportHeight - barHeight)) / maxScroll);
+            guiGraphics.fill(leftColumnX + 163, topPos + 25, leftColumnX + 165, topPos + 25 + viewportHeight, 0xFF151515); // background
+            guiGraphics.fill(leftColumnX + 163, barTop, leftColumnX + 165, barTop + barHeight, 0xFF555555); // thumb
         }
     }
 
     private void renderVicinityList(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        int leftColumnX = getColumnX(0);
         int startY = topPos + 25;
-        int endY = topPos + 215;
+        int viewportHeight = this.imageHeight - 40;
+        int endY = startY + viewportHeight;
 
-        guiGraphics.enableScissor(leftPos + 5, startY, leftPos + 175, endY);
+        guiGraphics.enableScissor(leftColumnX, startY, leftColumnX + 162, endY);
 
         int relY = 5;
 
         // Draw Ground Items header
-        guiGraphics.drawString(this.font, "Ground Items", leftPos + 9, startY + relY - (int) scrollAmount, 0x88FFFFFF, false);
+        guiGraphics.drawString(this.font, "Ground Items", leftColumnX + 4, startY + relY - (int) scrollAmount, 0x88FFFFFF, false);
         relY += 15;
 
         if (vicinityItems.isEmpty()) {
-            guiGraphics.drawString(this.font, "No items nearby", leftPos + 9, startY + relY - (int) scrollAmount, 0x44FFFFFF, false);
+            guiGraphics.drawString(this.font, "No items nearby", leftColumnX + 4, startY + relY - (int) scrollAmount, 0x44FFFFFF, false);
             relY += 15;
         } else {
-            for (ItemEntity itemEntity : vicinityItems) {
-                int rowY = startY + relY - (int) scrollAmount;
+            for (int i = 0; i < vicinityItems.size(); i++) {
+                ItemEntity itemEntity = vicinityItems.get(i);
+                int col = i % 9;
+                int row = i / 9;
+                int relX = col * 18;
+                int rowRelY = relY + row * 18;
+                
+                int itemX = leftColumnX + relX;
+                int itemY = startY + rowRelY - (int) scrollAmount;
 
-                if (rowY + 20 >= startY && rowY <= endY) {
+                if (itemY + 18 >= startY && itemY <= endY) {
                     ItemStack stack = itemEntity.getItem();
 
-                    boolean hovering = mouseX >= leftPos + 9 && mouseX <= leftPos + 171 && mouseY >= rowY && mouseY <= rowY + 20;
-                    int bgColor = hovering ? 0xFF2C2C2C : 0xFF1C1C1C;
-                    guiGraphics.fill(leftPos + 9, rowY, leftPos + 171, rowY + 20, bgColor);
+                    boolean hovering = mouseX >= itemX && mouseX < itemX + 18 && mouseY >= itemY && mouseY <= itemY + 18;
+                    int bgColor = hovering ? 0x40FFFFFF : 0x80101010;
+                    guiGraphics.fill(itemX, itemY, itemX + 18, itemY + 18, bgColor);
+                    drawSlotBorder(guiGraphics, itemX, itemY);
 
-                    // Draw border manually
-                    guiGraphics.fill(leftPos + 9, rowY, leftPos + 171, rowY + 1, 0xFF333333); // top
-                    guiGraphics.fill(leftPos + 9, rowY + 19, leftPos + 171, rowY + 20, 0xFF333333); // bottom
-                    guiGraphics.fill(leftPos + 9, rowY, leftPos + 10, rowY + 20, 0xFF333333); // left
-                    guiGraphics.fill(leftPos + 170, rowY, leftPos + 171, rowY + 20, 0xFF333333); // right
-
-                    guiGraphics.renderFakeItem(stack, leftPos + 11, rowY + 2);
-                    guiGraphics.renderItemDecorations(this.font, stack, leftPos + 11, rowY + 2);
-
-                    String name = stack.getHoverName().getString();
-                    if (name.length() > 18) {
-                        name = name.substring(0, 16) + "...";
-                    }
-                    guiGraphics.drawString(this.font, name, leftPos + 32, rowY + 6, 0xFFFFFFFF, false);
+                    guiGraphics.renderFakeItem(stack, itemX + 1, itemY + 1);
+                    guiGraphics.renderItemDecorations(this.font, stack, itemX + 1, itemY + 1);
                 }
-                relY += 22;
             }
+            int rows = (int) Math.ceil(vicinityItems.size() / 9.0);
+            relY += rows * 18;
         }
 
         // Draw Container header
         if (this.menu.getContainerInventory() != null) {
             relY += 10;
-            guiGraphics.drawString(this.font, "Container", leftPos + 9, startY + relY - (int) scrollAmount, 0x88FFFFFF, false);
+            guiGraphics.drawString(this.font, "Container", leftColumnX + 4, startY + relY - (int) scrollAmount, 0x88FFFFFF, false);
         }
 
         guiGraphics.disableScissor();
