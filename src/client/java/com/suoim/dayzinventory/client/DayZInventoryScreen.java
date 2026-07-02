@@ -2,6 +2,7 @@ package com.suoim.dayzinventory.client;
 
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.DayZInventoryPackets;
+import com.suoim.dayzinventory.mixin.SlotAccessor;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,6 +15,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import org.joml.Quaternionf;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,13 +103,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             int slotX = leftPos + relX;
             int slotY = topPos + 25 + relY - (int) this.scrollAmount;
 
+            SlotAccessor accessor = (SlotAccessor) slot;
             // Viewport is Y range [topPos + 25, topPos + 215]
             if (slotY >= topPos + 25 && slotY + 18 <= topPos + 215) {
-                slot.x = relX;
-                slot.y = 25 + relY - (int) this.scrollAmount;
+                accessor.setX(relX);
+                accessor.setY(25 + relY - (int) this.scrollAmount);
             } else {
-                slot.x = -2000;
-                slot.y = -2000;
+                accessor.setX(-2000);
+                accessor.setY(-2000);
             }
         }
 
@@ -116,8 +119,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             for (int col = 0; col < 9; col++) {
                 int index = containerSize + col + row * 9;
                 Slot slot = this.menu.slots.get(index);
-                slot.x = 369 + col * 18;
-                slot.y = 30 + row * 18;
+                SlotAccessor accessor = (SlotAccessor) slot;
+                accessor.setX(369 + col * 18);
+                accessor.setY(30 + row * 18);
             }
         }
 
@@ -125,31 +129,32 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         for (int col = 0; col < 9; col++) {
             int index = containerSize + 27 + col;
             Slot slot = this.menu.slots.get(index);
-            slot.x = 369 + col * 18;
-            slot.y = 180;
+            SlotAccessor accessor = (SlotAccessor) slot;
+            accessor.setX(369 + col * 18);
+            accessor.setY(180);
         }
 
         // 4. Position Armor Slots (Helmet, Chestplate, Leggings, Boots)
         Slot helmetSlot = this.menu.slots.get(containerSize + 36);
-        helmetSlot.x = 195;
-        helmetSlot.y = 35;
+        ((SlotAccessor) helmetSlot).setX(195);
+        ((SlotAccessor) helmetSlot).setY(35);
 
         Slot chestSlot = this.menu.slots.get(containerSize + 37);
-        chestSlot.x = 195;
-        chestSlot.y = 60;
+        ((SlotAccessor) chestSlot).setX(195);
+        ((SlotAccessor) chestSlot).setY(60);
 
         Slot legsSlot = this.menu.slots.get(containerSize + 38);
-        legsSlot.x = 195;
-        legsSlot.y = 85;
+        ((SlotAccessor) legsSlot).setX(195);
+        ((SlotAccessor) legsSlot).setY(85);
 
         Slot bootsSlot = this.menu.slots.get(containerSize + 39);
-        bootsSlot.x = 195;
-        bootsSlot.y = 110;
+        ((SlotAccessor) bootsSlot).setX(195);
+        ((SlotAccessor) bootsSlot).setY(110);
 
         // 5. Position Offhand Slot
         Slot offhandSlot = this.menu.slots.get(containerSize + 40);
-        offhandSlot.x = 327;
-        offhandSlot.y = 35;
+        ((SlotAccessor) offhandSlot).setX(327);
+        ((SlotAccessor) offhandSlot).setY(35);
     }
 
     private boolean isMouseOverVicinity(double mouseX, double mouseY) {
@@ -242,7 +247,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
-    protected boolean isClickOutsideBounds(double mouseX, double mouseY, int left, int top, int button) {
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
         if (isMouseOverVicinity(mouseX, mouseY)) {
             return true;
         }
@@ -318,21 +323,53 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             }
             
             // Draw 3D Player entity
+            float f = (float) Math.atan((double) ((leftPos + 270 - mouseX) / 40.0F));
+            float g = (float) Math.atan((double) ((topPos + 80 - mouseY) / 40.0F));
+            Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
+            Quaternionf cameraPose = (new Quaternionf()).rotateX(g * 20.0F * ((float) Math.PI / 180.0F));
+            pose.mul(cameraPose);
+
+            float backupBodyRot = this.minecraft.player.yBodyRot;
+            float backupYRot = this.minecraft.player.getYRot();
+            float backupXRot = this.minecraft.player.getXRot();
+            float backupHeadRotO = this.minecraft.player.yHeadRotO;
+            float backupHeadRot = this.minecraft.player.yHeadRot;
+
+            this.minecraft.player.yBodyRot = 180.0F + f * 20.0F;
+            this.minecraft.player.setYRot(180.0F + f * 40.0F);
+            this.minecraft.player.setXRot(-g * 20.0F);
+            this.minecraft.player.yHeadRot = this.minecraft.player.getYRot();
+            this.minecraft.player.yHeadRotO = this.minecraft.player.getYRot();
+
             InventoryScreen.renderEntityInInventory(
                 guiGraphics,
                 leftPos + 270,
                 topPos + 150,
                 45,
-                (float) (leftPos + 270 - mouseX),
-                (float) (topPos + 80 - mouseY),
+                pose,
+                cameraPose,
                 this.minecraft.player
             );
+
+            this.minecraft.player.yBodyRot = backupBodyRot;
+            this.minecraft.player.setYRot(backupYRot);
+            this.minecraft.player.setXRot(backupXRot);
+            this.minecraft.player.yHeadRotO = backupHeadRotO;
+            this.minecraft.player.yHeadRot = backupHeadRot;
         }
 
-        // 5. Draw Vicinity List (Ground Items + Container slots titles)
+        // 5. Draw Slot Backgrounds & Borders behind visible slots
+        for (Slot slot : this.menu.slots) {
+            if (slot.x >= 0) {
+                guiGraphics.fill(leftPos + slot.x - 1, topPos + slot.y - 1, leftPos + slot.x + 17, topPos + slot.y + 17, 0x80101010);
+                drawSlotBorder(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
+            }
+        }
+
+        // 6. Draw Vicinity List (Ground Items + Container slots titles)
         renderVicinityList(guiGraphics, mouseX, mouseY);
 
-        // 6. Draw Scrollbar
+        // 7. Draw Scrollbar
         int contentHeight = getScrollContentHeight();
         if (contentHeight > 190) {
             int maxScroll = contentHeight - 190;
@@ -395,17 +432,6 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
 
         guiGraphics.disableScissor();
-    }
-
-    @Override
-    protected void renderSlot(GuiGraphics guiGraphics, Slot slot) {
-        if (slot.x < 0) return; // Hidden slot
-
-        // Draw custom slot background and border
-        guiGraphics.fill(leftPos + slot.x - 1, topPos + slot.y - 1, leftPos + slot.x + 17, topPos + slot.y + 17, 0x80101010);
-        drawSlotBorder(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
-
-        super.renderSlot(guiGraphics, slot);
     }
 
     private void drawSlotBorder(GuiGraphics guiGraphics, int x, int y) {

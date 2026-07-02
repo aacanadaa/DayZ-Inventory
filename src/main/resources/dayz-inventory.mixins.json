@@ -6,7 +6,8 @@
 		"ExampleMixin",
 		"ChestBlockMixin",
 		"BarrelBlockMixin",
-		"ItemEntityMixin"
+		"ItemEntityMixin",
+		"SlotAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1
