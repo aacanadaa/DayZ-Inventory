@@ -473,7 +473,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // Replicates click/hover hit check over the virtual Hands slot in the middle column (absolute coordinates)
         int middleColumnX = getColumnX(1);
         int handsPanelY = topPos + imageHeight - 75;
-        Slot handsSlot = this.menu.slots.get(containerSize + 27);
+        
+        int selectedSlot = 0;
+        if (this.minecraft != null && this.minecraft.player != null) {
+            selectedSlot = this.minecraft.player.getInventory().selected;
+        }
+        Slot handsSlot = this.menu.slots.get(containerSize + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();
         int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
         int bodyHeight = handsStack.isEmpty() ? 55 : 43;
@@ -635,7 +640,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         guiGraphics.fill(middleColumnX - 4, handsPanelY + 15, middleColumnX + 166, handsPanelY + 16, 0x26FFFFFF); // 15% opacity white border line
         guiGraphics.drawString(this.font, "HANDS", middleColumnX + 81 - (this.font.width("HANDS") / 2), handsPanelY + 4, 0xFFDFDFDF, false);
         
-        Slot handsSlot = this.menu.slots.get(containerSize + 27);
+        int selectedSlot = 0;
+        if (this.minecraft != null && this.minecraft.player != null) {
+            selectedSlot = this.minecraft.player.getInventory().selected;
+        }
+        Slot handsSlot = this.menu.slots.get(containerSize + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();
         int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
         int bodyHeight = handsStack.isEmpty() ? 55 : 43;
