@@ -1,9 +1,9 @@
 # DayZ-Style Inventory Mod for Minecraft (Fabric 1.20.1)
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-007ec6.svg)](LICENSE)
-![Platform](https://img.shields.io/badge/Platform-Fabric-df643c.svg)
-![Downloads](https://img.shields.io/badge/downloads-7-2c2c2c.svg)
-![Issues](https://img.shields.io/badge/issues-0_open-e6b400.svg)
+[![License](https://img.shields.io/github/license/aacanadaa/DayZ-Inventory)](LICENSE)
+[![Platform](https://img.shields.io/modrinth/game-versions/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
+[![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
+[![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
@@ -61,8 +61,8 @@ All vicinity interactions use network packets registered in DayZInventoryPackets
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/suoim/dayz-inventory.git
-   cd dayz-inventory
+   git clone https://github.com/aacanadaa/DayZ-Inventory.git
+   cd DayZ-Inventory
    ```
 
 2. **Build the Mod Jar:**
