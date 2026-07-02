@@ -2,7 +2,7 @@
 	"required": true,
 	"package": "com.suoim.dayzinventory.client.mixin",
 	"compatibilityLevel": "JAVA_17",
-	"client": [
+	"mixins": [
 		"ExampleClientMixin",
 		"MinecraftClientMixin"
 	],
