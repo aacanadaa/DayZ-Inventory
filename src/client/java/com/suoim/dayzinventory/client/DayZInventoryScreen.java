@@ -597,54 +597,65 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int scaledMouseX = (int) (mouseX / scale);
         int scaledMouseY = (int) (mouseY / scale);
 
-        // 1. Draw Section Panels (separate translucent dark rectangles with outlines)
-        
+        // 1. Draw Section Panels derived from getColumnX() to guarantee alignment with slots
+        int lx = getColumnX(0); // left column origin
+        int mx = getColumnX(1); // middle column origin
+        int rx = getColumnX(2); // right column origin
+        // Item fills span 160px (9 slots * 16px icons, spaced 18px). 2px padding each side = 164px panels.
+        // This ensures left and right gaps are equal (2px each).
+        final int PANEL_W = 164; // 160px item span + 2px each side
+        final int PAD = 2;
+
         // Left Column (Vicinity)
-        drawSectionPanel(guiGraphics, leftColumnX - 4, topPos + 5, 170, 17); // Header
-        drawSectionPanel(guiGraphics, leftColumnX - 4, topPos + 25, 170, viewportHeight); // Content
-        
+        drawSectionPanel(guiGraphics, lx - PAD, topPos + 5, PANEL_W, 17); // Header
+        drawSectionPanel(guiGraphics, lx - PAD, topPos + 25, PANEL_W, viewportHeight); // Content
+
         // Middle Column (Survivor)
-        drawSectionPanel(guiGraphics, middleColumnX - 4, topPos + 5, 170, 17); // Header
-        drawSectionPanel(guiGraphics, middleColumnX + 11, topPos + 31, 26, 101); // Armor
-        drawSectionPanel(guiGraphics, middleColumnX + 125, topPos + 31, 26, 26); // Offhand
-        
+        drawSectionPanel(guiGraphics, mx - PAD, topPos + 5, PANEL_W, 17); // Header
+        // Armor: 4 individual panels, one per slot (y=35, 60, 85, 110 relative to topPos)
+        drawSectionPanel(guiGraphics, mx + 13, topPos + 33, 20, 20); // Helmet
+        drawSectionPanel(guiGraphics, mx + 13, topPos + 58, 20, 20); // Chestplate
+        drawSectionPanel(guiGraphics, mx + 13, topPos + 83, 20, 20); // Leggings
+        drawSectionPanel(guiGraphics, mx + 13, topPos + 108, 20, 20); // Boots
+        // Offhand: 1 slot (y=35, x=mx+129)
+        drawSectionPanel(guiGraphics, mx + 127, topPos + 33, 20, 20); // Offhand
+
         // Right Column (Inventory)
-        drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + 5, 170, 17); // Header
-        drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + 26, 170, 62); // Main inventory
-        drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + imageHeight - 34, 170, 26); // Hotbar
-        
-        // Right Column (Crafting Menu between Inventory and Hotbar)
-        drawSectionPanel(guiGraphics, rightColumnX - 4, topPos + 92, 170, 90);
-        guiGraphics.fill(rightColumnX - 4, topPos + 107, rightColumnX + 166, topPos + 108, 0x26FFFFFF); // separator
-        guiGraphics.drawString(this.font, "CRAFTING", rightColumnX + 81 - (this.font.width("CRAFTING") / 2), topPos + 96, 0xFFDFDFDF, false);
-        guiGraphics.drawString(this.font, "->", rightColumnX + 72, topPos + 130, 0xFFDFDFDF, false);
+        drawSectionPanel(guiGraphics, rx - PAD, topPos + 5, PANEL_W, 17); // Header
+        // Main inventory: items span topPos+30 to topPos+82 (52px), + 2px each side = 56px tall
+        drawSectionPanel(guiGraphics, rx - PAD, topPos + 28, PANEL_W, 56);
+        // Crafting section: header + 2x2 grid + result
+        drawSectionPanel(guiGraphics, rx - PAD, topPos + 90, PANEL_W, 90);
+        guiGraphics.fill(rx - PAD, topPos + 107, rx - PAD + PANEL_W, topPos + 108, 0x10FFFFFF); // separator
+        guiGraphics.drawString(this.font, "CRAFTING", rx + 80 - (this.font.width("CRAFTING") / 2), topPos + 96, 0xFFDFDFDF, false);
+        guiGraphics.drawString(this.font, "->", rx + 72, topPos + 130, 0xFFDFDFDF, false);
+        // Hotbar: items span 16px tall, + 2px each side = 20px tall
+        drawSectionPanel(guiGraphics, rx - PAD, topPos + imageHeight - 32, PANEL_W, 20);
 
-        // 2. Draw Column Header Texts centered with shadows
-        int leftTextX = leftColumnX + (162 - this.font.width("VICINITY")) / 2;
-        guiGraphics.drawString(this.font, "VICINITY", leftTextX, topPos + 9, 0xFFFFFFFF, true);
 
-        int middleTextX = middleColumnX + (162 - this.font.width("SURVIVOR")) / 2;
-        guiGraphics.drawString(this.font, "SURVIVOR", middleTextX, topPos + 9, 0xFFFFFFFF, true);
-
-        int rightTextX = rightColumnX + (162 - this.font.width("INVENTORY")) / 2;
-        guiGraphics.drawString(this.font, "INVENTORY", rightTextX, topPos + 9, 0xFFFFFFFF, true);
+        // 2. Draw Column Header Texts
+        int lx2 = getColumnX(0), mx2 = getColumnX(1), rx2 = getColumnX(2);
+        guiGraphics.drawString(this.font, "VICINITY",  lx2 + (162 - this.font.width("VICINITY"))  / 2, topPos + 9, 0xFFFFFFFF, true);
+        guiGraphics.drawString(this.font, "SURVIVOR",  mx2 + (162 - this.font.width("SURVIVOR"))  / 2, topPos + 9, 0xFFFFFFFF, true);
+        guiGraphics.drawString(this.font, "INVENTORY", rx2 + (162 - this.font.width("INVENTORY")) / 2, topPos + 9, 0xFFFFFFFF, true);
 
         // 3. Draw Hands Panel at the bottom of the middle column
-        int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
+        int mx3 = getColumnX(1);
+        int containerSize2 = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
         int handsPanelY = topPos + imageHeight - 75;
         
         // Single unified panel for the entire Hands area
-        drawSectionPanel(guiGraphics, middleColumnX - 4, handsPanelY, 170, 70);
+        drawSectionPanel(guiGraphics, mx3 - 2, handsPanelY, 166, 70);
         
         // Separate header section using a thin line
-        guiGraphics.fill(middleColumnX - 4, handsPanelY + 15, middleColumnX + 166, handsPanelY + 16, 0x26FFFFFF); // 15% opacity white border line
-        guiGraphics.drawString(this.font, "HANDS", middleColumnX + 81 - (this.font.width("HANDS") / 2), handsPanelY + 4, 0xFFDFDFDF, false);
+        guiGraphics.fill(mx3 - 2, handsPanelY + 15, mx3 + 164, handsPanelY + 16, 0x10FFFFFF); // divider line
+        guiGraphics.drawString(this.font, "HANDS", mx3 + 81 - (this.font.width("HANDS") / 2), handsPanelY + 4, 0xFFDFDFDF, false);
         
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
             selectedSlot = this.minecraft.player.getInventory().selected;
         }
-        Slot handsSlot = this.menu.slots.get(containerSize + 27 + selectedSlot);
+        Slot handsSlot = this.menu.slots.get(containerSize2 + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();
         int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
         int bodyHeight = handsStack.isEmpty() ? 55 : 43;
@@ -652,8 +663,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         if (!handsStack.isEmpty()) {
             String handsItemName = handsStack.getHoverName().getString().toUpperCase();
             // Separate subheader using another thin line
-            guiGraphics.fill(middleColumnX - 4, handsPanelY + 27, middleColumnX + 166, handsPanelY + 28, 0x26FFFFFF);
-            guiGraphics.drawString(this.font, handsItemName, middleColumnX + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
+            guiGraphics.fill(mx3 - 2, handsPanelY + 27, mx3 + 164, handsPanelY + 28, 0x10FFFFFF);
+            guiGraphics.drawString(this.font, handsItemName, mx3 + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
         }
 
         // Draw custom hover highlight for the Hands slot body (covers the entire translucent area)
@@ -717,11 +728,16 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.minecraft.player.yHeadRot = backupHeadRot;
         }
 
-        // 4. Draw Modern DayZ-style Slot Backgrounds & Borders behind visible slots
+        // 4. Draw DayZ-style Slot Backgrounds — exactly aligned with item icon (slot.x, slot.y = item top-left)
         for (Slot slot : this.menu.slots) {
             if (slot.x >= 0) {
-                // Draws default slot frames for inventory, crafting grid, armor, hotbar.
-                drawDayZSlot(guiGraphics, leftPos + slot.x - 1, topPos + slot.y - 1);
+                // Fill exactly 16x16 at the item position. Adjacent slots are naturally 2px apart
+                // due to the 18px cell spacing (18 - 16 = 2px gap between icon edges).
+                guiGraphics.fill(
+                    leftPos + slot.x, topPos + slot.y,
+                    leftPos + slot.x + 16, topPos + slot.y + 16,
+                    0x18FFFFFF
+                );
             }
         }
 
@@ -845,35 +861,17 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     private void drawSectionPanel(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        // Dark translucent panel background
-        guiGraphics.fill(x, y, x + width, y + height, 0xD0101010);
-        
-        // 3D-like thin borders for panel separation
-        guiGraphics.fill(x, y, x + width, y + 1, 0xFF3A3A3A); // top
-        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0xFF3A3A3A); // bottom
-        guiGraphics.fill(x, y, x + 1, y + height, 0xFF3A3A3A); // left
-        guiGraphics.fill(x + width - 1, y, x + width, y + height, 0xFF3A3A3A); // right
+        // Dark translucent panel background without any outline borders
+        guiGraphics.fill(x, y, x + width, y + height, 0x9E0C0C0C);
     }
 
     private void drawDayZSlot(GuiGraphics guiGraphics, int x, int y) {
-        // Flat modern semi-transparent slot fill
-        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0x1AFFFFFF); // 10% white opacity
-        
-        // Thin borders representing flat slot edges
-        guiGraphics.fill(x, y, x + 18, y + 1, 0x26FFFFFF); // top
-        guiGraphics.fill(x, y + 17, x + 18, y + 18, 0x26FFFFFF); // bottom
-        guiGraphics.fill(x, y, x + 1, y + 18, 0x26FFFFFF); // left
-        guiGraphics.fill(x + 17, y, x + 18, y + 18, 0x26FFFFFF); // right
+        // 16x16 fill with 1px gap on all sides within the 18x18 cell = visible slot separation
+        guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0x18FFFFFF);
     }
 
     private void drawDayZSlotLarge(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        // Flat modern semi-transparent slot fill
-        guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x1AFFFFFF); // 10% white opacity
-        
-        // Thin borders representing flat slot edges
-        guiGraphics.fill(x, y, x + width, y + 1, 0x26FFFFFF); // top
-        guiGraphics.fill(x, y + height - 1, x + width, y + height, 0x26FFFFFF); // bottom
-        guiGraphics.fill(x, y, x + 1, y + height, 0x26FFFFFF); // left
-        guiGraphics.fill(x + width - 1, y, x + width, y + height, 0x26FFFFFF); // right
+        // Flat modern semi-transparent slot fill without any borders
+        guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x15FFFFFF);
     }
 }
