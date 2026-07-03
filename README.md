@@ -1,4 +1,4 @@
-# DayZ-Style Inventory Mod for Minecraft (Fabric 1.20.1)
+# DayZ-Style Inventory Mod for Minecraft (Fabric 1.20.1-6)
 
 [![License](https://img.shields.io/github/license/aacanadaa/DayZ-Inventory)](LICENSE)
 [![Platform](https://img.shields.io/modrinth/game-versions/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
@@ -6,6 +6,8 @@
 [![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
+
+**REQUIRES FABRIC API**
 
 ---
 <img width="3732" height="1668" alt="image" src="https://github.com/user-attachments/assets/c2c2ae16-af85-454d-98df-4340832bc25d" />
