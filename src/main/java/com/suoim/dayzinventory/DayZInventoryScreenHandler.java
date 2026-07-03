@@ -2,6 +2,8 @@ package com.suoim.dayzinventory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -11,7 +13,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeType;
 import org.jetbrains.annotations.Nullable;
+import java.util.Optional;
 
 public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     private final Container containerInventory;
@@ -125,8 +130,38 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     public void slotsChanged(Container container) {
         super.slotsChanged(container);
         if (!this.playerInventory.player.level().isClientSide) {
-            net.minecraft.world.inventory.DayZInventoryCraftingHelper.updateCraftingGrid(this, this.playerInventory.player.level(), this.playerInventory.player, this.craftSlots, this.resultSlots);
+            this.updateCraftingResult();
         }
+    }
+
+    /**
+     * Re-implements CraftingMenu.slotChangedCraftingGrid() inline.
+     * The protected helper class trick (DayZInventoryCraftingHelper) causes
+     * IllegalAccessError in production under Knot's classloader, so we replicate
+     * the logic here using only public APIs and this-accessible protected methods.
+     */
+    private void updateCraftingResult() {
+        if (this.playerInventory.player.level().isClientSide) return;
+        ServerPlayer serverPlayer = (ServerPlayer) this.playerInventory.player;
+
+        ItemStack result = ItemStack.EMPTY;
+        Optional<CraftingRecipe> optional = serverPlayer.getServer()
+            .getRecipeManager()
+            .getRecipeFor(RecipeType.CRAFTING, this.craftSlots, serverPlayer.level());
+
+        if (optional.isPresent()) {
+            CraftingRecipe recipe = optional.get();
+            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipe)) {
+                result = recipe.assemble(this.craftSlots, serverPlayer.level().registryAccess());
+            }
+        }
+
+        this.resultSlots.setItem(0, result);
+        // setRemoteSlot is protected in AbstractContainerMenu but accessible here since we extend it
+        this.setRemoteSlot(0, result);
+        serverPlayer.connection.send(new ClientboundContainerSetSlotPacket(
+            this.containerId, this.incrementStateId(), 0, result
+        ));
     }
 
     public @Nullable Container getContainerInventory() {
