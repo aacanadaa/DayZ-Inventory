@@ -3,7 +3,7 @@
 	"id": "dayz-inventory",
 	"version": "${version}",
 	"name": "DayZ Inventory",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.",
 	"authors": [
 		{
 			"name": "suoim",
