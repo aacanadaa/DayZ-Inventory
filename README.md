@@ -1,4 +1,4 @@
-# DayZ-Style Inventory Mod for Minecraft (Fabric 1.20.1-6)
+# DayZ-Style Inventory Mod for Minecraft (Fabric 1.20.1)
 
 [![License](https://img.shields.io/github/license/aacanadaa/DayZ-Inventory)](LICENSE)
 [![Platform](https://img.shields.io/modrinth/game-versions/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
@@ -36,9 +36,12 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 - **Item Swapping**: Dragging a vicinity item onto an occupied slot (e.g. dragging an iron chestplate onto an equipped diamond chestplate) automatically equips the new item and returns the old one to the player's inventory.
 - **True Click-Hold-Drag-Release**: Supports intuitive clicking and dragging for all item management tasks.
 
-### Cursor Jump Prevention
-- Caches raw cursor positions before opening or collapsing nearby containers, restoring the cursor position via GLFW on the next frame so the mouse never resets to the center.
+## Dependencies and Compatibility
 
+* **Platform**: Fabric
+* **Minecraft Version**: 1.20.1
+* **Dependencies**: Fabric Loader and Fabric API only. No other mods required!
+* **Server Compatibility**: Requires both server and client to have this installed.
 ---
 
 ## Technical Details and Architecture
