@@ -8,7 +8,7 @@
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
 ---
-<img width="3760" height="1602" alt="image" src="https://github.com/user-attachments/assets/ac38a122-5dbd-4271-b2b3-89e365c476bf" />
+<img width="3732" height="1668" alt="image" src="https://github.com/user-attachments/assets/c2c2ae16-af85-454d-98df-4340832bc25d" />
 
 ## Features
 
