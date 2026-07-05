@@ -285,6 +285,25 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
 
+        // Handle recipe viewer button click if JEI/REI/EMI is present
+        boolean hasJei = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("jei");
+        boolean hasRei = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("roughlyenoughitems");
+        boolean hasEmi = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("emi");
+        boolean showToggleBtn = hasJei || hasRei || hasEmi;
+        if (showToggleBtn) {
+            int rightColumnX = getColumnX(2);
+            int btnX = rightColumnX + 130;
+            int btnY = topPos + 7;
+            int btnW = 30;
+            int btnH = 13;
+            if (scaledX >= btnX && scaledX < btnX + btnW &&
+                scaledY >= btnY && scaledY < btnY + btnH) {
+                this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                toggleRecipeViewerOverlay();
+                return true;
+            }
+        }
+
         // Store dragged slot for click-hold-drag-release UX
         Slot hoveredSlot = this.getSlotAt(scaledX, scaledY);
         if (hoveredSlot != null && !hoveredSlot.getItem().isEmpty()) {
@@ -632,6 +651,24 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // Hotbar: items span 16px tall, + 2px each side = 20px tall
         drawSectionPanel(guiGraphics, rx - PAD, topPos + imageHeight - 32, PANEL_W, 20);
 
+        // Draw recipe viewer toggle button if JEI/REI/EMI is loaded
+        boolean hasJei = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("jei");
+        boolean hasRei = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("roughlyenoughitems");
+        boolean hasEmi = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("emi");
+        boolean showToggleBtn = hasJei || hasRei || hasEmi;
+        if (showToggleBtn) {
+            String toggleBtnText = hasJei ? "JEI" : (hasRei ? "REI" : "EMI");
+            int btnX = rx + 130;
+            int btnY = topPos + 7;
+            int btnW = 30;
+            int btnH = 13;
+            boolean hoverBtn = scaledMouseX >= btnX && scaledMouseX < btnX + btnW &&
+                               scaledMouseY >= btnY && scaledMouseY < btnY + btnH;
+            guiGraphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, hoverBtn ? 0x35FFFFFF : 0x15FFFFFF);
+            int textW = this.font.width(toggleBtnText);
+            guiGraphics.drawString(this.font, toggleBtnText, btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
+        }
+
 
         // 2. Draw Column Header Texts
         int lx2 = getColumnX(0), mx2 = getColumnX(1), rx2 = getColumnX(2);
@@ -873,5 +910,52 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     private void drawDayZSlotLarge(GuiGraphics guiGraphics, int x, int y, int width, int height) {
         // Flat modern semi-transparent slot fill without any borders
         guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x15FFFFFF);
+    }
+
+    private void toggleRecipeViewerOverlay() {
+        if (this.minecraft == null) return;
+        net.minecraft.client.KeyMapping targetKey = null;
+        for (net.minecraft.client.KeyMapping key : this.minecraft.options.keyMappings) {
+            String name = key.getName();
+            if (name.equals("key.jei.toggleOverlay") || 
+                name.equals("key.rei.toggle_overlay") || 
+                name.equals("key.emi.toggle_visibility") || 
+                name.equals("key.emi.toggle") || 
+                name.contains("toggle_overlay") ||
+                name.contains("toggle_visibility")) {
+                targetKey = key;
+                break;
+            }
+        }
+        if (targetKey != null && !targetKey.isUnbound()) {
+            com.mojang.blaze3d.platform.InputConstants.Key key = getBoundKey(targetKey);
+            if (key != null) {
+                int keyCode = key.getValue();
+                // 1. Fire keyPressed event on screen
+                this.keyPressed(keyCode, 0, 0);
+                
+                // 2. Also toggle/click via KeyMapping to support all polling handlers
+                targetKey.setDown(true);
+                net.minecraft.client.KeyMapping.click(key);
+                targetKey.setDown(false);
+            }
+        }
+    }
+
+    private static com.mojang.blaze3d.platform.InputConstants.Key getBoundKey(net.minecraft.client.KeyMapping keyMapping) {
+        try {
+            for (java.lang.reflect.Field field : net.minecraft.client.KeyMapping.class.getDeclaredFields()) {
+                if (field.getType().getName().endsWith("$Key") || field.getType().getSimpleName().equals("Key")) {
+                    field.setAccessible(true);
+                    Object obj = field.get(keyMapping);
+                    if (obj instanceof com.mojang.blaze3d.platform.InputConstants.Key) {
+                        return (com.mojang.blaze3d.platform.InputConstants.Key) obj;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
