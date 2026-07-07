@@ -5,6 +5,8 @@ import net.fabricmc.api.ClientModInitializer;
 import net.minecraft.client.gui.screens.MenuScreens;
 
 public class DayZInventoryClient implements ClientModInitializer {
+	public static boolean allowVanillaInventory = false;
+
 	@Override
 	public void onInitializeClient() {
 		// Register the custom screen for our ScreenHandler

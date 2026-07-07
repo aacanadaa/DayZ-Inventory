@@ -19,6 +19,9 @@ public class MinecraftClientMixin {
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         if (screen instanceof InventoryScreen) {
+            if (com.suoim.dayzinventory.client.DayZInventoryClient.allowVanillaInventory) {
+                return;
+            }
             if (this.player != null && !this.player.isCreative()) {
                 ci.cancel();
                 // Send custom open inventory packet to server

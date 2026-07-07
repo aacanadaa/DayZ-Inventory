@@ -304,7 +304,41 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             }
         }
 
-        // Store dragged slot for click-hold-drag-release UX
+        // Handle Curios button click if Curios is present
+        boolean hasCurios = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("curios");
+        boolean hasTrinkets = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets");
+        if (hasCurios) {
+            int middleColumnX = getColumnX(1);
+            int btnX = hasTrinkets ? (middleColumnX + 4) : (middleColumnX + 125);
+            int btnY = topPos + 7;
+            int btnW = 35;
+            int btnH = 13;
+            if (scaledX >= btnX && scaledX < btnX + btnW &&
+                scaledY >= btnY && scaledY < btnY + btnH) {
+                this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                toggleCuriosOverlay();
+                return true;
+            }
+        }
+
+        // Handle Trinkets button click if Trinkets is present
+        if (hasTrinkets) {
+            int middleColumnX = getColumnX(1);
+            int btnX = middleColumnX + 115;
+            int btnY = topPos + 7;
+            int btnW = 45;
+            int btnH = 13;
+            if (scaledX >= btnX && scaledX < btnX + btnW &&
+                scaledY >= btnY && scaledY < btnY + btnH) {
+                this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+                // Bypass redirection to open the vanilla InventoryScreen where Trinkets slots render perfectly
+                com.suoim.dayzinventory.client.DayZInventoryClient.allowVanillaInventory = true;
+                this.minecraft.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(this.minecraft.player));
+                com.suoim.dayzinventory.client.DayZInventoryClient.allowVanillaInventory = false;
+                return true;
+            }
+        }
+
         Slot hoveredSlot = this.getSlotAt(scaledX, scaledY);
         if (hoveredSlot != null && !hoveredSlot.getItem().isEmpty()) {
             this.draggedSlot = hoveredSlot;
@@ -669,6 +703,34 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             guiGraphics.drawString(this.font, toggleBtnText, btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
         }
 
+        // Draw Curios button if Curios is loaded
+        boolean hasCurios = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("curios");
+        boolean hasTrinkets = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("trinkets");
+        if (hasCurios) {
+            int btnX = hasTrinkets ? (mx + 4) : (mx + 125);
+            int btnY = topPos + 7;
+            int btnW = 35;
+            int btnH = 13;
+            boolean hoverBtn = scaledMouseX >= btnX && scaledMouseX < btnX + btnW &&
+                               scaledMouseY >= btnY && scaledMouseY < btnY + btnH;
+            guiGraphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, hoverBtn ? 0x35FFFFFF : 0x15FFFFFF);
+            int textW = this.font.width("CURIOS");
+            guiGraphics.drawString(this.font, "CURIOS", btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
+        }
+
+        // Draw Trinkets button if Trinkets is loaded
+        if (hasTrinkets) {
+            int btnX = mx + 115;
+            int btnY = topPos + 7;
+            int btnW = 45;
+            int btnH = 13;
+            boolean hoverBtn = scaledMouseX >= btnX && scaledMouseX < btnX + btnW &&
+                               scaledMouseY >= btnY && scaledMouseY < btnY + btnH;
+            guiGraphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, hoverBtn ? 0x35FFFFFF : 0x15FFFFFF);
+            int textW = this.font.width("TRINKETS");
+            guiGraphics.drawString(this.font, "TRINKETS", btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
+        }
+
 
         // 2. Draw Column Header Texts
         int lx2 = getColumnX(0), mx2 = getColumnX(1), rx2 = getColumnX(2);
@@ -912,17 +974,23 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x15FFFFFF);
     }
 
+    private void simulateKeyTap(int keyCode) {
+        if (this.minecraft == null) return;
+        long window = this.minecraft.getWindow().getWindow();
+        this.minecraft.keyboardHandler.keyPress(window, keyCode, 0, 1, 0); // PRESS
+        this.minecraft.keyboardHandler.keyPress(window, keyCode, 0, 0, 0); // RELEASE
+    }
+
     private void toggleRecipeViewerOverlay() {
+        simulateKeyTap(79); // 79 is GLFW_KEY_O
+    }
+
+    private void toggleCuriosOverlay() {
         if (this.minecraft == null) return;
         net.minecraft.client.KeyMapping targetKey = null;
         for (net.minecraft.client.KeyMapping key : this.minecraft.options.keyMappings) {
             String name = key.getName();
-            if (name.equals("key.jei.toggleOverlay") || 
-                name.equals("key.rei.toggle_overlay") || 
-                name.equals("key.emi.toggle_visibility") || 
-                name.equals("key.emi.toggle") || 
-                name.contains("toggle_overlay") ||
-                name.contains("toggle_visibility")) {
+            if (name.equals("key.curios.open.desc") || name.contains("curios.open")) {
                 targetKey = key;
                 break;
             }
@@ -930,14 +998,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         if (targetKey != null && !targetKey.isUnbound()) {
             com.mojang.blaze3d.platform.InputConstants.Key key = getBoundKey(targetKey);
             if (key != null) {
-                int keyCode = key.getValue();
-                // 1. Fire keyPressed event on screen
-                this.keyPressed(keyCode, 0, 0);
-                
-                // 2. Also toggle/click via KeyMapping to support all polling handlers
-                targetKey.setDown(true);
-                net.minecraft.client.KeyMapping.click(key);
-                targetKey.setDown(false);
+                simulateKeyTap(key.getValue());
             }
         }
     }
