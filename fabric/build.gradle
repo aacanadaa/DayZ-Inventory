@@ -37,7 +37,7 @@ publishMods {
 
     modrinth {
         projectId = "8asZxzdc"
-        accessToken = "mrp_g4MvBdB2Aq6cmUpcgxsx8txhP8MRq089PqHEZAxaKtCIEu4JUMus4CIqXUTf"
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersions.add("1.20.1")
         modLoaders.add("fabric")
         requires("fabric-api")
@@ -45,7 +45,7 @@ publishMods {
 
     curseforge {
         projectId = "1596267"
-        accessToken = "03afdb7f-82e4-456b-93a6-ec9585161eaf"
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         minecraftVersions.add("1.20.1")
         modLoaders.add("fabric")
         requires("fabric-api")
