@@ -77,18 +77,26 @@ publishMods {
 
     modrinth {
         projectId = "8asZxzdc"
-        accessToken = "mrp_g4MvBdB2Aq6cmUpcgxsx8txhP8MRq089PqHEZAxaKtCIEu4JUMus4CIqXUTf"
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersions.add("1.20.1")
         modLoaders.add("forge")
     }
 
     curseforge {
         projectId = "1596267"
-        accessToken = "03afdb7f-82e4-456b-93a6-ec9585161eaf"
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         minecraftVersions.add("1.20.1")
         modLoaders.add("forge")
         client = true
         server = true
+    }
+
+    github {
+        repository = "aacanadaa/DayZ-Inventory"
+        accessToken = providers.environmentVariable("GITHUB_TOKEN")
+        commitish = "main"
+        tagName = "v${project.version}"
+        displayName = "DayZ Inventory v${project.version}"
     }
 }
 
