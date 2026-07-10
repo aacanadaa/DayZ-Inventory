@@ -1,0 +1,56 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'me.modmuss50.mod-publish-plugin'
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+    implementation project(":common")
+}
+
+loom {
+    runs {
+        client {
+            client()
+            runDir "run"
+        }
+        server {
+            server()
+            runDir "run"
+        }
+    }
+}
+
+base {
+    archivesName = "dayz-inventory-fabric"
+}
+
+publishMods {
+    file = remapJar.archiveFile
+    changelog = rootProject.file("CHANGELOG.md").text
+    type = STABLE
+
+    modrinth {
+        projectId = "8asZxzdc"
+        accessToken = "mrp_g4MvBdB2Aq6cmUpcgxsx8txhP8MRq089PqHEZAxaKtCIEu4JUMus4CIqXUTf"
+        minecraftVersions.add("1.20.1")
+        modLoaders.add("fabric")
+        requires("fabric-api")
+    }
+
+    curseforge {
+        projectId = "1596267"
+        accessToken = "03afdb7f-82e4-456b-93a6-ec9585161eaf"
+        minecraftVersions.add("1.20.1")
+        modLoaders.add("fabric")
+        requires("fabric-api")
+        client = true
+        server = true
+    }
+}
+

@@ -15,7 +15,7 @@ Key Features and Improvements:
   - Refactored the recipe viewer button click action to unconditionally simulate a tap of the 'O' key on the client (GLFW keycode 79), which is the standard default key for toggling the recipe viewer overlay (JEI, REI, EMI) on and off.
 
 Compatibility Section:
-- Minecraft Version: 1.20.1 (Fabric)
+- Minecraft Version: 1.20.1 (Fabric & Forge)
 - Java Version: Java 17 and newer
 - Mod Compatibility List:
   - Just Enough Items (JEI) - Fully compatible (supports toggling overlay via simulated 'O' keytap)

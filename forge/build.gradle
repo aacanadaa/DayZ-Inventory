@@ -1,0 +1,94 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '6.0.+'
+    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'me.modmuss50.mod-publish-plugin'
+}
+
+minecraft {
+    mappings channel: 'official', version: project.minecraft_version
+    
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            
+            mods {
+                dayz_inventory {
+                    source sourceSets.main
+                    source project(':common').sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
+            mods {
+                dayz_inventory {
+                    source sourceSets.main
+                    source project(':common').sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+    
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    implementation(project(':common')) {
+        exclude group: 'net.fabricmc'
+        exclude group: 'net.fabricmc.fabric-api'
+    }
+}
+
+mixin {
+    add sourceSets.main, "dayz-inventory.refmap.json"
+    config "dayz-inventory.mixins.json"
+    config "dayz-inventory.client.mixins.json"
+}
+
+// Ensure resources from common are packaged
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/${it.name}")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
+}
+
+base {
+    archivesName = "dayz-inventory-forge"
+}
+
+publishMods {
+    file = jar.archiveFile
+    changelog = rootProject.file("CHANGELOG.md").text
+    type = STABLE
+
+    modrinth {
+        projectId = "8asZxzdc"
+        accessToken = "mrp_g4MvBdB2Aq6cmUpcgxsx8txhP8MRq089PqHEZAxaKtCIEu4JUMus4CIqXUTf"
+        minecraftVersions.add("1.20.1")
+        modLoaders.add("forge")
+    }
+
+    curseforge {
+        projectId = "1596267"
+        accessToken = "03afdb7f-82e4-456b-93a6-ec9585161eaf"
+        minecraftVersions.add("1.20.1")
+        modLoaders.add("forge")
+        client = true
+        server = true
+    }
+}
+

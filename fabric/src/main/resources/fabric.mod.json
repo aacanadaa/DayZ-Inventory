@@ -1,0 +1,42 @@
+{
+	"schemaVersion": 1,
+	"id": "dayz_inventory",
+	"version": "${version}",
+	"name": "DayZ Inventory",
+	"description": "A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.",
+	"authors": [
+		{
+			"name": "suoim",
+			"contact": {
+				"homepage": "https://modrinth.com/user/suoim"
+			}
+		}
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/project/dayz-inventory"
+	},
+	"license": "Apache-2.0",
+	"icon": "assets/dayz_inventory/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.suoim.dayzinventory.fabric.DayZInventoryFabric"
+		],
+		"client": [
+			"com.suoim.dayzinventory.fabric.client.DayZInventoryFabricClient"
+		]
+	},
+	"mixins": [
+		"dayz-inventory.mixins.json",
+		{
+			"config": "dayz-inventory.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	}
+}
