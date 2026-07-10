@@ -1,0 +1,19 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modCompileOnly "net.fabricmc:fabric-loader:${project.loader_version}"
+    modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+configurations {
+    runtimeClasspath {
+        exclude group: 'net.fabricmc', module: 'sponge-mixin'
+    }
+    runtimeElements {
+        exclude group: 'net.fabricmc', module: 'sponge-mixin'
+    }
+}

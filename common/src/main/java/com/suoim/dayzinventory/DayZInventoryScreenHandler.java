@@ -1,0 +1,261 @@
+package com.suoim.dayzinventory;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeType;
+import org.jetbrains.annotations.Nullable;
+import java.util.Optional;
+
+public class DayZInventoryScreenHandler extends AbstractContainerMenu {
+    private final Container containerInventory;
+    private final BlockPos containerPos;
+    private final Inventory playerInventory;
+
+    // Client-side constructor
+    public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, FriendlyByteBuf buf) {
+        this(syncId, playerInventory, 
+             buf.readBoolean() ? new SimpleContainer(buf.readInt()) : null, 
+             buf.readBoolean() ? buf.readBlockPos() : null);
+    }
+
+    // Main constructor (used by client-side builder and server-side opener)
+    public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, @Nullable Container containerInventory, @Nullable BlockPos containerPos) {
+        super(com.suoim.dayzinventory.platform.Platform.HELPER.getScreenHandlerType(), syncId);
+        this.playerInventory = playerInventory;
+        this.containerInventory = containerInventory;
+        this.containerPos = containerPos;
+
+        int containerSize = containerInventory != null ? containerInventory.getContainerSize() : 0;
+
+        // 1. Add Container Slots (first index)
+        if (containerInventory != null) {
+            if (!playerInventory.player.level().isClientSide) {
+                containerInventory.startOpen(playerInventory.player);
+            }
+            for (int i = 0; i < containerSize; i++) {
+                // Coordinates set to 0 initially, will be placed dynamically during client rendering
+                this.addSlot(new Slot(containerInventory, i, 0, 0));
+            }
+        }
+
+        // 2. Add Player Inventory Slots (27 slots, index containerSize to containerSize + 26)
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slotIndex = col + row * 9 + 9;
+                this.addSlot(new Slot(playerInventory, slotIndex, 0, 0));
+            }
+        }
+
+        // 3. Add Player Hotbar Slots (9 slots, index containerSize + 27 to containerSize + 35)
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(playerInventory, col, 0, 0));
+        }
+
+        // 4. Add Player Armor Slots (4 slots: Helmet, Chestplate, Leggings, Boots, index containerSize + 36 to containerSize + 39)
+        // Note: Helmet is slot 39, Chestplate 38, Leggings 37, Boots 36 in player inventory
+        this.addSlot(new Slot(playerInventory, 39, 0, 0) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.HEAD;
+            }
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+        this.addSlot(new Slot(playerInventory, 38, 0, 0) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.CHEST;
+            }
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+        this.addSlot(new Slot(playerInventory, 37, 0, 0) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.LEGS;
+            }
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+        this.addSlot(new Slot(playerInventory, 36, 0, 0) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.FEET;
+            }
+            @Override
+            public int getMaxStackSize() {
+                return 1;
+            }
+        });
+
+        // 5. Add Offhand Slot (index containerSize + 40)
+        this.addSlot(new Slot(playerInventory, 40, 0, 0) {
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                return true;
+            }
+        });
+
+        // 6. Add Crafting Slots (index containerSize + 41 is Result, containerSize + 42 to + 45 are inputs)
+        this.addSlot(new net.minecraft.world.inventory.ResultSlot(playerInventory.player, this.craftSlots, this.resultSlots, 0, 0, 0));
+        for (int r = 0; r < 2; r++) {
+            for (int c = 0; c < 2; c++) {
+                this.addSlot(new Slot(this.craftSlots, c + r * 2, 0, 0));
+            }
+        }
+    }
+
+    private final net.minecraft.world.inventory.CraftingContainer craftSlots = new net.minecraft.world.inventory.TransientCraftingContainer(this, 2, 2);
+    private final net.minecraft.world.inventory.ResultContainer resultSlots = new net.minecraft.world.inventory.ResultContainer();
+
+    @Override
+    public void slotsChanged(Container container) {
+        super.slotsChanged(container);
+        if (!this.playerInventory.player.level().isClientSide) {
+            this.updateCraftingResult();
+        }
+    }
+
+    /**
+     * Re-implements CraftingMenu.slotChangedCraftingGrid() inline.
+     * The protected helper class trick (DayZInventoryCraftingHelper) causes
+     * IllegalAccessError in production under Knot's classloader, so we replicate
+     * the logic here using only public APIs and this-accessible protected methods.
+     */
+    private void updateCraftingResult() {
+        if (this.playerInventory.player.level().isClientSide) return;
+        ServerPlayer serverPlayer = (ServerPlayer) this.playerInventory.player;
+
+        ItemStack result = ItemStack.EMPTY;
+        Optional<CraftingRecipe> optional = serverPlayer.getServer()
+            .getRecipeManager()
+            .getRecipeFor(RecipeType.CRAFTING, this.craftSlots, serverPlayer.level());
+
+        if (optional.isPresent()) {
+            CraftingRecipe recipe = optional.get();
+            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipe)) {
+                result = recipe.assemble(this.craftSlots, serverPlayer.level().registryAccess());
+            }
+        }
+
+        this.resultSlots.setItem(0, result);
+        // setRemoteSlot is protected in AbstractContainerMenu but accessible here since we extend it
+        this.setRemoteSlot(0, result);
+        serverPlayer.connection.send(new ClientboundContainerSetSlotPacket(
+            this.containerId, this.incrementStateId(), 0, result
+        ));
+    }
+
+    public @Nullable Container getContainerInventory() {
+        return this.containerInventory;
+    }
+
+    public @Nullable BlockPos getContainerPos() {
+        return this.containerPos;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        if (this.containerInventory != null) {
+            return this.containerInventory.stillValid(player);
+        }
+        return true;
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        if (this.containerInventory != null && !player.level().isClientSide) {
+            this.containerInventory.stopOpen(player);
+        }
+        this.clearContainer(player, this.craftSlots);
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int index) {
+        ItemStack itemStack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack itemStack2 = slot.getItem();
+            itemStack = itemStack2.copy();
+            int containerSize = this.containerInventory != null ? this.containerInventory.getContainerSize() : 0;
+            
+            if (index < containerSize) {
+                // From container to player inventory/hotbar
+                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (index >= containerSize && index < containerSize + 36) {
+                // From player inventory/hotbar
+                // 1. Try to move to armor/offhand if applicable
+                boolean movedToArmor = false;
+                EquipmentSlot equipmentSlot = LivingEntity.getEquipmentSlotForItem(itemStack);
+                int targetIdx = -1;
+                
+                if (equipmentSlot == EquipmentSlot.HEAD) targetIdx = containerSize + 36;
+                else if (equipmentSlot == EquipmentSlot.CHEST) targetIdx = containerSize + 37;
+                else if (equipmentSlot == EquipmentSlot.LEGS) targetIdx = containerSize + 38;
+                else if (equipmentSlot == EquipmentSlot.FEET) targetIdx = containerSize + 39;
+                else if (equipmentSlot == EquipmentSlot.OFFHAND) targetIdx = containerSize + 40;
+                
+                if (targetIdx != -1) {
+                    Slot targetSlot = this.slots.get(targetIdx);
+                    if (!targetSlot.hasItem() && targetSlot.mayPlace(itemStack2)) {
+                        if (!this.moveItemStackTo(itemStack2, targetIdx, targetIdx + 1, false)) {
+                            return ItemStack.EMPTY;
+                        }
+                        movedToArmor = true;
+                    }
+                }
+                
+                // 2. Try to move to container (if open)
+                if (!movedToArmor && containerSize > 0) {
+                    if (!this.moveItemStackTo(itemStack2, 0, containerSize, false)) {
+                        return ItemStack.EMPTY;
+                    }
+                }
+            } else if (index >= containerSize + 41) {
+                // From crafting slots to player inventory/hotbar
+                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else {
+                // From armor/offhand to player inventory/hotbar
+                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, false)) {
+                    return ItemStack.EMPTY;
+                }
+            }
+
+            if (itemStack2.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+
+            if (itemStack2.getCount() == itemStack.getCount()) {
+                return ItemStack.EMPTY;
+            }
+
+            slot.onTake(player, itemStack2);
+        }
+        return itemStack;
+    }
+}
