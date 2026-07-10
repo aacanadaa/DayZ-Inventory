@@ -1,4 +1,4 @@
-# DayZ-Style Inventory Mod for Minecraft (Fabric 1.20.1)
+# DayZ-Style Inventory Mod for Minecraft (Fabric/Forge 1.20.1)
 
 [![License](https://img.shields.io/github/license/aacanadaa/DayZ-Inventory)](LICENSE)
 [![Platform](https://img.shields.io/modrinth/game-versions/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
