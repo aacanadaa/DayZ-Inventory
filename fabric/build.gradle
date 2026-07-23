@@ -27,7 +27,7 @@ loom {
 }
 
 base {
-    archivesName = "dayz-inventory-fabric-release"
+    archivesName = "dayz-inventory-fabric"
 }
 
 tasks.named('processResources', ProcessResources) {

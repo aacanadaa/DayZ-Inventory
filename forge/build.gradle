@@ -93,7 +93,7 @@ tasks.named('processResources', ProcessResources) {
 }
 
 base {
-    archivesName = "dayz-inventory-forge-release"
+    archivesName = "dayz-inventory-forge"
 }
 
 publishMods {
