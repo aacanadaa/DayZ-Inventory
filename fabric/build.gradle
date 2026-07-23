@@ -42,7 +42,7 @@ publishMods {
         modLoaders.add("fabric")
         requires("fabric-api")
         optional("trinkets")
-        optional("curios-api")
+        optional("curios")
     }
 
     curseforge {
@@ -52,7 +52,7 @@ publishMods {
         modLoaders.add("fabric")
         requires("fabric-api")
         optional("trinkets")
-        optional("curios-api")
+        optional("curios")
         client = true
         server = true
     }
