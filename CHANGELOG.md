@@ -1,4 +1,14 @@
-DayZ Inventory 1.2.0: Accessory Integration and Input Polish Update
+FORGE IS NOW FIXED!
+
+DayZ Inventory 1.3.0 Release
+
+Welcome to the official 1.3.0 release of DayZ Inventory!
+
+Key Updates:
+- FORGE IS NOW FIXED for all launchers (Prism Launcher, Modrinth App, CurseForge Launcher).
+- License update: Transitioned to All Rights Reserved (ARR).
+- Dual repository setup: Issue tracking moved to public issue tracker repository (aacanadaa/DayZ-Inventory-Issues).
+- Dependency metadata updates: Curios and Trinkets configured as optional dependencies.
 
 Welcome to the official 1.2.0 release of DayZ Inventory! This version adds comprehensive support for the Trinkets accessory mod, improves the layout structure when multiple accessory mods are installed, and refactors the recipe viewer toggle button.
 
