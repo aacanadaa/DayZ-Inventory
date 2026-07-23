@@ -54,7 +54,7 @@ dependencies {
 }
 
 mixin {
-    add sourceSets.main, "common-refmap.json"
+    add sourceSets.main, "dayz-inventory.refmap.json"
     config "dayz-inventory.mixins.json"
     config "dayz-inventory.client.mixins.json"
 }

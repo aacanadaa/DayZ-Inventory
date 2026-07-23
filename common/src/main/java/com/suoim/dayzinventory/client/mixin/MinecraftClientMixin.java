@@ -14,15 +14,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Minecraft.class)
 public class MinecraftClientMixin {
-    @Shadow public net.minecraft.client.player.LocalPlayer player;
-
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         if (screen instanceof InventoryScreen) {
             if (Platform.allowVanillaInventory) {
                 return;
             }
-            if (this.player != null && !this.player.isCreative()) {
+            net.minecraft.client.player.LocalPlayer localPlayer = Minecraft.getInstance().player;
+            if (localPlayer != null && !localPlayer.isCreative()) {
                 ci.cancel();
                 // Send custom open inventory packet to server using Platform helper
                 Platform.HELPER.sendPacketToServer(DayZInventoryPackets.OPEN_INVENTORY_PACKET, 
