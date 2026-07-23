@@ -30,6 +30,22 @@ base {
     archivesName = "dayz-inventory-fabric"
 }
 
+tasks.named('processResources', ProcessResources) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+
+    from project(":common").sourceSets.main.resources
+}
+
+tasks.named('jar', Jar) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from project(":common").sourceSets.main.output
+}
+
 publishMods {
     file = remapJar.archiveFile
     changelog = rootProject.file("CHANGELOG.md").text
