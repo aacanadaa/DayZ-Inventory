@@ -15,7 +15,7 @@
 	"contact": {
 		"homepage": "https://modrinth.com/project/dayz-inventory"
 	},
-	"license": "Apache-2.0",
+	"license": "All-Rights-Reserved",
 	"icon": "assets/dayz_inventory/icon.png",
 	"environment": "*",
 	"entrypoints": {
@@ -38,5 +38,9 @@
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*"
+	},
+	"suggests": {
+		"trinkets": "*",
+		"curios": "*"
 	}
 }
