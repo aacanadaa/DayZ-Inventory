@@ -54,7 +54,7 @@ dependencies {
 }
 
 mixin {
-    add sourceSets.main, "dayz-inventory.refmap.json"
+    add sourceSets.main, "common-refmap.json"
     config "dayz-inventory.mixins.json"
     config "dayz-inventory.client.mixins.json"
 }
@@ -63,6 +63,17 @@ mixin {
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from project(':common').sourceSets.main.output
+    manifest {
+        attributes([
+            'Specification-Title'     : 'dayz_inventory',
+            'Specification-Vendor'    : 'suoim',
+            'Specification-Version'   : '1',
+            'Implementation-Title'    : project.name,
+            'Implementation-Version'  : project.jar.archiveVersion,
+            'Implementation-Vendor'   : 'suoim',
+            'MixinConfigs'            : 'dayz-inventory.mixins.json,dayz-inventory.client.mixins.json'
+        ])
+    }
 }
 
 tasks.named('processResources', ProcessResources) {
