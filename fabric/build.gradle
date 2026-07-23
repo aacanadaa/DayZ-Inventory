@@ -41,6 +41,14 @@ tasks.named('processResources', ProcessResources) {
     from project(":common").sourceSets.main.resources
 }
 
+sourceSets {
+    main {
+        java {
+            srcDir 'src/client/java'
+        }
+    }
+}
+
 tasks.named('jar', Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from project(":common").sourceSets.main.output
