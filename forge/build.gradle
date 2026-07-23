@@ -92,13 +92,5 @@ publishMods {
         client = true
         server = true
     }
-
-    github {
-        repository = "aacanadaa/DayZ-Inventory"
-        accessToken = providers.environmentVariable("GITHUB_TOKEN")
-        commitish = "main"
-        tagName = "v${project.version}"
-        displayName = "DayZ Inventory v${project.version}"
-    }
 }
 
