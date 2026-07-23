@@ -27,7 +27,7 @@ loom {
 }
 
 base {
-    archivesName = "dayz-inventory-fabric"
+    archivesName = "dayz-inventory-fabric-release"
 }
 
 tasks.named('processResources', ProcessResources) {
@@ -60,6 +60,7 @@ publishMods {
     type = STABLE
 
     modrinth {
+        displayName = "DayZ Inventory 1.3.0 Release"
         projectId = "8asZxzdc"
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersions.add("1.20.1")
@@ -70,6 +71,7 @@ publishMods {
     }
 
     curseforge {
+        displayName = "DayZ Inventory 1.3.0 Release"
         projectId = "1596267"
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         minecraftVersions.add("1.20.1")
