@@ -59,11 +59,15 @@ mixin {
     config "dayz-inventory.client.mixins.json"
 }
 
-// Ensure resources from common are packaged
-sourceSets.each {
-    def dir = layout.buildDirectory.dir("sourcesSets/${it.name}")
-    it.output.resourcesDir = dir
-    it.java.destinationDirectory = dir
+// Ensure resources and classes from common are packaged into the Forge JAR
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from project(':common').sourceSets.main.output
+}
+
+tasks.named('processResources', ProcessResources) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from project(':common').sourceSets.main.resources
 }
 
 base {
