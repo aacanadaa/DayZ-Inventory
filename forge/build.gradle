@@ -53,6 +53,17 @@ dependencies {
     }
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs += project(':common').sourceSets.main.java.srcDirs
+        }
+        resources {
+            srcDirs += project(':common').sourceSets.main.resources.srcDirs
+        }
+    }
+}
+
 mixin {
     add sourceSets.main, "dayz-inventory.refmap.json"
     config "dayz-inventory.mixins.json"
