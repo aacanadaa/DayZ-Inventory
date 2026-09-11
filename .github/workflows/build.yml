@@ -2,7 +2,9 @@ name: build
 
 on:
   push:
-    branches: [main, "1.x"]
+    # `1.*` covers the per-version branches (1.20.1, 1.21.1, 1.21.11, ...).
+    # Plain `1.x` matches only a branch literally named that, which nothing is.
+    branches: [main, "1.*"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
