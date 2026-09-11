@@ -37,21 +37,21 @@ public class DayZInventoryPackets {
     public static void handlePacketOnServer(Identifier packetId, ServerPlayer player, FriendlyByteBuf buf) {
         if (packetId.equals(OPEN_CONTAINER_PACKET)) {
             BlockPos pos = buf.readBlockPos();
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 25.0) {
                     // Open container method
                     openContainerInventory(player, pos);
                 }
             });
         } else if (packetId.equals(OPEN_INVENTORY_PACKET)) {
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 openPlayerInventory(player);
             });
         } else if (packetId.equals(PICKUP_ITEM_PACKET)) {
             int entityId = buf.readInt();
             int slotId = buf.readInt();
             int amount = buf.readInt();
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 Entity entity = player.level().getEntity(entityId);
                 if (entity instanceof ItemEntity itemEntity && itemEntity.isAlive()) {
                     if (player.distanceToSqr(itemEntity) <= 16.0) {
@@ -104,7 +104,7 @@ public class DayZInventoryPackets {
             });
         } else if (packetId.equals(QUICK_PICKUP_ITEM_PACKET)) {
             int entityId = buf.readInt();
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 Entity entity = player.level().getEntity(entityId);
                 if (entity instanceof ItemEntity itemEntity && itemEntity.isAlive()) {
                     if (player.distanceToSqr(itemEntity) <= 16.0) {
