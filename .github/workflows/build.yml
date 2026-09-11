@@ -12,7 +12,11 @@ permissions:
 
 jobs:
   build:
-    name: Build (Fabric + NeoForge)
+    # Deliberately version- and loader-agnostic. This string is a required
+    # status check on main's branch protection, so renaming it per Minecraft
+    # version (or per loader change) would silently block PRs - and merging a
+    # branch that renamed it would break protection on the target.
+    name: Build
     runs-on: ubuntu-24.04
 
     steps:
