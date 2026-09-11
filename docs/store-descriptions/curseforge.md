@@ -2,7 +2,12 @@
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
-**Fabric and Forge — Minecraft 1.20.1.** Forge works natively, with no Sinytra Connector required.
+**Now available for Minecraft 1.21.1 and 1.20.1.**
+
+| Minecraft | Loaders |
+| :--- | :--- |
+| **1.21.1** | Fabric · NeoForge (Java 21) |
+| **1.20.1** | Fabric · Forge (Java 17) |
 
 ![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](https://raw.githubusercontent.com/aacanadaa/DayZ-Inventory/main/docs/screenshots/ui-example.png)
 
@@ -37,7 +42,7 @@ Items are no longer picked up by walking over them. Loot is collected deliberate
 
 - **Recipe Viewers (JEI / REI / EMI)** — Adds a theme-aligned toggle button to the header when one is installed.
 - **Curios API** — Adds a CURIOS button to the Survivor header when Curios is present.
-- **Trinkets** — Adds a TRINKETS button to the Survivor header when Trinkets is present.
+- **Trinkets** — Adds a TRINKETS button to the Survivor header when Trinkets is present (Fabric).
 
 Every optional integration is probed at runtime. The mod never requires them and will not crash on launch or when opening the inventory if they are absent.
 
@@ -45,17 +50,41 @@ Every optional integration is probed at runtime. The mod never requires them and
 
 ## Installation
 
-1. Install **Minecraft 1.20.1** with either **Fabric Loader** or **Forge**.
-2. Download the file matching your loader from the **Files** tab.
+1. Install the Minecraft version you want:
+   - **1.21.1** with **Fabric Loader** or **NeoForge**
+   - **1.20.1** with **Fabric Loader** or **Forge**
+2. Download the file matching your Minecraft version and loader from the **Files** tab.
 3. Drop it into your `mods/` folder.
 
-**Make sure you pick the correct file.** The Fabric build will not load on Forge and vice versa.
+**Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.1, and vice versa. Each download is labelled with its version and loader.
 
 ---
 
 ## Dependencies
 
-### Fabric
+### Fabric (1.21.1)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 1.21.1 |
+| **Mandatory** | Fabric Loader | 0.15.0 or newer |
+| **Mandatory** | Fabric API | Any 1.21.1 build |
+| **Mandatory** | Java | 21 |
+| *Optional* | JEI / REI / EMI | Any 1.21.1 build |
+| *Optional* | Trinkets | Any 1.21.1 build |
+| *Optional* | Curios API | Any 1.21.1 build |
+
+### NeoForge (1.21.1)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 1.21.1 |
+| **Mandatory** | NeoForge | 21.1 or newer |
+| **Mandatory** | Java | 21 |
+| *Optional* | JEI | Any 1.21.1 build |
+| *Optional* | Curios API | Any 1.21.1 build |
+
+### Fabric (1.20.1)
 
 | Type | Dependency | Required Version |
 | :--- | :--- | :--- |
@@ -66,7 +95,7 @@ Every optional integration is probed at runtime. The mod never requires them and
 | *Optional* | Trinkets | Any 1.20.1 build |
 | *Optional* | Curios API | Any 1.20.1 build |
 
-### Forge
+### Forge (1.20.1)
 
 | Type | Dependency | Required Version |
 | :--- | :--- | :--- |

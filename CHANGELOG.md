@@ -1,4 +1,54 @@
-# DayZ Inventory 1.4.0
+# DayZ Inventory 1.4.0 — now on Minecraft 1.21.1
+
+**DayZ Inventory is now available for Minecraft 1.21.1 on Fabric and NeoForge.**
+
+The DayZ UI is unchanged — the Vicinity grid, Proximity Scanner, 2x2 crafting, the 2.0x Hands slot
+and drag-to-equip all behave exactly as they do on 1.20.1. This release is about bringing the mod
+to the current Minecraft version, and it took real work to get there: 1.21 was one of the largest
+API breaks in recent memory.
+
+## NeoForge, not Forge
+
+The 1.21.1 build targets **NeoForge**. Forge does not carry forward past 1.20.x — the ecosystem
+moved to NeoForge — so this is a new implementation, not a port of the old Forge module. The 1.20.1
+line still ships Forge as before, and both lines are maintained.
+
+One nice consequence: NeoForge has used official Mojang names at runtime with no remapping since
+1.20.2, so the refmap machinery that Forge 1.20.1 required is gone entirely.
+
+## What had to change for 1.21
+
+These are internal, but they explain the scale of the update:
+
+- **Networking was replaced.** 1.20.5+ dropped per-channel receivers and buffer-based sending in
+  favour of typed payloads. The transport was rewritten for both loaders, and the payload class is
+  now shared between Fabric and NeoForge.
+- **Item NBT became data components.** `ItemStack#getTag` no longer exists, which affected stack
+  comparison when picking items up from the Vicinity grid.
+- **`Block#use` was split into two methods** (`useItemOn` and `useWithoutItem`), which is what the
+  chest and barrel hooks target.
+- **The recipe API was reworked** around `RecipeHolder` and `CraftingInput`, affecting the 2x2
+  crafting result.
+- **Several rendering and input signatures changed** — screen scrolling, background rendering and
+  the player-model render used by the Survivor panel.
+- **The menu-opening contract changed**: Fabric now passes typed data where NeoForge still passes a
+  buffer, so the screen handler supports both shapes.
+
+## Also in this release
+
+- **Requires Java 21** on 1.21.1 (Minecraft 1.20.5+ refuses to run on 17). The 1.20.1 build still
+  targets Java 17.
+- All optional integrations still work and remain optional: JEI / REI / EMI, Curios, and Trinkets
+  on Fabric. The mod loads and runs fine with none of them installed.
+
+## Still on 1.20.1?
+
+Nothing changes for you. 1.20.1 continues to be built and released for both Fabric and Forge, and
+will keep receiving fixes. Pick the download matching your Minecraft version.
+
+---
+
+# DayZ Inventory 1.4.0 (Minecraft 1.20.1)
 
 This is a maintenance and stability release. There are no gameplay or UI changes — the DayZ
 Vicinity grid, Proximity Scanner, 2x2 crafting grid, 2.0x Hands slot render and drag-to-equip panel
