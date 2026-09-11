@@ -83,7 +83,7 @@ publishMods {
         modLoaders.add("fabric")
         requires("fabric-api")
         optional("jei")
-        optional("roughlyenoughitems")
+        optional("rei")
         optional("emi")
         optional("trinkets")
         optional("curios")
