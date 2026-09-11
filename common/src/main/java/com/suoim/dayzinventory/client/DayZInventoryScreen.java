@@ -182,7 +182,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
-            selectedSlot = this.minecraft.player.getInventory().selected;
+            selectedSlot = this.minecraft.player.getInventory().getSelectedSlot();
         }
         int handsSlotIdx = containerSize + 27 + selectedSlot;
         if (handsSlotIdx < 0 || handsSlotIdx >= this.menu.slots.size()) {
@@ -595,7 +595,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
-            selectedSlot = this.minecraft.player.getInventory().selected;
+            selectedSlot = this.minecraft.player.getInventory().getSelectedSlot();
         }
         Slot handsSlot = this.menu.slots.get(containerSize + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();
@@ -828,7 +828,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
-            selectedSlot = this.minecraft.player.getInventory().selected;
+            selectedSlot = this.minecraft.player.getInventory().getSelectedSlot();
         }
         Slot handsSlot = this.menu.slots.get(containerSize2 + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();

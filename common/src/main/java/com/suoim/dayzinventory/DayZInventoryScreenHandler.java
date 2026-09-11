@@ -69,7 +69,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 
         // 1. Add Container Slots (first index)
         if (containerInventory != null) {
-            if (!playerInventory.player.level().isClientSide) {
+            if (!playerInventory.player.level().isClientSide()) {
                 containerInventory.startOpen(playerInventory.player);
             }
             for (int i = 0; i < containerSize; i++) {
@@ -157,7 +157,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     @Override
     public void slotsChanged(Container container) {
         super.slotsChanged(container);
-        if (!this.playerInventory.player.level().isClientSide) {
+        if (!this.playerInventory.player.level().isClientSide()) {
             this.updateCraftingResult();
         }
     }
@@ -169,7 +169,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
      * the logic here using only public APIs and this-accessible protected methods.
      */
     private void updateCraftingResult() {
-        if (this.playerInventory.player.level().isClientSide) return;
+        if (this.playerInventory.player.level().isClientSide()) return;
         ServerPlayer serverPlayer = (ServerPlayer) this.playerInventory.player;
 
         ItemStack result = ItemStack.EMPTY;
@@ -216,7 +216,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);
-        if (this.containerInventory != null && !player.level().isClientSide) {
+        if (this.containerInventory != null && !player.level().isClientSide()) {
             this.containerInventory.stopOpen(player);
         }
         this.clearContainer(player, this.craftSlots);

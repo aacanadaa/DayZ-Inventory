@@ -30,7 +30,7 @@ import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.MenuType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class DayZInventoryFabric implements ModInitializer {
         // codec for its opening data as a second argument.
         DAYZ_INVENTORY_SCREEN_HANDLER = Registry.register(
                 BuiltInRegistries.MENU,
-                ResourceLocation.fromNamespaceAndPath(MOD_ID, "dayz_inventory"),
+                Identifier.fromNamespaceAndPath(MOD_ID, "dayz_inventory"),
                 new ExtendedScreenHandlerType<>(DayZInventoryScreenHandler::new, DayZInventoryOpenData.CODEC)
         );
 
