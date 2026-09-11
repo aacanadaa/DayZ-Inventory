@@ -639,22 +639,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     /**
-     * Runs {@code renderBg} but not vanilla's dim.
+     * Deliberately empty.
      * <p>
-     * 1.21 routes the background through {@code Screen#render}, which this
-     * screen calls from inside its own GUI scale.
-     * {@code AbstractContainerScreen.renderBackground} does two things: it fills
-     * {@code width x height} with the dim, and it calls {@code renderBg} - which
-     * is where this screen draws its panels, so it must stay under the scale.
+     * 1.21.11 calls this from {@code Screen#renderWithTooltipAndSubtitles}, which
+     * runs <b>before</b> {@link #render} and outside this screen's GUI scale.
+     * Vanilla puts two things here - the full-screen dim and {@code renderBg} (this
+     * screen's DayZ panels) - and they need opposite treatment: the dim must be
+     * drawn at identity pose or it only covers {@code width/scale} of the screen,
+     * while the panels must be drawn <i>under</i> the scale or the layout is wrong.
      * <p>
-     * Splitting them is the fix. Vanilla's dim fill is left out here (inside the
-     * scale it would only cover {@code width/scale} of the screen) and is drawn
-     * once at identity pose from {@link #render} instead, while {@code renderBg}
-     * keeps running here where the scale is active.
+     * So neither is done here. {@link #render} draws the dim at identity and then
+     * calls {@code renderBg} once the scale is applied.
      */
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+        // Intentionally empty - see the javadoc above.
     }
 
     @Override
@@ -686,6 +685,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         guiGraphics.pose().scale(scale, scale);
 
         this.updateSlotPositions();
+        // The DayZ panels are laid out in the scaled coordinate space, so they
+        // have to be drawn here rather than from renderBackground.
+        this.renderBg(guiGraphics, partialTick, scaledMouseX, scaledMouseY);
         super.render(guiGraphics, scaledMouseX, scaledMouseY, partialTick);
         this.renderTooltip(guiGraphics, scaledMouseX, scaledMouseY);
 
