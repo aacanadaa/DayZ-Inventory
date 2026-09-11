@@ -1,15 +1,3 @@
-<!--
-CurseForge project description for DayZ Inventory.
-
-CurseForge has no API available to the upload token used by the build, so this
-file is the source of truth to copy from when updating the project page:
-
-  https://www.curseforge.com/minecraft/mc-mods/dayz-inventory
-
-Paste this content into the project description editor. Keep it in sync with
-README.md when features change.
--->
-
 # DayZ Inventory
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
