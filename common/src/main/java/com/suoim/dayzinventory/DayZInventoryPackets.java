@@ -18,7 +18,7 @@ package com.suoim.dayzinventory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -28,13 +28,13 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public class DayZInventoryPackets {
-    // The ResourceLocation constructor is private since 1.21.
-    public static final ResourceLocation OPEN_INVENTORY_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "open_inventory");
-    public static final ResourceLocation PICKUP_ITEM_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "pickup_item");
-    public static final ResourceLocation QUICK_PICKUP_ITEM_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "quick_pickup_item");
-    public static final ResourceLocation OPEN_CONTAINER_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "open_container");
+    // The Identifier constructor is private since 1.21.
+    public static final Identifier OPEN_INVENTORY_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "open_inventory");
+    public static final Identifier PICKUP_ITEM_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "pickup_item");
+    public static final Identifier QUICK_PICKUP_ITEM_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "quick_pickup_item");
+    public static final Identifier OPEN_CONTAINER_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "open_container");
 
-    public static void handlePacketOnServer(ResourceLocation packetId, ServerPlayer player, FriendlyByteBuf buf) {
+    public static void handlePacketOnServer(Identifier packetId, ServerPlayer player, FriendlyByteBuf buf) {
         if (packetId.equals(OPEN_CONTAINER_PACKET)) {
             BlockPos pos = buf.readBlockPos();
             player.server.execute(() -> {

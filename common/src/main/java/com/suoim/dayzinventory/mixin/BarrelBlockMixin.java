@@ -39,9 +39,9 @@ public class BarrelBlockMixin {
             return;
         }
 
-        if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+        if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             Platform.HELPER.openContainerInventory(serverPlayer, pos);
         }
-        cir.setReturnValue(InteractionResult.sidedSuccess(level.isClientSide));
+        cir.setReturnValue(InteractionResult.sidedSuccess(level.isClientSide()));
     }
 }

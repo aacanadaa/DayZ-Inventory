@@ -23,7 +23,7 @@ import com.suoim.dayzinventory.platform.IPlatformHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleMenuProvider;
@@ -41,7 +41,7 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void sendPacketToServer(ResourceLocation packetId, FriendlyByteBuf buf) {
+    public void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf) {
         // NeoForge 1.21 uses the vanilla typed-payload system, same shape as
         // Fabric's - wrap the raw bytes and hand them to the distributor.
         byte[] bytes = new byte[buf.readableBytes()];

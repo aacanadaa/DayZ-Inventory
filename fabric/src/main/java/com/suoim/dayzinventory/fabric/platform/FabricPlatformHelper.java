@@ -27,7 +27,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -45,7 +45,7 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void sendPacketToServer(ResourceLocation packetId, FriendlyByteBuf buf) {
+    public void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf) {
         // 1.20.5+ sends typed payloads; there is no longer a (channel, buffer) send.
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(buf.readerIndex(), bytes);

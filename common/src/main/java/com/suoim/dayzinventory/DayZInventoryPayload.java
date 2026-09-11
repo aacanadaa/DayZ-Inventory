@@ -20,25 +20,25 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /**
  * Client-to-server envelope.
  * <p>
  * Before 1.20.5 this mod sent a bare {@code FriendlyByteBuf} under a
- * {@link ResourceLocation} channel. Custom payloads are now typed records with a
+ * {@link Identifier} channel. Custom payloads are now typed records with a
  * {@link StreamCodec}, so the same "channel id + raw bytes" shape is carried
  * explicitly here and the existing dispatch logic in {@link DayZInventoryPackets}
  * keeps working unchanged.
  */
-public record DayZInventoryPayload(ResourceLocation packetId, byte[] data) implements CustomPacketPayload {
+public record DayZInventoryPayload(Identifier packetId, byte[] data) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<DayZInventoryPayload> TYPE =
-        new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath("dayz_inventory", "main"));
+        new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("dayz_inventory", "main"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, DayZInventoryPayload> CODEC =
         StreamCodec.composite(
-            ResourceLocation.STREAM_CODEC, DayZInventoryPayload::packetId,
+            Identifier.STREAM_CODEC, DayZInventoryPayload::packetId,
             ByteBufCodecs.BYTE_ARRAY, DayZInventoryPayload::data,
             DayZInventoryPayload::new
         );
