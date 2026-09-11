@@ -889,10 +889,18 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             // fall on screen instead of inside the panel.
             float guiScale = getGuiScale();
 
+            // renderY used to mean the model's FEET - the old API translated to
+            // (x, y) before drawing, and models are drawn from the feet up. The
+            // replacement centres the model in the box instead, so the box centre
+            // has to be raised by half the model's rendered height to land the
+            // model where it used to sit.
+            float modelHeightPx = this.minecraft.player.getBbHeight() * (float) renderScale;
+            int boxCentreY = renderY - Math.round(modelHeightPx / 2.0f);
+
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                 guiGraphics,
-                Math.round((renderX - halfWidth) * guiScale), Math.round((renderY - halfHeight) * guiScale),
-                Math.round((renderX + halfWidth) * guiScale), Math.round((renderY + halfHeight) * guiScale),
+                Math.round((renderX - halfWidth) * guiScale), Math.round((boxCentreY - halfHeight) * guiScale),
+                Math.round((renderX + halfWidth) * guiScale), Math.round((boxCentreY + halfHeight) * guiScale),
                 Math.round(renderScale * guiScale),
                 0.0625F,
                 (float) mouseX * guiScale, (float) mouseY * guiScale,
