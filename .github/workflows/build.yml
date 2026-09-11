@@ -12,7 +12,11 @@ permissions:
 
 jobs:
   build:
-    name: Build (Fabric + Forge)
+    # Deliberately version- and loader-agnostic. This string is a required
+    # status check on branch protection, so naming it after the loader set means
+    # merging a branch that changed loaders would break protection here - and
+    # every PR into this branch would be blocked permanently.
+    name: Build
     runs-on: ubuntu-24.04
 
     steps:
