@@ -1,6 +1,7 @@
 # DayZ Inventory
 
 [![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
 [![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -42,7 +43,7 @@ All optional integrations are probed at runtime. The mod never requires them and
 ## Installation
 
 1. Install **Minecraft 1.20.1** with either **Fabric Loader** or **Forge**.
-2. Download the matching JAR for your loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions).
+2. Download the matching JAR for your loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
 3. Drop it into your `mods/` folder.
 
 > Make sure you pick the correct file. The Fabric build will not load on Forge and vice versa.
@@ -100,7 +101,8 @@ Output JARs:
 ## Links
 
 - **Modrinth**: <https://modrinth.com/mod/dayz-inventory>
-- **Versions**: <https://modrinth.com/mod/dayz-inventory/versions>
+- **CurseForge**: <https://www.curseforge.com/minecraft/mc-mods/dayz-inventory>
+- **Versions**: <https://modrinth.com/mod/dayz-inventory/versions> · <https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files>
 - **Source Code**: <https://github.com/aacanadaa/DayZ-Inventory>
 - **Issue Tracker**: <https://github.com/aacanadaa/DayZ-Inventory/issues>
 - **Author**: <https://modrinth.com/user/suoim>
