@@ -42,7 +42,7 @@ loom {
 }
 
 base {
-    archivesName = "dayz-inventory-fabric"
+    archivesName = "dayz-inventory-fabric-${project.minecraft_version}"
 }
 
 tasks.named('processResources', ProcessResources) {
