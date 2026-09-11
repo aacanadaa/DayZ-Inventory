@@ -79,7 +79,9 @@ publishMods {
         displayName = releaseName
         projectId = project.modrinth_id
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
-        minecraftVersions.add("1.20.1")
+        // Taken from gradle.properties rather than hardcoded, so a branch bump
+        // can never publish a jar under the wrong Minecraft version.
+        minecraftVersions.add(project.minecraft_version)
         modLoaders.add("fabric")
         requires("fabric-api")
         optional("jei")
@@ -93,7 +95,9 @@ publishMods {
         displayName = releaseName
         projectId = "1596267"
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-        minecraftVersions.add("1.20.1")
+        // Taken from gradle.properties rather than hardcoded, so a branch bump
+        // can never publish a jar under the wrong Minecraft version.
+        minecraftVersions.add(project.minecraft_version)
         modLoaders.add("fabric")
         requires("fabric-api")
         optional("jei")
