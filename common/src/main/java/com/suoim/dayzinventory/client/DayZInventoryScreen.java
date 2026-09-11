@@ -882,13 +882,20 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             int halfWidth = 45;
             int halfHeight = 64;
 
+            // This does NOT draw immediately: it queues a render state that is
+            // drawn in a later pass, outside this screen's GUI scale. So the box
+            // has to be converted from our scaled layout space into real screen
+            // coordinates, or the model lands wherever those numbers happen to
+            // fall on screen instead of inside the panel.
+            float guiScale = getGuiScale();
+
             InventoryScreen.renderEntityInInventoryFollowsMouse(
                 guiGraphics,
-                renderX - halfWidth, renderY - halfHeight,
-                renderX + halfWidth, renderY + halfHeight,
-                renderScale,
+                Math.round((renderX - halfWidth) * guiScale), Math.round((renderY - halfHeight) * guiScale),
+                Math.round((renderX + halfWidth) * guiScale), Math.round((renderY + halfHeight) * guiScale),
+                Math.round(renderScale * guiScale),
                 0.0625F,
-                (float) mouseX, (float) mouseY,
+                (float) mouseX * guiScale, (float) mouseY * guiScale,
                 this.minecraft.player
             );
         }
