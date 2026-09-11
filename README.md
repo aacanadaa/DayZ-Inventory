@@ -1,14 +1,14 @@
-# DayZ-Style Inventory Mod for Minecraft (Fabric & Forge 1.20.1)
+# DayZ Inventory
 
-[![Platform](https://img.shields.io/modrinth/game-versions/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
-[![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory)](https://modrinth.com/project/dayz-inventory)
-[![License](https://img.shields.io/badge/License-All_Rights_Reserved-red.svg)](LICENSE)
+[![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
+[![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 
-A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
+A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft. Available for **Fabric** and **Forge** on **Minecraft 1.20.1**.
 
 ---
-
-<img width="3732" height="1668" alt="image" src="https://github.com/user-attachments/assets/c2c2ae16-af85-454d-98df-4340832bc25d" />
 
 ## Features
 
@@ -28,34 +28,86 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 - **Vanilla 2x2 Grid**: Integrates standard 2x2 crafting container and result slot directly in the UI.
 - **Drag-to-Equip**: Drag clothing or armor directly onto the middle Survivor panel to automatically equip or swap them.
 
+### Optional Mod Integration
+- **Recipe Viewers (JEI / REI / EMI)**: Adds a theme-aligned toggle button to the header. Fully optional — the button only appears when a supported recipe viewer is installed.
+- **Curios API**: Adds a CURIOS button to the Survivor header when Curios is present.
+- **Trinkets**: Adds a TRINKETS button to the Survivor header when Trinkets is present.
+
+All optional integrations are probed at runtime. The mod never requires them and will not crash on launch or on opening the inventory when they are absent.
+
 ---
 
-## Dependencies & Platform Requirements
+## Installation
+
+1. Install **Minecraft 1.20.1** with either **Fabric Loader** or **Forge**.
+2. Download the matching JAR for your loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions).
+3. Drop it into your `mods/` folder.
+
+> Make sure you pick the correct file. The Fabric build will not load on Forge and vice versa.
+
+---
+
+## Dependencies
 
 ### Fabric (1.20.1)
+
 | Type | Dependency | Required Version |
 | :--- | :--- | :--- |
 | **Mandatory** | Minecraft | `1.20.1` |
-| **Mandatory** | Fabric Loader | `>=0.14.0` |
-| **Mandatory** | Fabric API | Any compatible `1.20.1` build |
-| *Optional* | Trinkets | Any compatible `1.20.1` build |
-| *Optional* | Curios API | Any compatible `1.20.1` build |
+| **Mandatory** | Fabric Loader | `>=0.15.0` |
+| **Mandatory** | Fabric API | Any `1.20.1` build |
+| *Optional* | JEI / REI / EMI | Any `1.20.1` build |
+| *Optional* | Trinkets | Any `1.20.1` build |
+| *Optional* | Curios API | Any `1.20.1` build |
 
 ### Forge (1.20.1)
+
 | Type | Dependency | Required Version |
 | :--- | :--- | :--- |
 | **Mandatory** | Minecraft | `1.20.1` |
 | **Mandatory** | Forge | `>=47.0.0` |
-| *Optional* | Curios API (Forge) | `>=5.0.0` |
+| *Optional* | JEI | Any `1.20.1` build |
+| *Optional* | Curios API | `>=5.0.0` |
 
 ---
 
-## Issue Tracking & Bug Reports
-For bug reports, feature requests, or compatibility issues, please use our public issue tracker:
-- **Submit an Issue**: [Public Issue Tracker](https://github.com/aacanadaa/DayZ-Inventory-Issues/issues)
+## Building from Source
+
+Requires **JDK 17**.
+
+```bash
+git clone https://github.com/aacanadaa/DayZ-Inventory.git
+cd DayZ-Inventory
+./gradlew build
+```
+
+Output JARs:
+
+| Loader | Path |
+| :--- | :--- |
+| Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
+| Forge | `forge/build/libs/dayz-inventory-forge-<version>.jar` |
+
+> **Developing on the GUI?** Use `./gradlew :forge:runClient`. Fabric development runs
+> (`:fabric:runClient`) start the game but do not apply mixins, because the project uses Mojang
+> official mappings and Fabric's dev-time mixin remapper expects intermediary. The released Fabric
+> jar is unaffected. See `CLAUDE.md` for the full explanation.
+
+---
+
+## Links
+
+- **Modrinth**: <https://modrinth.com/mod/dayz-inventory>
+- **Versions**: <https://modrinth.com/mod/dayz-inventory/versions>
+- **Source Code**: <https://github.com/aacanadaa/DayZ-Inventory>
+- **Issue Tracker**: <https://github.com/aacanadaa/DayZ-Inventory/issues>
+- **Author**: <https://modrinth.com/user/suoim>
 
 ---
 
 ## License & Copyright
-- **Author**: suoim (Modrinth Profile: [https://modrinth.com/user/suoim](https://modrinth.com/user/suoim))
-- **License**: All Rights Reserved (ARR). See [LICENSE](LICENSE) file for full details.
+
+- **Author**: suoim ([Modrinth Profile](https://modrinth.com/user/suoim))
+- **License**: [Apache License 2.0](LICENSE)
+
+Copyright 2026 suoim. Licensed under the Apache License, Version 2.0.

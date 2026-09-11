@@ -1,3 +1,12 @@
+/*
+ * DayZ Inventory
+ * Copyright 2026 suoim
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
+
 plugins {
     id 'maven-publish'
     id 'me.modmuss50.mod-publish-plugin' version '2.1.1'
@@ -51,8 +60,10 @@ subprojects {
     jar {
         def projectName = project.name
         inputs.property "projectName", projectName
+        // Ship the project's Apache-2.0 LICENSE inside every artifact.
         from(rootProject.file("LICENSE")) {
-            rename { "${it}_$projectName" }
+            into 'META-INF'
+            rename { "LICENSE-${projectName}" }
         }
     }
 }

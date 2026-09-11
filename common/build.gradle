@@ -1,3 +1,12 @@
+/*
+ * DayZ Inventory - shared (loader-agnostic) module
+ * Copyright 2026 suoim
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
+
 plugins {
     id 'fabric-loom' version "${loom_version}"
 }
@@ -7,6 +16,18 @@ dependencies {
     mappings loom.officialMojangMappings()
     modCompileOnly "net.fabricmc:fabric-loader:${project.loader_version}"
     modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+loom {
+    mixin {
+        // The mixin configs in common/src/main/resources declare
+        // "refmap": "dayz-inventory.refmap.json". Loom defaults to naming the
+        // generated refmap after the project directory ("common-refmap.json"),
+        // which does not match, so the Fabric mixins would fail to remap at
+        // runtime. Forcing the name here keeps Fabric in sync with the declared
+        // refmap (Forge's MixinGradle emits the same name via forge/build.gradle).
+        defaultRefmapName = "dayz-inventory.refmap.json"
+    }
 }
 
 configurations {

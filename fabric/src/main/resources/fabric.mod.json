@@ -13,9 +13,11 @@
 		}
 	],
 	"contact": {
-		"homepage": "https://modrinth.com/project/dayz-inventory"
+		"homepage": "https://modrinth.com/mod/dayz-inventory",
+		"sources": "https://github.com/aacanadaa/DayZ-Inventory",
+		"issues": "https://github.com/aacanadaa/DayZ-Inventory/issues"
 	},
-	"license": "All-Rights-Reserved",
+	"license": "Apache-2.0",
 	"icon": "assets/dayz_inventory/icon.png",
 	"environment": "*",
 	"entrypoints": {
@@ -34,12 +36,15 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.19.3",
+		"fabricloader": ">=0.15.0",
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*"
 	},
 	"suggests": {
+		"jei": "*",
+		"roughlyenoughitems": "*",
+		"emi": "*",
 		"trinkets": "*",
 		"curios": "*"
 	}
