@@ -15,14 +15,14 @@ logoFile="assets/dayz_inventory/icon.png"
 [[dependencies.dayz_inventory]]
 modId="neoforge"
 type="required"
-versionRange="[21.1,)"
+versionRange="[21.11,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.dayz_inventory]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1,1.21.2)"
+versionRange="[1.21.11,1.21.12)"
 ordering="NONE"
 side="BOTH"
 

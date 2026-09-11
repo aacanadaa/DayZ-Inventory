@@ -27,4 +27,4 @@ include 'fabric'
 // ships it. NeoForge is a separate module rather than a port of forge/ because
 // the plugin, the package names and the networking stack all differ.
 // include 'forge'
-// include 'neoforge'  // parked while Fabric is ported first
+include 'neoforge'

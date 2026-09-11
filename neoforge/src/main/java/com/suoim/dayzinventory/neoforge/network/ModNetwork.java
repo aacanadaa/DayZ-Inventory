@@ -36,7 +36,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * no manual encode/decode pair. The payload itself is shared with the Fabric
  * module.
  */
-@EventBusSubscriber(modid = DayZInventoryNeoForge.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DayZInventoryNeoForge.MOD_ID)
 public class ModNetwork {
 
     @SubscribeEvent
