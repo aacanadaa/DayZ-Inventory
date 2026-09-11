@@ -1,11 +1,6 @@
 <h1 align="center">DayZ Inventory</h1>
 
 <p align="center">
-  A complete overhaul of the Minecraft inventory UI — the look, the feel,<br>
-  and the mechanics of the DayZ inventory system, in Minecraft.
-</p>
-
-<p align="center">
   <a href="https://modrinth.com/mod/dayz-inventory"><img alt="Modrinth" src="https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth"></a>
   <a href="https://www.curseforge.com/minecraft/mc-mods/dayz-inventory"><img alt="CurseForge" src="https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436"></a>
   <a href="https://modrinth.com/mod/dayz-inventory/versions"><img alt="Minecraft versions" src="https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft"></a>
@@ -13,14 +8,13 @@
 </p>
 
 <p align="center">
-  <a href="https://modrinth.com/mod/dayz-inventory"><img alt="Modrinth downloads" src="https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth"></a>
-  <a href="https://www.curseforge.com/minecraft/mc-mods/dayz-inventory"><img alt="CurseForge downloads" src="https://img.shields.io/curseforge/dt/1596267?label=CurseForge%20Downloads&logo=curseforge&color=F16436"></a>
-  <a href="https://github.com/aacanadaa/DayZ-Inventory/issues"><img alt="Issues" src="https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory"></a>
+  Items are not vacuumed off the floor. Loot appears in a <b>Vicinity</b> grid next to the
+  containers around you, the held item gets its own <b>Hands</b> panel, and gear is equipped
+  by dragging it onto your survivor.
 </p>
 
 <p align="center">
-  <b>Fabric</b> · <b>NeoForge</b> &nbsp;—&nbsp; Minecraft 1.21.1<br>
-  <b>Fabric</b> · <b>Forge</b> &nbsp;—&nbsp; Minecraft 1.20.1
+  <sub>Minecraft <b>1.21.1</b> — Fabric · NeoForge &nbsp;&nbsp;•&nbsp;&nbsp; Minecraft <b>1.20.1</b> — Fabric · Forge</sub>
 </p>
 
 <p align="center">
