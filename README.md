@@ -1,25 +1,21 @@
-<h1 align="center">DayZ Inventory</h1>
+# DayZ Inventory
 
-<p align="center">
-  <a href="https://modrinth.com/mod/dayz-inventory"><img alt="Modrinth" src="https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth"></a>
-  <a href="https://www.curseforge.com/minecraft/mc-mods/dayz-inventory"><img alt="CurseForge" src="https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436"></a>
-  <a href="https://modrinth.com/mod/dayz-inventory/versions"><img alt="Minecraft versions" src="https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft"></a>
-  <a href="LICENSE"><img alt="License: Apache 2.0" src="https://img.shields.io/badge/License-Apache_2.0-blue.svg"></a>
-</p>
+[![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
+[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=CurseForge%20Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
+[![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
+[![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 
-<p align="center">
-  Items are not vacuumed off the floor. Loot appears in a <b>Vicinity</b> grid next to the
-  containers around you, the held item gets its own <b>Hands</b> panel, and gear is equipped
-  by dragging it onto your survivor.
-</p>
+A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
-<p align="center">
-  <sub>Minecraft <b>1.21.1</b> — Fabric · NeoForge &nbsp;&nbsp;•&nbsp;&nbsp; Minecraft <b>1.20.1</b> — Fabric · Forge</sub>
-</p>
+| Minecraft | Loaders |
+| :--- | :--- |
+| **1.21.1** | Fabric · NeoForge |
+| **1.20.1** | Fabric · Forge |
 
-<p align="center">
-  <img width="100%" alt="The DayZ Inventory screen: a VICINITY grid with an open Jukebox drawer, the SURVIVOR panel, a 2.0x HANDS slot showing a Decorated Pot, and a 2x2 CRAFTING grid" src="docs/screenshots/ui-example.png">
-</p>
+![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](docs/screenshots/ui-example.png)
 
 ---
 
