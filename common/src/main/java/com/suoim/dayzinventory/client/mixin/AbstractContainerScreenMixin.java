@@ -29,7 +29,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Makes the virtual Hands panel count as hovering the Hands slot.
  * <p>
- * Two 1.21 changes shaped this.
+ * The hook point has moved twice now. 1.21 removed
+ * isHovering(Slot, double, double) and assigned hoveredSlot from render; 1.21.11
+ * split the render pipeline so that assignment now happens in renderContents.
  * <p>
  * 1. {@code isHovering(Slot, double, double)} is gone - {@code render} now walks
  * the slot list and assigns {@code hoveredSlot} directly, so that assignment is
@@ -45,7 +47,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
 
     @Inject(
-        method = "render",
+        method = "renderContents",
         at = @At(
             value = "FIELD",
             target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;hoveredSlot:Lnet/minecraft/world/inventory/Slot;",
