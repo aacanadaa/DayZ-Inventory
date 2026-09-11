@@ -1,0 +1,91 @@
+/*
+ * DayZ Inventory - NeoForge module
+ * Copyright 2026 suoim
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+plugins {
+    id 'net.neoforged.moddev' version '2.0.146'
+    id 'me.modmuss50.mod-publish-plugin'
+}
+
+def releaseName = "DayZ Inventory ${project.version}"
+
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run')
+        }
+        server {
+            server()
+            gameDirectory = project.file('run')
+        }
+    }
+
+    mods {
+        dayz_inventory {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+// The common module is compiled into this project rather than consumed as a jar,
+// the same way forge/ does on 1.20.1. That keeps a single copy of every class on
+// the mod classpath and lets the shared mixin classes be picked up directly.
+//
+// No refmap handling is needed here: NeoForge has used official Mojang names at
+// runtime since 1.20.2, so mixin selectors written in official names resolve as
+// written. (On 1.20.1/Forge this needed a Searge refmap; that problem does not
+// exist on NeoForge.)
+sourceSets {
+    main {
+        java {
+            srcDirs += project(':common').sourceSets.main.java.srcDirs
+        }
+        resources {
+            srcDirs += project(':common').sourceSets.main.resources.srcDirs
+        }
+    }
+}
+
+dependencies {
+    // NeoForge itself comes from the moddev plugin - no coordinate needed.
+}
+
+base {
+    archivesName = "dayz-inventory-neoforge"
+}
+
+publishMods {
+    file = jar.archiveFile
+    changelog = rootProject.file("CHANGELOG.md").text
+    type = STABLE
+
+    modrinth {
+        displayName = releaseName
+        projectId = project.modrinth_id
+        accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+        minecraftVersions.add("1.21.1")
+        modLoaders.add("neoforge")
+        optional("jei")
+        optional("curios")
+    }
+
+    curseforge {
+        displayName = releaseName
+        projectId = "1596267"
+        accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
+        minecraftVersions.add("1.21.1")
+        modLoaders.add("neoforge")
+        optional("jei")
+        optional("curios")
+        client = true
+        server = true
+    }
+}
