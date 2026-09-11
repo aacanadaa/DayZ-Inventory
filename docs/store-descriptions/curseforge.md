@@ -2,10 +2,11 @@
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
-**Now available for Minecraft 1.21.1 and 1.20.1.**
+**Now available for Minecraft 1.21.11, 1.21.1 and 1.20.1.**
 
 | Minecraft | Loaders |
 | :--- | :--- |
+| **1.21.11** | Fabric · NeoForge (Java 21) |
 | **1.21.1** | Fabric · NeoForge (Java 21) |
 | **1.20.1** | Fabric · Forge (Java 17) |
 
@@ -51,6 +52,7 @@ Every optional integration is probed at runtime. The mod never requires them and
 ## Installation
 
 1. Install the Minecraft version you want:
+   - **1.21.11** with **Fabric Loader** or **NeoForge**
    - **1.21.1** with **Fabric Loader** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from the **Files** tab.
@@ -61,6 +63,28 @@ Every optional integration is probed at runtime. The mod never requires them and
 ---
 
 ## Dependencies
+
+### Fabric (1.21.11)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 1.21.11 |
+| **Mandatory** | Fabric Loader | 0.15.0 or newer |
+| **Mandatory** | Fabric API | Any 1.21.11 build |
+| **Mandatory** | Java | 21 |
+| *Optional* | JEI / REI / EMI | Any 1.21.11 build |
+| *Optional* | Trinkets | Any 1.21.11 build |
+| *Optional* | Curios API | Any 1.21.11 build |
+
+### NeoForge (1.21.11)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 1.21.11 |
+| **Mandatory** | NeoForge | 21.11 or newer |
+| **Mandatory** | Java | 21 |
+| *Optional* | JEI | Any 1.21.11 build |
+| *Optional* | Curios API | Any 1.21.11 build |
 
 ### Fabric (1.21.1)
 

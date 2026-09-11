@@ -12,6 +12,7 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 
 | Minecraft | Loaders |
 | :--- | :--- |
+| **1.21.11** | Fabric · NeoForge |
 | **1.21.1** | Fabric · NeoForge |
 | **1.20.1** | Fabric · Forge |
 
@@ -49,12 +50,13 @@ All optional integrations are probed at runtime. The mod never requires them and
 ## Installation
 
 1. Install the Minecraft version you want:
+   - **1.21.11** with **Fabric Loader** or **NeoForge**
    - **1.21.1** with **Fabric Loader** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
 3. Drop it into your `mods/` folder.
 
-> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.1, and vice versa. Each download is labelled with its version and loader.
+> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.x, and vice versa. Each download is labelled with its version and loader.
 
 ---
 
@@ -79,6 +81,28 @@ All optional integrations are probed at runtime. The mod never requires them and
 | **Mandatory** | Forge | `>=47.0.0` |
 | *Optional* | JEI | Any `1.20.1` build |
 | *Optional* | Curios API | `>=5.0.0` |
+
+### Fabric (1.21.11)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | `1.21.11` |
+| **Mandatory** | Fabric Loader | `>=0.15.0` |
+| **Mandatory** | Fabric API | Any `1.21.11` build |
+| **Mandatory** | Java | `21` |
+| *Optional* | JEI / REI / EMI | Any `1.21.11` build |
+| *Optional* | Trinkets | Any `1.21.11` build |
+| *Optional* | Curios API | Any `1.21.11` build |
+
+### NeoForge (1.21.11)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | `1.21.11` |
+| **Mandatory** | NeoForge | `>=21.11` |
+| **Mandatory** | Java | `21` |
+| *Optional* | JEI | Any `1.21.11` build |
+| *Optional* | Curios API | Any `1.21.11` build |
 
 ### Fabric (1.21.1)
 
@@ -112,13 +136,14 @@ Each Minecraft version lives on its own branch:
 
 | Branch | Minecraft | Loaders | JDK |
 | :--- | :--- | :--- | :--- |
+| `1.21.11` | 1.21.11 | Fabric, NeoForge | **21** |
 | `1.21.1` | 1.21.1 | Fabric, NeoForge | **21** |
 | `main` | 1.20.1 | Fabric, Forge | **17** |
 
 ```bash
 git clone https://github.com/aacanadaa/DayZ-Inventory.git
 cd DayZ-Inventory
-git checkout 1.21.1   # or stay on main for 1.20.1
+git checkout 1.21.11   # or 1.21.1, or stay on main for 1.20.1
 ./gradlew build
 ```
 
@@ -126,6 +151,8 @@ Output JARs:
 
 | Branch | Loader | Path |
 | :--- | :--- | :--- |
+| 1.21.11 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<mc>-<version>.jar` |
+| 1.21.11 | NeoForge | `neoforge/build/libs/dayz-inventory-neoforge-<mc>-<version>.jar` |
 | 1.21.1 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
 | 1.21.1 | NeoForge | `neoforge/build/libs/dayz-inventory-neoforge-<version>.jar` |
 | 1.20.1 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
