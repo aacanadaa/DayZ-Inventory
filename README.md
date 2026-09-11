@@ -8,7 +8,12 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 
-A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft. Available for **Fabric** and **Forge** on **Minecraft 1.20.1**.
+A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
+
+| Minecraft | Loaders |
+| :--- | :--- |
+| **1.21.1** | Fabric · NeoForge |
+| **1.20.1** | Fabric · Forge |
 
 ![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](docs/screenshots/ui-example.png)
 
@@ -43,11 +48,13 @@ All optional integrations are probed at runtime. The mod never requires them and
 
 ## Installation
 
-1. Install **Minecraft 1.20.1** with either **Fabric Loader** or **Forge**.
-2. Download the matching JAR for your loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
+1. Install the Minecraft version you want:
+   - **1.21.1** with **Fabric Loader** or **NeoForge**
+   - **1.20.1** with **Fabric Loader** or **Forge**
+2. Download the file matching your Minecraft version and loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
 3. Drop it into your `mods/` folder.
 
-> Make sure you pick the correct file. The Fabric build will not load on Forge and vice versa.
+> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.1, and vice versa. Each download is labelled with its version and loader.
 
 ---
 
@@ -73,29 +80,61 @@ All optional integrations are probed at runtime. The mod never requires them and
 | *Optional* | JEI | Any `1.20.1` build |
 | *Optional* | Curios API | `>=5.0.0` |
 
+### Fabric (1.21.1)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | `1.21.1` |
+| **Mandatory** | Fabric Loader | `>=0.15.0` |
+| **Mandatory** | Fabric API | Any `1.21.1` build |
+| **Mandatory** | Java | `21` |
+| *Optional* | JEI / REI / EMI | Any `1.21.1` build |
+| *Optional* | Trinkets | Any `1.21.1` build |
+| *Optional* | Curios API | Any `1.21.1` build |
+
+### NeoForge (1.21.1)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | `1.21.1` |
+| **Mandatory** | NeoForge | `>=21.1` |
+| **Mandatory** | Java | `21` |
+| *Optional* | JEI | Any `1.21.1` build |
+| *Optional* | Curios API | Any `1.21.1` build |
+
+> NeoForge needs no additional libraries — it has its own loader and networking built in.
+
 ---
 
 ## Building from Source
 
-Requires **JDK 17**.
+Each Minecraft version lives on its own branch:
+
+| Branch | Minecraft | Loaders | JDK |
+| :--- | :--- | :--- | :--- |
+| `1.21.1` | 1.21.1 | Fabric, NeoForge | **21** |
+| `main` | 1.20.1 | Fabric, Forge | **17** |
 
 ```bash
 git clone https://github.com/aacanadaa/DayZ-Inventory.git
 cd DayZ-Inventory
+git checkout 1.21.1   # or stay on main for 1.20.1
 ./gradlew build
 ```
 
 Output JARs:
 
-| Loader | Path |
-| :--- | :--- |
-| Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
-| Forge | `forge/build/libs/dayz-inventory-forge-<version>.jar` |
+| Branch | Loader | Path |
+| :--- | :--- | :--- |
+| 1.21.1 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
+| 1.21.1 | NeoForge | `neoforge/build/libs/dayz-inventory-neoforge-<version>.jar` |
+| 1.20.1 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
+| 1.20.1 | Forge | `forge/build/libs/dayz-inventory-forge-<version>.jar` |
 
-> **Developing on the GUI?** Use `./gradlew :forge:runClient`. Fabric development runs
-> (`:fabric:runClient`) start the game but do not apply mixins, because the project uses Mojang
-> official mappings and Fabric's dev-time mixin remapper expects intermediary. The released Fabric
-> jar is unaffected. See `CLAUDE.md` for the full explanation.
+> **Developing on the GUI?** Fabric development runs (`:fabric:runClient`) start the game but do
+> not apply mixins, because the project uses Mojang official mappings and Fabric's dev-time mixin
+> remapper expects intermediary. The released Fabric jar is unaffected. Build the jar and test it in
+> a launcher instead. See `CLAUDE.md` for the full explanation.
 
 ---
 
