@@ -156,7 +156,23 @@ Publishing uses `me.modmuss50.mod-publish-plugin` (Minotaur) and is configured i
 
 - Tokens are read from the environment (`MODRINTH_TOKEN`, `CURSEFORGE_TOKEN`). Never hardcode a
   token in a build file or commit one.
-- Modrinth project id: `8asZxzdc`.
+- Modrinth project id: `8asZxzdc`. CurseForge project id: `1596267`.
+- `:fabric:publishMods` / `:forge:publishMods` publish to **both** platforms. Use the
+  platform-specific tasks (`publishModrinth`, `publishCurseforge`) when you only want one.
+- Modrinth placeholder slugs must be real Modrinth project slugs or the publish fails with a 404 —
+  e.g. REI is `rei`, not `roughlyenoughitems`. Verify before adding one.
+
+### Store descriptions
+
+`docs/store-descriptions/curseforge.md` is the **copy-paste source** for the CurseForge project
+page, because that page cannot be updated from the build. The `CURSEFORGE_TOKEN` used for uploads
+is a legacy upload-only token; the Eternal API that edits project metadata rejects it (403).
+
+Consequences when features change:
+
+- The Modrinth description **is** pushed via the API, so it must be updated deliberately.
+- The CurseForge description and the CurseForge **license field** are manual dashboard edits.
+  Keep the CurseForge description in sync with `README.md` by hand.
 
 ## Versioning
 
