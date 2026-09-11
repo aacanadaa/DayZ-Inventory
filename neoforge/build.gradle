@@ -71,7 +71,7 @@ publishMods {
         displayName = releaseName
         projectId = project.modrinth_id
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
-        minecraftVersions.add("1.21.1")
+        minecraftVersions.add(project.minecraft_version)
         modLoaders.add("neoforge")
         optional("jei")
         optional("curios")
@@ -81,7 +81,7 @@ publishMods {
         displayName = releaseName
         projectId = "1596267"
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-        minecraftVersions.add("1.21.1")
+        minecraftVersions.add(project.minecraft_version)
         modLoaders.add("neoforge")
         optional("jei")
         optional("curios")
