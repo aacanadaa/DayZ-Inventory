@@ -32,7 +32,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public class NeoForgePlatformHelper implements IPlatformHelper {
     @Override
@@ -46,7 +46,7 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
         // Fabric's - wrap the raw bytes and hand them to the distributor.
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(buf.readerIndex(), bytes);
-        PacketDistributor.sendToServer(new DayZInventoryPayload(packetId, bytes));
+        ClientPacketDistributor.sendToServer(new DayZInventoryPayload(packetId, bytes));
     }
 
     @Override

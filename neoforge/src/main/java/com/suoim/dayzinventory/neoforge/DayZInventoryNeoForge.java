@@ -50,7 +50,7 @@ public class DayZInventoryNeoForge {
         MENUS.register(modEventBus);
     }
 
-    @EventBusSubscriber(modid = MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = MOD_ID, value = Dist.CLIENT)
     public static class ClientModEvents {
         // MenuScreens.register is private in 1.21; NeoForge exposes a dedicated
         // event for screen registration instead.
