@@ -63,7 +63,7 @@ dependencies {
 }
 
 base {
-    archivesName = "dayz-inventory-neoforge"
+    archivesName = "dayz-inventory-neoforge-${project.minecraft_version}"
 }
 
 publishMods {

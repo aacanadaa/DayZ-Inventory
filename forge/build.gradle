@@ -131,7 +131,7 @@ tasks.named('processResources', ProcessResources) {
 }
 
 base {
-    archivesName = "dayz-inventory-forge"
+    archivesName = "dayz-inventory-forge-${project.minecraft_version}"
 }
 
 publishMods {
