@@ -46,6 +46,7 @@ public class ChestBlockMixin {
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
             Platform.HELPER.openContainerInventory(serverPlayer, pos);
         }
-        cir.setReturnValue(InteractionResult.sidedSuccess(level.isClientSide()));
+        // sidedSuccess(bool) is gone; pick the constant for the side we are on.
+        cir.setReturnValue(level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.SUCCESS_SERVER);
     }
 }

@@ -178,13 +178,13 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         // CraftingInput value, and recipes come back wrapped in a RecipeHolder.
         CraftingInput craftingInput = this.craftSlots.asCraftInput();
 
-        Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.getServer()
+        Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.level().getServer()
             .getRecipeManager()
             .getRecipeFor(RecipeType.CRAFTING, craftingInput, serverPlayer.level());
 
         if (optional.isPresent()) {
             RecipeHolder<CraftingRecipe> recipeHolder = optional.get();
-            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)) {
+            if (this.resultSlots.setRecipeUsed(serverPlayer, recipeHolder)) {
                 result = recipeHolder.value().assemble(craftingInput, serverPlayer.level().registryAccess());
             }
         }
