@@ -8,6 +8,8 @@
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft. Available for **Fabric** and **Forge** on **Minecraft 1.20.1**.
 
+![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](docs/screenshots/ui-example.png)
+
 ---
 
 ## Features
