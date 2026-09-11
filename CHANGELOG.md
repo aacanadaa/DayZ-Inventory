@@ -1,3 +1,65 @@
+# DayZ Inventory 1.4.0 — now on Minecraft 1.21.11
+
+**DayZ Inventory is now available for Minecraft 1.21.11 on Fabric and NeoForge.**
+
+The DayZ UI is unchanged — Vicinity grid, Proximity Scanner, 2x2 crafting, the 2.0x Hands slot and
+drag-to-equip all behave exactly as on 1.20.1 and 1.21.1. This release brings the mod to 1.21.11,
+which is the last Minecraft release before the game moved to year-based versioning.
+
+## Why 1.21.11 and not 26.x
+
+Minecraft 26.1 was the first **unobfuscated** release. Mojang stopped publishing mappings, which
+retired Yarn entirely, and 26.x also replaced the GUI rendering model — `GuiGraphics` is gone,
+replaced by a render-state extraction pipeline. That makes it a rewrite of this mod's entire custom
+screen rather than a port, so 1.21.11 is the current target. 1.20.1 and 1.21.1 continue to be
+maintained.
+
+## What changed for 1.21.11
+
+Internal only, but it explains the scale:
+
+- **`ResourceLocation` was renamed to `Identifier`** by Mojang, which touches most of the codebase.
+- **The GUI transform stack went 2D** — `GuiGraphics.pose()` is now a `Matrix3x2fStack`, so the
+  scale/translate calls lost their z argument.
+- **Mouse input uses event objects** now (`MouseButtonEvent`), so click, drag and release overrides
+  take events rather than raw coordinates. Shift-click reads the modifier bits off the event.
+- **Tooltips are deferred** — `renderTooltip` became `setTooltipForNextFrame`.
+- **`InventoryScreen.renderEntityInInventory` was removed.** The Survivor panel's player model now
+  uses the follows-mouse variant, which also does the rotation the old code performed by hand. Note
+  the new call *queues* its render state instead of drawing immediately, so its coordinates must be
+  in screen space rather than the scaled layout space.
+- **The container render pipeline was split.** The background and the screen contents are now
+  separate passes, which changed where the DayZ panels can be drawn from.
+- **`KeyboardHandler#keyPress` was removed**, so the recipe-viewer toggle simulates a keybind click
+  through `KeyMapping` instead of a raw key event.
+- Several fields became private with accessors: `Level.isClientSide()`, `Inventory.getSelectedSlot()`.
+- `InteractionResult.sidedSuccess` was replaced by explicit per-side constants.
+
+## NeoForge
+
+The NeoForge module targets **21.11.x**. Three changes from the 1.21.1 build:
+
+- `@EventBusSubscriber` no longer has a `bus` attribute.
+- `PacketDistributor.sendToServer` was removed; client-to-server sending moved to
+  `ClientPacketDistributor`.
+- Dependency ranges updated to `neoforge [21.11,)` and `minecraft [1.21.11,1.21.12)`.
+
+NeoForge needs no refmap: it has run on official Mojang names since 1.20.2, so mixin selectors
+resolve as written.
+
+## Downloads are now labelled with the Minecraft version
+
+Jars are named `dayz-inventory-<loader>-<minecraft>-<version>.jar`, e.g.
+`dayz-inventory-fabric-1.21.11-1.4.0.jar`. With the mod shipping for three Minecraft versions, the
+old name was genuinely ambiguous.
+
+## Still on an older version?
+
+Nothing changes for you. 1.20.1 (Fabric and Forge) and 1.21.1 (Fabric and NeoForge) keep being built
+and will keep receiving fixes — pick the download matching your Minecraft version.
+
+---
+
 # DayZ Inventory 1.4.0 — now on Minecraft 1.21.1
 
 **DayZ Inventory is now available for Minecraft 1.21.1 on Fabric and NeoForge.**
