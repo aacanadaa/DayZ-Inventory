@@ -21,4 +21,8 @@ rootProject.name = 'dayz-inventory'
 
 include 'common'
 include 'fabric'
-include 'forge'
+
+// Forge does not carry forward to 1.21.x - the ecosystem moved to NeoForge.
+// The NeoForge port is a separate piece of work; until then this branch builds
+// Fabric only. The 1.20.1 branch still ships both loaders.
+// include 'forge'

@@ -28,10 +28,11 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public class DayZInventoryPackets {
-    public static final ResourceLocation OPEN_INVENTORY_PACKET = new ResourceLocation("dayz_inventory", "open_inventory");
-    public static final ResourceLocation PICKUP_ITEM_PACKET = new ResourceLocation("dayz_inventory", "pickup_item");
-    public static final ResourceLocation QUICK_PICKUP_ITEM_PACKET = new ResourceLocation("dayz_inventory", "quick_pickup_item");
-    public static final ResourceLocation OPEN_CONTAINER_PACKET = new ResourceLocation("dayz_inventory", "open_container");
+    // The ResourceLocation constructor is private since 1.21.
+    public static final ResourceLocation OPEN_INVENTORY_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "open_inventory");
+    public static final ResourceLocation PICKUP_ITEM_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "pickup_item");
+    public static final ResourceLocation QUICK_PICKUP_ITEM_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "quick_pickup_item");
+    public static final ResourceLocation OPEN_CONTAINER_PACKET = ResourceLocation.fromNamespaceAndPath("dayz_inventory", "open_container");
 
     public static void handlePacketOnServer(ResourceLocation packetId, ServerPlayer player, FriendlyByteBuf buf) {
         if (packetId.equals(OPEN_CONTAINER_PACKET)) {
@@ -75,7 +76,9 @@ public class DayZInventoryPackets {
                                         if (!player.getInventory().add(oldStack)) {
                                             player.drop(oldStack, false);
                                         }
-                                    } else if (slotStack.is(stack.getItem()) && java.util.Objects.equals(slotStack.getTag(), stack.getTag())) {
+                                    // ItemStack#getTag was removed in 1.20.5 when item NBT became
+                                    // data components; isSameItemSameComponents is the equivalent test.
+                                    } else if (ItemStack.isSameItemSameComponents(slotStack, stack)) {
                                         int max = Math.min(slot.getMaxStackSize(slotStack), slotStack.getMaxStackSize());
                                         int addable = max - slotStack.getCount();
                                         int added = Math.min(toAdd, addable);
