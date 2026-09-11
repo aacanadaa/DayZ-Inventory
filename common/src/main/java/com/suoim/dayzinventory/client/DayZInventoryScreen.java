@@ -32,6 +32,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -152,6 +153,57 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 }
             }
         }
+    }
+
+    /**
+     * Marks the Hands slot as hovered when the cursor is over the virtual Hands
+     * panel.
+     * <p>
+     * Called from {@code AbstractContainerScreenMixin} at the point where
+     * vanilla assigns {@code hoveredSlot}. Writing the field happens here rather
+     * than in the mixin because this class inherits {@code hoveredSlot} from
+     * {@link AbstractContainerScreen}, so no {@code @Shadow} is needed - and
+     * shadowing that field does not resolve on 1.21 production runtimes.
+     */
+    public void applyVirtualHandsHover(int mouseX, int mouseY) {
+        Slot handsSlot = getVirtualHandsHoverSlot(mouseX, mouseY);
+        if (handsSlot != null) {
+            this.hoveredSlot = handsSlot;
+        }
+    }
+
+    private Slot getVirtualHandsHoverSlot(double mouseX, double mouseY) {
+        if (!(this.menu instanceof DayZInventoryScreenHandler handler)) {
+            return null;
+        }
+
+        int containerSize = handler.getContainerInventory() != null
+            ? handler.getContainerInventory().getContainerSize() : 0;
+
+        int selectedSlot = 0;
+        if (this.minecraft != null && this.minecraft.player != null) {
+            selectedSlot = this.minecraft.player.getInventory().selected;
+        }
+        int handsSlotIdx = containerSize + 27 + selectedSlot;
+        if (handsSlotIdx < 0 || handsSlotIdx >= this.menu.slots.size()) {
+            return null;
+        }
+
+        Slot handsSlot = this.menu.slots.get(handsSlotIdx);
+        if (handsSlot == null) {
+            return null;
+        }
+
+        ItemStack handsStack = handsSlot.getItem();
+        int middleColumnX = this.getColumnX(1);
+        int handsPanelY = this.topPos + this.imageHeight - 75;
+        int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
+        int bodyHeight = handsStack.isEmpty() ? 55 : 43;
+
+        boolean hovering = mouseX >= (middleColumnX - 4) && mouseX < (middleColumnX + 166)
+            && mouseY >= bodyY && mouseY < (bodyY + bodyHeight);
+
+        return hovering ? handsSlot : null;
     }
 
     public int getColumnX(int colIndex) {
@@ -280,17 +332,17 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
-        
+
         if (isMouseOverVicinity(scaledX, scaledY)) {
-            this.scrollAmount = Math.max(0.0, this.scrollAmount - amount * 12.0);
+            this.scrollAmount = Math.max(0.0, this.scrollAmount - scrollY * 12.0);
             this.updateSlotPositions();
             return true;
         }
-        return super.mouseScrolled(scaledX, scaledY, amount);
+        return super.mouseScrolled(scaledX, scaledY, scrollX, scrollY);
     }
 
     @Override
@@ -457,7 +509,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 Platform.HELPER.sendPacketToServer(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
             } else if (releasedOverSurvivor) {
                 // Auto equip ground item if equippable
-                net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(this.draggedStack);
+                net.minecraft.world.entity.EquipmentSlot equipSlot = this.minecraft.player.getEquipmentSlotForItem(this.draggedStack);
                 int targetSlotIdx = -1;
                 if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
                     targetSlotIdx = containerSize + 36;
@@ -495,7 +547,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 // Dragged onto survivor panel -> auto equip if equippable (skip if dropping back on the source slot)
                 ItemStack draggedItem = this.menu.getCarried();
                 if (!draggedItem.isEmpty()) {
-                    net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(draggedItem);
+                    net.minecraft.world.entity.EquipmentSlot equipSlot = this.minecraft.player.getEquipmentSlotForItem(draggedItem);
                     int targetSlotIdx = -1;
                     if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
                         targetSlotIdx = containerSize + 36;
@@ -577,6 +629,25 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         return mouseX < left || mouseY < top || mouseX > left + imageWidth || mouseY > top + imageHeight;
     }
 
+    /**
+     * Runs {@code renderBg} but not vanilla's dim.
+     * <p>
+     * 1.21 routes the background through {@code Screen#render}, which this
+     * screen calls from inside its own GUI scale.
+     * {@code AbstractContainerScreen.renderBackground} does two things: it fills
+     * {@code width x height} with the dim, and it calls {@code renderBg} - which
+     * is where this screen draws its panels, so it must stay under the scale.
+     * <p>
+     * Splitting them is the fix. Vanilla's dim fill is left out here (inside the
+     * scale it would only cover {@code width/scale} of the screen) and is drawn
+     * once at identity pose from {@link #render} instead, while {@code renderBg}
+     * keeps running here where the scale is active.
+     */
+    @Override
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+    }
+
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Restore cursor positions on render frame tick if requested
@@ -589,8 +660,10 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             mouseY = (int) (lastMouseY * (double) this.minecraft.getWindow().getGuiScaledHeight() / (double) this.minecraft.getWindow().getHeight());
         }
 
-        // Draw the background dim overlay at full physical 1x scale
-        this.renderBackground(guiGraphics);
+        // Full-screen dim, drawn here at identity pose before the GUI scale is
+        // applied below, so it always covers the entire screen. These are the
+        // same colours vanilla's Screen#renderTransparentBackground uses.
+        guiGraphics.fillGradient(0, 0, this.width, this.height, -1072689136, -804253680);
 
         float scale = getGuiScale();
         int scaledMouseX = (int) (mouseX / scale);
@@ -809,11 +882,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.minecraft.player.yHeadRot = this.minecraft.player.getYRot();
             this.minecraft.player.yHeadRotO = this.minecraft.player.getYRot();
 
+            // 1.21 added a Vector3f translate offset and switched the position
+            // arguments to floats. Zero offset reproduces the 1.20.x behaviour.
             InventoryScreen.renderEntityInInventory(
                 guiGraphics,
                 renderX,
                 renderY,
                 renderScale,
+                new Vector3f(0.0F, 0.0F, 0.0F),
                 pose,
                 cameraPose,
                 this.minecraft.player

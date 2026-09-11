@@ -17,57 +17,45 @@
 package com.suoim.dayzinventory.client.mixin;
 
 import com.suoim.dayzinventory.client.DayZInventoryScreen;
-import com.suoim.dayzinventory.DayZInventoryScreenHandler;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/**
+ * Makes the virtual Hands panel count as hovering the Hands slot.
+ * <p>
+ * Two 1.21 changes shaped this.
+ * <p>
+ * 1. {@code isHovering(Slot, double, double)} is gone - {@code render} now walks
+ * the slot list and assigns {@code hoveredSlot} directly, so that assignment is
+ * the hook point.
+ * <p>
+ * 2. {@code @Shadow} on this target does not resolve at runtime any more
+ * (both {@code menu} and {@code hoveredSlot} failed with "was not located").
+ * The mixin therefore shadows nothing: it only calls into
+ * {@link DayZInventoryScreen}, which inherits those fields from
+ * {@link AbstractContainerScreen} and can read and write them directly.
+ */
 @Mixin(AbstractContainerScreen.class)
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
-    @Shadow protected T menu;
-    @Shadow protected int leftPos;
-    @Shadow protected int topPos;
-    @Shadow protected int imageHeight;
 
-    @Inject(method = "isHovering(Lnet/minecraft/world/inventory/Slot;DD)Z", at = @At("HEAD"), cancellable = true)
-    private void onIsHovering(Slot slot, double mouseX, double mouseY, CallbackInfoReturnable<Boolean> cir) {
+    @Inject(
+        method = "render",
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;hoveredSlot:Lnet/minecraft/world/inventory/Slot;",
+            opcode = Opcodes.PUTFIELD,
+            shift = At.Shift.AFTER
+        )
+    )
+    private void dayz$applyVirtualHandsHover(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if ((Object) this instanceof DayZInventoryScreen dayZScreen) {
-            if (this.menu instanceof DayZInventoryScreenHandler handler) {
-                int containerSize = handler.getContainerInventory() != null ? handler.getContainerInventory().getContainerSize() : 0;
-                
-                int selectedSlot = 0;
-                Minecraft mc = Minecraft.getInstance();
-                if (mc.player != null) {
-                    selectedSlot = mc.player.getInventory().selected;
-                }
-                int handsSlotIdx = containerSize + 27 + selectedSlot;
-
-                if (slot.index == handsSlotIdx) {
-                    // Check if hovering over physical slot in right column (absolute coordinates)
-                    boolean hoveringPhysical = mouseX >= (this.leftPos + slot.x) && mouseX < (this.leftPos + slot.x + 18) 
-                        && mouseY >= (this.topPos + slot.y) && mouseY < (this.topPos + slot.y + 18);
-                    
-                    // Check if hovering over virtual hands slot body in middle column (absolute coordinates)
-                    int middleColumnX = dayZScreen.getColumnX(1);
-                    int handsPanelY = this.topPos + this.imageHeight - 75;
-                    
-                    ItemStack handsStack = slot.getItem();
-                    int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
-                    int bodyHeight = handsStack.isEmpty() ? 55 : 43;
-                    
-                    boolean hoveringVirtual = mouseX >= (middleColumnX - 4) && mouseX < (middleColumnX + 166) 
-                        && mouseY >= bodyY && mouseY < (bodyY + bodyHeight);
-                    
-                    cir.setReturnValue(hoveringPhysical || hoveringVirtual);
-                }
-            }
+            dayZScreen.applyVirtualHandsHover(mouseX, mouseY);
         }
     }
 }
