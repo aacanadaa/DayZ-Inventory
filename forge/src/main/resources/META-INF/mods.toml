@@ -1,15 +1,15 @@
 modLoader="javafml"
 loaderVersion="[47,)"
-license="All Rights Reserved"
-issueTrackerURL="https://modrinth.com/project/dayz-inventory"
+license="Apache-2.0"
+issueTrackerURL="https://github.com/aacanadaa/DayZ-Inventory/issues"
 
 [[mods]]
 modId="dayz_inventory"
-version="1.3.0"
+version="1.4.0"
 displayName="DayZ Inventory"
 authors="suoim"
 description="A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft."
-displayURL="https://modrinth.com/project/dayz-inventory"
+displayURL="https://modrinth.com/mod/dayz-inventory"
 logoFile="assets/dayz_inventory/icon.png"
 
 [[dependencies.dayz_inventory]]
@@ -27,8 +27,15 @@ ordering="NONE"
 side="BOTH"
 
 [[dependencies.dayz_inventory]]
+modId="jei"
+mandatory=false
+versionRange="[15,)"
+ordering="AFTER"
+side="CLIENT"
+
+[[dependencies.dayz_inventory]]
 modId="curios"
 mandatory=false
 versionRange="[5.0.0,)"
-ordering="NONE"
+ordering="AFTER"
 side="BOTH"

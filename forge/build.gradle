@@ -1,8 +1,19 @@
+/*
+ * DayZ Inventory - Forge module
+ * Copyright 2026 suoim
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ */
+
 plugins {
     id 'net.minecraftforge.gradle' version '6.0.+'
     id 'org.spongepowered.mixin' version '0.7.+'
     id 'me.modmuss50.mod-publish-plugin'
 }
+
+def releaseName = "DayZ Inventory ${project.version}"
 
 minecraft {
     mappings channel: 'official', version: project.minecraft_version
@@ -19,8 +30,12 @@ minecraft {
             
             mods {
                 dayz_inventory {
+                    // Only this project's output is on the mod path. The common
+                    // module's java and resources directories are compiled and
+                    // processed into sourceSets.main above, so adding it again
+                    // would put a second copy of the mixin configs and Loom's
+                    // intermediary refmap on the classpath and break Mixin.
                     source sourceSets.main
-                    source project(':common').sourceSets.main
                 }
             }
         }
@@ -34,8 +49,12 @@ minecraft {
 
             mods {
                 dayz_inventory {
+                    // Only this project's output is on the mod path. The common
+                    // module's java and resources directories are compiled and
+                    // processed into sourceSets.main above, so adding it again
+                    // would put a second copy of the mixin configs and Loom's
+                    // intermediary refmap on the classpath and break Mixin.
                     source sourceSets.main
-                    source project(':common').sourceSets.main
                 }
             }
         }
@@ -44,13 +63,13 @@ minecraft {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
-    
+
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    implementation(project(':common')) {
-        exclude group: 'net.fabricmc'
-        exclude group: 'net.fabricmc.fabric-api'
-    }
+    // NOTE: deliberately no `implementation project(':common')` here.
+    // sourceSets.main below compiles the common module's sources directly, so a
+    // project dependency would only put a second copy of those classes - and
+    // Loom's intermediary refmap - on the classpath, which breaks Mixin.
 }
 
 sourceSets {
@@ -70,10 +89,12 @@ mixin {
     config "dayz-inventory.client.mixins.json"
 }
 
-// Ensure resources and classes from common are packaged into the Forge JAR
+// The common module's classes and resources are compiled and processed into this
+// project's own output via sourceSets.main above, so the jar needs no extra
+// `from` for them. Anything pulled in from common's build directory would only
+// add duplicate classes plus Loom's intermediary refmap, which Forge cannot use.
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from project(':common').sourceSets.main.output
     manifest {
         attributes([
             'Specification-Title'     : 'dayz_inventory',
@@ -87,9 +108,26 @@ jar {
     }
 }
 
+// MixinGradle writes the generated Searge refmap to build/tmp and only injects it
+// into the packaged jar. Dev runs (`runClient` / `runServer`) load this mod from
+// the compiled resources and classes directories instead, and the `common`
+// project - which is built by Loom - contributes a refmap with the *same name*
+// that targets intermediary. Forge cannot resolve intermediary targets, so Mixin
+// would rewrite every target to class_XXXX names and fail with
+// "specifies a target class which is not supported".
+//
+// Copy the Searge refmap into our own resources so this project's output, which
+// Forge places first on the mod classpath, shadows the intermediary one during
+// development exactly as it does in the packaged jar.
+def forgeRefmap = layout.buildDirectory.file('tmp/compileJava/dayz-inventory.refmap.json')
+
 tasks.named('processResources', ProcessResources) {
+    dependsOn tasks.named('compileJava')
+
+    // Bring in the Searge refmap so dev runs resolve it (see note below).
+    from(forgeRefmap)
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from project(':common').sourceSets.main.resources
 }
 
 base {
@@ -102,20 +140,22 @@ publishMods {
     type = STABLE
 
     modrinth {
-        displayName = "DayZ Inventory 1.3.0 Release"
-        projectId = "8asZxzdc"
+        displayName = releaseName
+        projectId = project.modrinth_id
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersions.add("1.20.1")
         modLoaders.add("forge")
+        optional("jei")
         optional("curios")
     }
 
     curseforge {
-        displayName = "DayZ Inventory 1.3.0 Release"
+        displayName = releaseName
         projectId = "1596267"
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
         minecraftVersions.add("1.20.1")
         modLoaders.add("forge")
+        optional("jei")
         optional("curios")
         client = true
         server = true

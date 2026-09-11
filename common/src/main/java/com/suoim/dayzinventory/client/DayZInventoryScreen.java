@@ -1,3 +1,19 @@
+/*
+ * DayZ Inventory
+ * Copyright 2026 suoim
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.suoim.dayzinventory.client;
 
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
@@ -284,9 +300,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         double scaledY = mouseY / scale;
 
         // Handle recipe viewer button click if JEI/REI/EMI is present
-        boolean hasJei = Platform.HELPER.isModLoaded("jei");
-        boolean hasRei = Platform.HELPER.isModLoaded("roughlyenoughitems");
-        boolean hasEmi = Platform.HELPER.isModLoaded("emi");
+        boolean hasJei = Platform.isModLoaded("jei");
+        boolean hasRei = Platform.isModLoaded("roughlyenoughitems");
+        boolean hasEmi = Platform.isModLoaded("emi");
         boolean showToggleBtn = hasJei || hasRei || hasEmi;
         if (showToggleBtn) {
             int rightColumnX = getColumnX(2);
@@ -303,8 +319,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
 
         // Handle Curios button click if Curios is present
-        boolean hasCurios = Platform.HELPER.isModLoaded("curios");
-        boolean hasTrinkets = Platform.HELPER.isModLoaded("trinkets");
+        boolean hasCurios = Platform.isModLoaded("curios");
+        boolean hasTrinkets = Platform.isModLoaded("trinkets");
         if (hasCurios) {
             int middleColumnX = getColumnX(1);
             int btnX = hasTrinkets ? (middleColumnX + 4) : (middleColumnX + 125);
@@ -677,9 +693,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         drawSectionPanel(guiGraphics, rx - PAD, topPos + imageHeight - 32, PANEL_W, 20);
 
         // Draw recipe viewer toggle button if JEI/REI/EMI is loaded
-        boolean hasJei = Platform.HELPER.isModLoaded("jei");
-        boolean hasRei = Platform.HELPER.isModLoaded("roughlyenoughitems");
-        boolean hasEmi = Platform.HELPER.isModLoaded("emi");
+        boolean hasJei = Platform.isModLoaded("jei");
+        boolean hasRei = Platform.isModLoaded("roughlyenoughitems");
+        boolean hasEmi = Platform.isModLoaded("emi");
         boolean showToggleBtn = hasJei || hasRei || hasEmi;
         if (showToggleBtn) {
             String toggleBtnText = hasJei ? "JEI" : (hasRei ? "REI" : "EMI");
@@ -695,8 +711,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
 
         // Draw Curios button if Curios is loaded
-        boolean hasCurios = Platform.HELPER.isModLoaded("curios");
-        boolean hasTrinkets = Platform.HELPER.isModLoaded("trinkets");
+        boolean hasCurios = Platform.isModLoaded("curios");
+        boolean hasTrinkets = Platform.isModLoaded("trinkets");
         if (hasCurios) {
             int btnX = hasTrinkets ? (mx + 4) : (mx + 125);
             int btnY = topPos + 7;
