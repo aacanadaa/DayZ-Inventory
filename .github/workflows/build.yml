@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, "1.x"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build (Fabric + Forge)
+    name: Build (Fabric + NeoForge)
     runs-on: ubuntu-24.04
 
     steps:
@@ -45,11 +45,11 @@ jobs:
           path: fabric/build/libs/*.jar
           if-no-files-found: error
 
-      - name: Upload Forge JAR
+      - name: Upload NeoForge JAR
         uses: actions/upload-artifact@v7
         with:
-          name: dayz-inventory-forge
-          path: forge/build/libs/*.jar
+          name: dayz-inventory-neoforge
+          path: neoforge/build/libs/*.jar
           if-no-files-found: error
 
   release:
@@ -67,16 +67,16 @@ jobs:
           name: dayz-inventory-fabric
           path: dist/fabric
 
-      - name: Download Forge JAR
+      - name: Download NeoForge JAR
         uses: actions/download-artifact@v6
         with:
-          name: dayz-inventory-forge
-          path: dist/forge
+          name: dayz-inventory-neoforge
+          path: dist/neoforge
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/fabric/*.jar
-            dist/forge/*.jar
+            dist/neoforge/*.jar
           generate_release_notes: true

@@ -41,8 +41,17 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     private final BlockPos containerPos;
     private final Inventory playerInventory;
 
-    // Client-side constructor. 1.21 passes the typed opening data produced by
-    // ExtendedScreenHandlerFactory#getScreenOpeningData rather than a raw buffer.
+    // NeoForge client-side constructor. IMenuTypeExtension still hands over a
+    // FriendlyByteBuf, whereas Fabric's ExtendedScreenHandlerType passes typed
+    // opening data - so both shapes exist and each loader binds to its own.
+    public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, FriendlyByteBuf buf) {
+        this(syncId, playerInventory,
+             buf.readBoolean() ? new SimpleContainer(buf.readInt()) : null,
+             buf.readBoolean() ? buf.readBlockPos() : null);
+    }
+
+    // Fabric client-side constructor. 1.21 passes the typed opening data produced
+    // by ExtendedScreenHandlerFactory#getScreenOpeningData rather than a buffer.
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, DayZInventoryOpenData data) {
         this(syncId, playerInventory,
              data.hasContainer() ? new SimpleContainer(data.containerSize()) : null,
