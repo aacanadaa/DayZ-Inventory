@@ -4,6 +4,8 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 
 **Fabric and Forge — Minecraft 1.20.1.** Forge works natively, with no Sinytra Connector required.
 
+![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](https://raw.githubusercontent.com/aacanadaa/DayZ-Inventory/main/docs/screenshots/ui-example.png)
+
 ---
 
 ## Features
