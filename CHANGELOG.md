@@ -1,3 +1,36 @@
+# DayZ Inventory 1.4.1 (Minecraft 1.20.1)
+
+**Fixes the Forge build crashing on launch.** Update if you are on 1.20.1 Forge.
+
+## Fixed: Forge crashed as soon as you opened a container
+
+The 1.4.0 Forge jar failed during Mixin application, before the inventory screen
+could appear:
+
+```
+@Shadow field menu was not located in the target class
+net.minecraft.client.gui.screens.AbstractContainerScreen
+```
+
+One of the mixins shadowed four fields of the container screen, and those shadows
+produce no refmap entry. Forge resolves shadow fields purely from the refmap, so it
+went looking for fields literally named `menu` and failed. Fabric resolves them
+through its own mapping resolver, which is why only Forge was affected.
+
+The check now lives in the screen class itself, which inherits those fields and can
+read them without shadowing anything. Behaviour is unchanged.
+
+This slipped through because the development client runs on official names, where
+the shadows resolve by name - only the packaged jar was ever affected. Releases are
+now checked against the built jar, not just a development run.
+
+## Not affected
+
+Fabric on 1.20.1, and both loaders on 1.21.1 and 1.21.11, are unaffected by this
+and stay on 1.4.0.
+
+---
+
 # DayZ Inventory 1.4.0 — now on Minecraft 1.21.11
 
 **DayZ Inventory is now available for Minecraft 1.21.11 on Fabric and NeoForge.**
