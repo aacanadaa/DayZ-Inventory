@@ -13,7 +13,7 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 | Minecraft | Loaders |
 | :--- | :--- |
 | **1.21.11** | Fabric · NeoForge |
-| **1.21.1** | Fabric · NeoForge |
+| **1.21.1** | Fabric · Forge · NeoForge |
 | **1.20.1** | Fabric · Forge |
 
 ![The DayZ Inventory screen: a VICINITY grid of nearby items, a CHEST drawer open with shells, the SURVIVOR panel with the player in gear, CURIOS and JEI buttons in the header, an M1014 Battle Shotgun in the 2.0x HANDS slot, and the 2x2 CRAFTING grid](docs/screenshots/ui-example.png)
@@ -51,7 +51,7 @@ All optional integrations are probed at runtime. The mod never requires them and
 
 1. Install the Minecraft version you want:
    - **1.21.11** with **Fabric Loader** or **NeoForge**
-   - **1.21.1** with **Fabric Loader** or **NeoForge**
+   - **1.21.1** with **Fabric Loader**, **Forge** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
 3. Drop it into your `mods/` folder.
@@ -126,7 +126,17 @@ All optional integrations are probed at runtime. The mod never requires them and
 | *Optional* | JEI | Any `1.21.1` build |
 | *Optional* | Curios API | Any `1.21.1` build |
 
-> NeoForge needs no additional libraries — it has its own loader and networking built in.
+### Forge (1.21.1)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | `1.21.1` |
+| **Mandatory** | Forge | `>=52.0.0` |
+| **Mandatory** | Java | `21` |
+| *Optional* | JEI | Any `1.21.1` build |
+| *Optional* | Curios API | Any `1.21.1` build |
+
+> NeoForge and Forge need no additional libraries — each has its own loader and networking built in.
 
 ---
 
@@ -137,7 +147,7 @@ Each Minecraft version lives on its own branch:
 | Branch | Minecraft | Loaders | JDK |
 | :--- | :--- | :--- | :--- |
 | `1.21.11` | 1.21.11 | Fabric, NeoForge | **21** |
-| `1.21.1` | 1.21.1 | Fabric, NeoForge | **21** |
+| `1.21.1` | 1.21.1 | Fabric, Forge, NeoForge | **21** |
 | `main` | 1.20.1 | Fabric, Forge | **17** |
 
 ```bash

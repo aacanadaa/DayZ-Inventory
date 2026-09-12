@@ -1,11 +1,13 @@
 modLoader="javafml"
-loaderVersion="[47,)"
+loaderVersion="[52,)"
 license="Apache-2.0"
 issueTrackerURL="https://github.com/aacanadaa/DayZ-Inventory/issues"
 
 [[mods]]
 modId="dayz_inventory"
-version="1.4.0"
+# Expanded from project.version by processResources. This was hardcoded once and
+# drifted, so a 1.4.1 jar reported itself as 1.4.0 in crash reports.
+version="${version}"
 displayName="DayZ Inventory"
 authors="suoim"
 description="A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft."
@@ -15,27 +17,31 @@ logoFile="assets/dayz_inventory/icon.png"
 [[dependencies.dayz_inventory]]
 modId="forge"
 mandatory=true
-versionRange="[47,)"
+versionRange="[52,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.dayz_inventory]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.20.1,1.20.2)"
+versionRange="[1.21.1,1.21.2)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.dayz_inventory]]
 modId="jei"
 mandatory=false
-versionRange="[15,)"
+versionRange="*"
 ordering="AFTER"
 side="CLIENT"
 
 [[dependencies.dayz_inventory]]
 modId="curios"
 mandatory=false
-versionRange="[5.0.0,)"
+versionRange="*"
 ordering="AFTER"
 side="BOTH"
+
+# Mixin configs are NOT declared here. Forge reads them from the MixinConfigs jar
+# manifest attribute, set in build.gradle. [[mixins]] blocks are a
+# NeoForge/Quilt extension that Forge's ModFileInfo does not parse.

@@ -5,7 +5,9 @@ issueTrackerURL="https://github.com/aacanadaa/DayZ-Inventory/issues"
 
 [[mods]]
 modId="dayz_inventory"
-version="1.4.0"
+# Expanded from project.version by processResources. This was hardcoded once and
+# drifted: a 1.4.1 jar reported itself as 1.4.0 in crash reports.
+version="${version}"
 displayName="DayZ Inventory"
 authors="suoim"
 description="A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft."

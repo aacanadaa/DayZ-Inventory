@@ -22,9 +22,13 @@ rootProject.name = 'dayz-inventory'
 include 'common'
 include 'fabric'
 
-// Forge does not carry forward to 1.21.x - the ecosystem moved to NeoForge.
-// `forge/` is left in place but unbuilt on this branch; the 1.20.1 line still
-// ships it. NeoForge is a separate module rather than a port of forge/ because
-// the plugin, the package names and the networking stack all differ.
-// include 'forge'
+// Forge 1.21.1 ships alongside NeoForge. The two are separate modules rather
+// than one shared one because the plugin, the package names, the networking
+// stack and the runtime mapping situation all differ between them.
+//
+// (An earlier note here claimed "Forge does not carry forward to 1.21.x". That
+// was wrong: Forge 52.x for 1.21.1 exists and is maintained. What was true is
+// that the old `forge/` directory held 1.20.1-era code, which is why the module
+// was rebuilt for 1.21.1 rather than re-enabled as-is.)
+include 'forge'
 include 'neoforge'

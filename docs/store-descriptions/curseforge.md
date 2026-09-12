@@ -7,7 +7,7 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 | Minecraft | Loaders |
 | :--- | :--- |
 | **1.21.11** | Fabric · NeoForge (Java 21) |
-| **1.21.1** | Fabric · NeoForge (Java 21) |
+| **1.21.1** | Fabric · Forge · NeoForge (Java 21) |
 | **1.20.1** | Fabric · Forge (Java 17) |
 
 ![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](https://raw.githubusercontent.com/aacanadaa/DayZ-Inventory/main/docs/screenshots/ui-example.png)
@@ -53,7 +53,7 @@ Every optional integration is probed at runtime. The mod never requires them and
 
 1. Install the Minecraft version you want:
    - **1.21.11** with **Fabric Loader** or **NeoForge**
-   - **1.21.1** with **Fabric Loader** or **NeoForge**
+   - **1.21.1** with **Fabric Loader**, **Forge** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from the **Files** tab.
 3. Drop it into your `mods/` folder.
@@ -104,6 +104,16 @@ Every optional integration is probed at runtime. The mod never requires them and
 | :--- | :--- | :--- |
 | **Mandatory** | Minecraft | 1.21.1 |
 | **Mandatory** | NeoForge | 21.1 or newer |
+| **Mandatory** | Java | 21 |
+| *Optional* | JEI | Any 1.21.1 build |
+| *Optional* | Curios API | Any 1.21.1 build |
+
+### Forge (1.21.1)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 1.21.1 |
+| **Mandatory** | Forge | 52.0.0 or newer |
 | **Mandatory** | Java | 21 |
 | *Optional* | JEI | Any 1.21.1 build |
 | *Optional* | Curios API | Any 1.21.1 build |
