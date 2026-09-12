@@ -1,5 +1,5 @@
 /*
- * DayZ Inventory - Forge module
+ * DayZ Inventory - Forge module (Minecraft 1.21.1)
  * Copyright 2026 suoim
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -8,63 +8,63 @@
  */
 
 plugins {
-    id 'net.minecraftforge.gradle' version '6.0.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
+    // Pinned to ForgeGradle 6 on purpose. Forge 52.1.14 is where ForgeGradle
+    // moved to 7.x and Gradle to 9.x; this build stays on Gradle 8.10.2 because
+    // fabric-loom 1.8.13 is configured against it.
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
     id 'me.modmuss50.mod-publish-plugin'
 }
 
-def releaseName = "DayZ Inventory ${project.version}"
+// The Minecraft version is part of the release name on purpose: CurseForge
+// rejects a second file whose display name matches an existing one in the same
+// project, and the same mod version is published for more than one Minecraft
+// version.
+def releaseName = "DayZ Inventory ${project.version} for ${project.minecraft_version}"
 
 minecraft {
     mappings channel: 'official', version: project.minecraft_version
-    
+
+    // Forge 1.20.2+ runs the game on official Mojang names, so there is nothing
+    // to reobfuscate. This is the single biggest difference from the 1.20.1
+    // Forge module, which needed Searge names, a generated refmap and a
+    // reobfuscated jar. None of that exists here.
+    reobf = false
     copyIdeResources = true
 
     runs {
-        client {
+        configureEach {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-            
-            mods {
-                dayz_inventory {
-                    // Only this project's output is on the mod path. The common
-                    // module's java and resources directories are compiled and
-                    // processed into sourceSets.main above, so adding it again
-                    // would put a second copy of the mixin configs and Loom's
-                    // intermediary refmap on the classpath and break Mixin.
-                    source sourceSets.main
-                }
-            }
+        }
+
+        client {
+            // Dev runs load the mod from build output rather than the packaged
+            // jar, so the MixinConfigs manifest attribute is not present and
+            // Forge would not pick the configs up on its own. Name them here so
+            // runClient exercises the same mixins the released jar ships.
+            args '--mixin.config', 'dayz-inventory.mixins.json'
+            args '--mixin.config', 'dayz-inventory.client.mixins.json'
         }
 
         server {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                dayz_inventory {
-                    // Only this project's output is on the mod path. The common
-                    // module's java and resources directories are compiled and
-                    // processed into sourceSets.main above, so adding it again
-                    // would put a second copy of the mixin configs and Loom's
-                    // intermediary refmap on the classpath and break Mixin.
-                    source sourceSets.main
-                }
-            }
+            args '--nogui'
+            args '--mixin.config', 'dayz-inventory.mixins.json'
         }
+    }
+}
+
+repositories {
+    // Forge's maven is only in settings.gradle's pluginManagement block, which
+    // resolves Gradle plugins but not this module's dependencies.
+    maven {
+        name = 'Forge'
+        url = 'https://maven.minecraftforge.net/'
     }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
-
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     // NOTE: deliberately no `implementation project(':common')` here.
     // sourceSets.main below compiles the common module's sources directly, so a
@@ -72,6 +72,10 @@ dependencies {
     // Loom's intermediary refmap - on the classpath, which breaks Mixin.
 }
 
+// The common module is compiled into this project rather than consumed as a jar,
+// the same way neoforge/ does on this branch. That keeps a single copy of every
+// class on the mod classpath and lets the shared mixin classes be picked up
+// directly.
 sourceSets {
     main {
         java {
@@ -83,16 +87,30 @@ sourceSets {
     }
 }
 
-mixin {
-    add sourceSets.main, "dayz-inventory.refmap.json"
-    config "dayz-inventory.mixins.json"
-    config "dayz-inventory.client.mixins.json"
+tasks.named('processResources', ProcessResources) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property "version", project.version
+
+    // mods.toml declares its version by expansion. On the 1.20.1 line a
+    // hardcoded version here drifted and a 1.4.1 jar reported itself as 1.4.0 in
+    // crash reports.
+    filesMatching('META-INF/mods.toml') {
+        expand "version": project.version
+    }
 }
 
-// The common module's classes and resources are compiled and processed into this
-// project's own output via sourceSets.main above, so the jar needs no extra
-// `from` for them. Anything pulled in from common's build directory would only
-// add duplicate classes plus Loom's intermediary refmap, which Forge cannot use.
+// Merge classes and resources into one output directory. ForgeGradle loads a
+// development mod from a single "mod file" directory, and by default that is
+// build/resources/main - which would hold mods.toml but none of the @Mod
+// classes, so the dev launcher fails with "classes are missing, but are
+// reported in the mods.toml: [dayz_inventory]". The 1.21.1 MDK does the same
+// thing for the same reason.
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
+}
+
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
@@ -103,31 +121,13 @@ jar {
             'Implementation-Title'    : project.name,
             'Implementation-Version'  : project.jar.archiveVersion,
             'Implementation-Vendor'   : 'suoim',
+            // Forge reads mixin configs from this manifest attribute. It does
+            // NOT understand [[mixins]] blocks in mods.toml - that is a
+            // NeoForge/Quilt extension, which is why neoforge/ declares them
+            // there and this module cannot.
             'MixinConfigs'            : 'dayz-inventory.mixins.json,dayz-inventory.client.mixins.json'
         ])
     }
-}
-
-// MixinGradle writes the generated Searge refmap to build/tmp and only injects it
-// into the packaged jar. Dev runs (`runClient` / `runServer`) load this mod from
-// the compiled resources and classes directories instead, and the `common`
-// project - which is built by Loom - contributes a refmap with the *same name*
-// that targets intermediary. Forge cannot resolve intermediary targets, so Mixin
-// would rewrite every target to class_XXXX names and fail with
-// "specifies a target class which is not supported".
-//
-// Copy the Searge refmap into our own resources so this project's output, which
-// Forge places first on the mod classpath, shadows the intermediary one during
-// development exactly as it does in the packaged jar.
-def forgeRefmap = layout.buildDirectory.file('tmp/compileJava/dayz-inventory.refmap.json')
-
-tasks.named('processResources', ProcessResources) {
-    dependsOn tasks.named('compileJava')
-
-    // Bring in the Searge refmap so dev runs resolve it (see note below).
-    from(forgeRefmap)
-
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 base {
@@ -143,7 +143,9 @@ publishMods {
         displayName = releaseName
         projectId = project.modrinth_id
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
-        minecraftVersions.add("1.20.1")
+        // Taken from gradle.properties rather than hardcoded, so a branch bump
+        // can never publish a jar under the wrong Minecraft version.
+        minecraftVersions.add(project.minecraft_version)
         modLoaders.add("forge")
         optional("jei")
         optional("curios")
@@ -153,7 +155,7 @@ publishMods {
         displayName = releaseName
         projectId = "1596267"
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-        minecraftVersions.add("1.20.1")
+        minecraftVersions.add(project.minecraft_version)
         modLoaders.add("forge")
         optional("jei")
         optional("curios")
@@ -161,4 +163,3 @@ publishMods {
         server = true
     }
 }
-
