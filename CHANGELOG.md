@@ -1,3 +1,40 @@
+# DayZ Inventory 1.4.2 — Forge for Minecraft 1.21.1
+
+**DayZ Inventory is now available for Minecraft 1.21.1 on Forge**, alongside the existing Fabric
+and NeoForge builds. Everything else about the mod is unchanged — this release adds a loader, it
+does not change the UI.
+
+Requires **Forge 52.0.0 or newer** and **Java 21**. Built and tested against Forge 52.1.12.
+
+## Why this needed a new module rather than a rebuild
+
+Forge 1.21.1 is not the same target as the Forge build on the 1.20.1 line, and the differences
+were substantial enough that the old module could not simply be re-enabled:
+
+- **Forge runs on official Mojang names at runtime** as of 1.20.2. On 1.20.1 it ran on SRG names,
+  which is why that line needs a generated Searge refmap and a reobfuscated jar. None of that
+  applies here, so the whole refmap pipeline is gone rather than ported.
+- **The old networking API is gone.** `NetworkRegistry.newSimpleChannel`,
+  `SimpleChannel.registerMessage` and `net.minecraftforge.network.NetworkEvent` no longer exist.
+  Forge 1.21 uses the game's own typed-payload system, so this build now shares the exact payload
+  class the Fabric and NeoForge builds use.
+- **`NetworkHooks` is gone**, and `MenuScreens.register` is private in 1.21. Forge exposes the
+  latter through an access transformer instead of the event NeoForge added.
+- The mod constructor takes `FMLJavaModLoadingContext` as a parameter now, not from a static getter.
+
+## Also fixed
+
+`neoforge.mods.toml` declared its version by hand. It now derives from the project version, the
+same way `fabric.mod.json` and `mods.toml` already did — a jar that reports the wrong version in a
+crash report is needlessly hard to support.
+
+## Not affected
+
+Fabric and NeoForge for 1.21.1 are unchanged by this release and remain on 1.4.0. The 1.20.1 line
+is unaffected.
+
+---
+
 # DayZ Inventory 1.4.0 — now on Minecraft 1.21.11
 
 **DayZ Inventory is now available for Minecraft 1.21.11 on Fabric and NeoForge.**

@@ -2,7 +2,10 @@ name: build
 
 on:
   push:
-    branches: [main, "1.x"]
+    # "1.*" not "1.x": GitHub Actions only globs "*", so the previous literal
+    # "1.x" matched a branch that does not exist and version branches like
+    # 1.21.1 never triggered a build at all.
+    branches: [main, "1.*"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
@@ -49,6 +52,13 @@ jobs:
           path: fabric/build/libs/*.jar
           if-no-files-found: error
 
+      - name: Upload Forge JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: dayz-inventory-forge
+          path: forge/build/libs/*.jar
+          if-no-files-found: error
+
       - name: Upload NeoForge JAR
         uses: actions/upload-artifact@v7
         with:
@@ -71,6 +81,12 @@ jobs:
           name: dayz-inventory-fabric
           path: dist/fabric
 
+      - name: Download Forge JAR
+        uses: actions/download-artifact@v6
+        with:
+          name: dayz-inventory-forge
+          path: dist/forge
+
       - name: Download NeoForge JAR
         uses: actions/download-artifact@v6
         with:
@@ -82,5 +98,6 @@ jobs:
         with:
           files: |
             dist/fabric/*.jar
+            dist/forge/*.jar
             dist/neoforge/*.jar
           generate_release_notes: true

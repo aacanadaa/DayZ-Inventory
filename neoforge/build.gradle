@@ -62,6 +62,15 @@ dependencies {
     // NeoForge itself comes from the moddev plugin - no coordinate needed.
 }
 
+tasks.named('processResources', ProcessResources) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property "version", project.version
+
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand "version": project.version
+    }
+}
+
 base {
     archivesName = "dayz-inventory-neoforge-${project.minecraft_version}"
 }

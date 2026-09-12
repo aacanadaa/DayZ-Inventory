@@ -16,6 +16,7 @@
  */
 package com.suoim.dayzinventory.forge.platform;
 
+import com.suoim.dayzinventory.DayZInventoryPayload;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.forge.DayZInventoryForge;
 import com.suoim.dayzinventory.forge.network.ModNetwork;
@@ -32,22 +33,30 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.network.NetworkHooks;
 
 public class ForgePlatformHelper implements IPlatformHelper {
     @Override
     public boolean isModLoaded(String modId) {
+        // Called from the render loop, so this must stay cheap and must never
+        // throw for a mod id that is not installed.
         return ModList.get().isLoaded(modId);
     }
 
     @Override
     public void sendPacketToServer(ResourceLocation packetId, FriendlyByteBuf buf) {
-        ModNetwork.INSTANCE.sendToServer(new ModNetwork.DayZInventoryPlatformPacket(packetId, buf));
+        // Forge 1.21 uses the vanilla typed-payload system, so wrap the raw bytes
+        // into the payload shared with the Fabric and NeoForge modules.
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        ModNetwork.sendToServer(new DayZInventoryPayload(packetId, bytes));
     }
 
     @Override
     public void openPlayerInventory(ServerPlayer player) {
-        NetworkHooks.openScreen(player, new SimpleMenuProvider(
+        // Forge's IForgeServerPlayer adds this overload, which forwards the
+        // written buffer to the menu type's IContainerFactory on the client.
+        // Vanilla's openMenu(MenuProvider) sends no extra data at all.
+        player.openMenu(new SimpleMenuProvider(
             (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, null, null),
             Component.translatable("container.inventory")
         ), buf -> {
@@ -69,7 +78,7 @@ public class ForgePlatformHelper implements IPlatformHelper {
 
         if (container != null) {
             final Container finalContainer = container;
-            NetworkHooks.openScreen(player, new SimpleMenuProvider(
+            player.openMenu(new SimpleMenuProvider(
                 (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos),
                 state.getBlock().getName()
             ), buf -> {
