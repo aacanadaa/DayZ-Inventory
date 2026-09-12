@@ -154,6 +154,55 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
     }
 
+    /**
+     * True when the given slot should count as hovered at these coordinates.
+     * <p>
+     * The Hands attachment slot is virtual: it is drawn in the middle column but
+     * backs the real hotbar slot, so vanilla needs to be told the panel counts as
+     * a hover of that slot. This lives here rather than in
+     * {@code AbstractContainerScreenMixin} because the mixin would otherwise have
+     * to {@code @Shadow} {@code menu}, {@code leftPos}, {@code topPos} and
+     * {@code imageHeight} - and those shadows carry no refmap entries, so they
+     * fail to resolve on intermediary (Fabric) and SRG (Forge) runtimes and crash
+     * on launch. This class inherits all four from
+     * {@link AbstractContainerScreen}, so it can read them directly.
+     */
+    public boolean isVirtualHandsSlotHovered(Slot slot, double mouseX, double mouseY) {
+        if (slot == null) {
+            return false;
+        }
+
+        // this.menu is already typed DayZInventoryScreenHandler here, so no cast.
+        int containerSize = this.menu.getContainerInventory() != null
+            ? this.menu.getContainerInventory().getContainerSize() : 0;
+
+        int selectedSlot = 0;
+        if (this.minecraft != null && this.minecraft.player != null) {
+            selectedSlot = this.minecraft.player.getInventory().selected;
+        }
+        int handsSlotIdx = containerSize + 27 + selectedSlot;
+        if (slot.index != handsSlotIdx) {
+            return false;
+        }
+
+        // Hovering the real slot in the right column...
+        boolean hoveringPhysical = mouseX >= (this.leftPos + slot.x) && mouseX < (this.leftPos + slot.x + 18)
+            && mouseY >= (this.topPos + slot.y) && mouseY < (this.topPos + slot.y + 18);
+
+        // ...or the virtual panel body in the middle column.
+        int middleColumnX = this.getColumnX(1);
+        int handsPanelY = this.topPos + this.imageHeight - 75;
+
+        ItemStack handsStack = slot.getItem();
+        int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
+        int bodyHeight = handsStack.isEmpty() ? 55 : 43;
+
+        boolean hoveringVirtual = mouseX >= (middleColumnX - 4) && mouseX < (middleColumnX + 166)
+            && mouseY >= bodyY && mouseY < (bodyY + bodyHeight);
+
+        return hoveringPhysical || hoveringVirtual;
+    }
+
     public int getColumnX(int colIndex) {
         int remaining = this.imageWidth - 486; // 486 is 3 * 162
         int gap = remaining / 4;
