@@ -1,3 +1,54 @@
+# DayZ Inventory 1.4.3 (Minecraft 1.20.1)
+
+**Fixes the Forge build crashing on launch.** Update if you are on 1.20.1 Forge.
+
+If you downloaded 1.4.2 from Modrinth or CurseForge, that file was broken and this
+one replaces it. Nothing else changed.
+
+## Fixed: the Modrinth and CurseForge files were never reobfuscated
+
+1.4.2 fixed this for the build and for GitHub, but not for publishing, so two
+different 1.4.2 Forge jars existed:
+
+| Where it came from | `Registries.` reference | Size |
+| :--- | :--- | :--- |
+| GitHub release | `f_256798_` | 967,133 bytes |
+| Modrinth / CurseForge | `MENU` | 966,295 bytes |
+
+Forge resolves members against SRG at runtime, so the Modrinth and CurseForge jars
+died before the game window opened:
+
+```
+java.lang.NoSuchFieldError: MENU
+    at DayZInventoryForge.<clinit>(DayZInventoryForge.java:41)
+```
+
+The reobfuscation step was wired to `assemble`, but `publishMods` read the `jar`
+task's output and depended only on `jar` - and publishing on its own never runs
+`assemble`. So the fix-up silently did not happen on the publishing path, and the
+upload was of the development jar. `--dry-run` confirmed it: the publish task graph
+contained no reobfuscation step at all.
+
+Two separate problems were behind that. The reobfuscation step declared the *same
+output file* as the `jar` task, so which file was correct depended on task ordering;
+and publishing referenced a path rather than the task that produces it, so nothing
+tied the upload to the reobfuscation.
+
+Now the `jar` task writes to `build/devlibs`, a single task produces the reobfuscated
+jar in `build/libs`, and publishing reads that task's output - so publishing depends
+on reobfuscation instead of hoping another task ran first.
+
+Releases are now checked by opening the built jar and confirming its own classes
+reference SRG names, and by confirming `:forge:publishMods` shows the reobfuscation
+step in its task graph.
+
+## Not affected
+
+Fabric on 1.20.1, and both loaders on 1.21.1 and 1.21.11, are unaffected and stay on
+their current versions.
+
+---
+
 # DayZ Inventory 1.4.2 (Minecraft 1.20.1)
 
 **Fixes the Forge build crashing on launch.** Update if you are on 1.20.1 Forge.
