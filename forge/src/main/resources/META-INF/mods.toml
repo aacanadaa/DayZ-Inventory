@@ -5,7 +5,7 @@ issueTrackerURL="https://github.com/aacanadaa/DayZ-Inventory/issues"
 
 [[mods]]
 modId="dayz_inventory"
-version="1.4.0"
+version="${version}"
 displayName="DayZ Inventory"
 authors="suoim"
 description="A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft."
