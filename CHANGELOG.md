@@ -1,6 +1,8 @@
-# DayZ Inventory 1.4.1 (Minecraft 1.20.1)
+# DayZ Inventory 1.4.2 (Minecraft 1.20.1)
 
 **Fixes the Forge build crashing on launch.** Update if you are on 1.20.1 Forge.
+
+(1.4.1 was published but still failed to launch - it fixed one of two faults. Use 1.4.2.)
 
 ## Fixed: Forge crashed as soon as you opened a container
 
@@ -23,6 +25,37 @@ read them without shadowing anything. Behaviour is unchanged.
 This slipped through because the development client runs on official names, where
 the shadows resolve by name - only the packaged jar was ever affected. Releases are
 now checked against the built jar, not just a development run.
+
+## Fixed: Forge crashed during mod construction
+
+With the mixin fault above out of the way, the next one appeared immediately:
+
+```
+java.lang.NoSuchFieldError: MENU
+    at DayZInventoryForge.<clinit>(DayZInventoryForge.java:41)
+```
+
+The shipped Forge jar had **never been reobfuscated**. ForgeGradle writes the
+reobfuscated jar to its own output directory, and the file that was being packaged -
+the one in `build/libs` - kept the game's official field names. Forge runs on SRG,
+so `Registries.MENU` did not exist at runtime; it should have been
+`Registries.f_256798_`. The published jar contained zero SRG references anywhere.
+
+The reobfuscated jar is now the one packaged, so `build/libs` always contains
+something Forge can actually load.
+
+## Why both of these reached you
+
+Development runs use the game's official names, where both faults resolve cleanly.
+`:forge:runClient` worked perfectly throughout, and only the packaged jar was ever
+affected. Releases are now checked by inspecting the built jar itself rather than
+trusting a successful build or a working development client.
+
+## Also fixed
+
+`mods.toml` declared its version by hand and had drifted - a 1.4.1 jar still
+reported itself as 1.4.0 in crash reports. It now derives from the project version,
+as `fabric.mod.json` already did.
 
 ## Not affected
 
