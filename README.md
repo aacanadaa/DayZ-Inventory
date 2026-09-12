@@ -16,7 +16,7 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 | **1.21.1** | Fabric · NeoForge |
 | **1.20.1** | Fabric · Forge |
 
-![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](docs/screenshots/ui-example.png)
+![The DayZ Inventory screen: a VICINITY grid of nearby items, a CHEST drawer open with shells, the SURVIVOR panel with the player in gear, CURIOS and JEI buttons in the header, an M1014 Battle Shotgun in the 2.0x HANDS slot, and the 2x2 CRAFTING grid](docs/screenshots/ui-example.png)
 
 ---
 
