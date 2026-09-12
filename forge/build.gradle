@@ -131,6 +131,13 @@ tasks.named('processResources', ProcessResources) {
     // Bring in the Searge refmap so dev runs resolve it (see note below).
     from(forgeRefmap)
 
+    // Keep the declared mod version in step with gradle.properties; it was
+    // hardcoded and drifted (a 1.4.1 jar still reported 1.4.0).
+    inputs.property "version", project.version
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
+    }
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
@@ -166,3 +173,28 @@ publishMods {
     }
 }
 
+
+
+// --- Ship the REOBFUSCATED jar -------------------------------------------
+// ForgeGradle writes the reobfuscated jar to build/reobfJar/output.jar, but the
+// jar task's own output - the one in build/libs that CI uploads and publishMods
+// publishes - is NOT reobfuscated. It contains official (Mojang) field names
+// where Forge needs SRG, so the released jar died on launch with
+// NoSuchFieldError: MENU as soon as the mod class was initialised.
+//
+// Development runs never caught this because dev runs on official names.
+//
+// This copies the reobfuscated jar over the packaged one so build/libs always
+// holds something Forge can actually load.
+tasks.register('reobfuscatePackagedJar', Copy) {
+    dependsOn tasks.named('reobfJar')
+    dependsOn tasks.named('jar')
+
+    from(layout.buildDirectory.file('reobfJar/output.jar'))
+    into(layout.buildDirectory.dir('libs'))
+    rename { "${base.archivesName.get()}-${project.version}.jar" }
+}
+
+tasks.named('assemble') {
+    dependsOn 'reobfuscatePackagedJar'
+}
