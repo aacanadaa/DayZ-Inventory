@@ -98,6 +98,13 @@ mixin {
 // `from` for them. Anything pulled in from common's build directory would only
 // add duplicate classes plus Loom's intermediary refmap, which Forge cannot use.
 jar {
+    // This is a DEVELOPMENT jar. ForgeGradle has not reobfuscated it yet, so it
+    // still carries official (Mojang) member names, and Forge resolves members
+    // against SRG at runtime - loading a class from it dies with
+    // NoSuchFieldError: MENU. Keep it out of build/libs, which exists only to
+    // hold the shippable artifact; see "Ship the REOBFUSCATED jar" below.
+    destinationDirectory = layout.buildDirectory.dir('devlibs')
+
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
         attributes([
@@ -145,8 +152,53 @@ base {
     archivesName = "dayz-inventory-forge-${project.minecraft_version}"
 }
 
+// --- Ship the REOBFUSCATED jar -------------------------------------------
+// Forge resolves members against SRG at runtime, but the `jar` task packages
+// against official (Mojang) names. The jar has to be reobfuscated before it can
+// load at all - an unreobfuscated one dies the moment a mod class initialises,
+// with NoSuchFieldError: MENU (Registries.MENU is f_256798_ on SRG).
+//
+// ForgeGradle replaces the `jar` task's output with the reobfuscated jar in
+// place, and also writes a copy to build/reobfJar/output.jar. This copies that
+// reobfuscated jar into build/libs under the release name. Reading ForgeGradle's
+// own declared output, rather than the path the `jar` task happens to sit at,
+// keeps the two concerns separate and makes this task the only writer of
+// build/libs - `jar` writes to build/devlibs instead, so the two no longer
+// contend for the same output file and Gradle's up-to-date checks stay coherent.
+//
+// The previous approach fixed up build/libs by overwriting the `jar` task's own
+// output, which made `./gradlew build` produce a good jar but left publishing
+// broken: `publishMods` read `jar.archiveFile`, which depends only on `jar`, and
+// `:forge:publishMods` never runs `assemble` - so the fix-up never ran and the
+// upload shipped the development jar. That is how the broken 1.4.2 reached
+// Modrinth and CurseForge while the GitHub release, built by `./gradlew build`,
+// was fine.
+//
+// Development runs never caught it either: `runClient` loads classes from the
+// build output directories, which are on official names.
+def releaseJarDir = layout.buildDirectory.dir('libs')
+def releaseJarName = "${base.archivesName.get()}-${project.version}.jar"
+
+def reobfuscatedJar = tasks.register('reobfuscatedJar', Copy) {
+    // reobfJar is created lazily by ForgeGradle, so it can only be named from
+    // inside a deferred block like this one.
+    dependsOn tasks.named('reobfJar')
+
+    from(layout.buildDirectory.file('reobfJar/output.jar'))
+    into(releaseJarDir)
+    rename { releaseJarName }
+}
+
+tasks.named('assemble') {
+    dependsOn reobfuscatedJar
+}
+
 publishMods {
-    file = jar.archiveFile
+    // Must be the reobfuscated jar, and must be read off the task that writes it:
+    // that is what makes publishMods depend on it. Resolving a plain path instead
+    // would let `:forge:publishMods` upload a stale file - or, as with the broken
+    // 1.4.2, the un-reobfuscated development jar.
+    file = reobfuscatedJar.map { releaseJarDir.get().file(releaseJarName) }
     changelog = rootProject.file("CHANGELOG.md").text
     type = STABLE
 
@@ -171,30 +223,4 @@ publishMods {
         client = true
         server = true
     }
-}
-
-
-
-// --- Ship the REOBFUSCATED jar -------------------------------------------
-// ForgeGradle writes the reobfuscated jar to build/reobfJar/output.jar, but the
-// jar task's own output - the one in build/libs that CI uploads and publishMods
-// publishes - is NOT reobfuscated. It contains official (Mojang) field names
-// where Forge needs SRG, so the released jar died on launch with
-// NoSuchFieldError: MENU as soon as the mod class was initialised.
-//
-// Development runs never caught this because dev runs on official names.
-//
-// This copies the reobfuscated jar over the packaged one so build/libs always
-// holds something Forge can actually load.
-tasks.register('reobfuscatePackagedJar', Copy) {
-    dependsOn tasks.named('reobfJar')
-    dependsOn tasks.named('jar')
-
-    from(layout.buildDirectory.file('reobfJar/output.jar'))
-    into(layout.buildDirectory.dir('libs'))
-    rename { "${base.archivesName.get()}-${project.version}.jar" }
-}
-
-tasks.named('assemble') {
-    dependsOn 'reobfuscatePackagedJar'
 }
