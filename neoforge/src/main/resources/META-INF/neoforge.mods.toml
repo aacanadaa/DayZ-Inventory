@@ -5,7 +5,10 @@ issueTrackerURL="https://github.com/aacanadaa/DayZ-Inventory/issues"
 
 [[mods]]
 modId="dayz_inventory"
-version="1.4.0"
+# Expanded from project.version by processResources. Keep it a placeholder:
+# a hardcoded value here drifted once and shipped a 1.4.1 jar that reported
+# itself as 1.4.0 in crash reports.
+version="${version}"
 displayName="DayZ Inventory"
 authors="suoim"
 description="A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft."
@@ -15,14 +18,14 @@ logoFile="assets/dayz_inventory/icon.png"
 [[dependencies.dayz_inventory]]
 modId="neoforge"
 type="required"
-versionRange="[21.11,)"
+versionRange="[26.2,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.dayz_inventory]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.11,1.21.12)"
+versionRange="[26.2,26.3)"
 ordering="NONE"
 side="BOTH"
 

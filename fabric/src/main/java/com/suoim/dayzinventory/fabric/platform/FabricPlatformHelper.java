@@ -22,7 +22,7 @@ import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.fabric.DayZInventoryFabric;
 import com.suoim.dayzinventory.platform.IPlatformHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -54,7 +54,7 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
     @Override
     public void openPlayerInventory(ServerPlayer player) {
-        player.openMenu(new ExtendedScreenHandlerFactory<DayZInventoryOpenData>() {
+        player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
             @Override
             public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
                 return DayZInventoryOpenData.none();
@@ -85,7 +85,7 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
         if (container != null) {
             final Container finalContainer = container;
-            player.openMenu(new ExtendedScreenHandlerFactory<DayZInventoryOpenData>() {
+            player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
                 @Override
                 public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
                     return DayZInventoryOpenData.forContainer(finalContainer.getContainerSize(), pos);

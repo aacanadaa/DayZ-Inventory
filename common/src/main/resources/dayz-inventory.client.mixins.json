@@ -2,9 +2,9 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "com.suoim.dayzinventory.client.mixin",
-	"compatibilityLevel": "JAVA_17",
+	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"MinecraftClientMixin",
+		"GuiMixin",
 		"AbstractContainerScreenMixin"
 	],
 	"injectors": {

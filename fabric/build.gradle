@@ -8,7 +8,7 @@
  */
 
 plugins {
-    id 'fabric-loom' version "${loom_version}"
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'me.modmuss50.mod-publish-plugin'
 }
 
@@ -20,10 +20,12 @@ def releaseName = "DayZ Inventory ${project.version} for ${project.minecraft_ver
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
+    // No `mappings` line: 26.x is unobfuscated. See common/build.gradle.
 
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    // 26.2 dropped the `mod*` configurations along with the remap step - plain
+    // `implementation` is the idiom now.
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     implementation project(":common")
 }
@@ -75,7 +77,8 @@ tasks.named('jar', Jar) {
 }
 
 publishMods {
-    file = remapJar.archiveFile
+    // 26.2 has no remap step, so the plain `jar` is the shippable artifact.
+    file = jar.archiveFile
     changelog = rootProject.file("CHANGELOG.md").text
     type = STABLE
 

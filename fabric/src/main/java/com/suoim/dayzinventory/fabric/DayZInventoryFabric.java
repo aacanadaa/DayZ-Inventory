@@ -26,7 +26,7 @@ import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuType;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -48,17 +48,25 @@ public class DayZInventoryFabric implements ModInitializer {
         // Initialize platform helper first
         Platform.HELPER = new FabricPlatformHelper();
 
-        // Register screen handler type. 1.21's ExtendedScreenHandlerType takes the
-        // codec for its opening data as a second argument.
+        // Register the menu type. The extended variant takes the codec for its
+        // opening data as a second argument.
+        //
+        // This was ExtendedScreenHandlerType in fabric-screen-handler-api-v1.
+        // Fabric API for 26.2 renamed that module to fabric-menu-api-v1 and the
+        // class to ExtendedMenuType, following Mojang's screen-handler -> menu
+        // rename (AbstractContainerMenu, ContainerInput, MenuProvider, ...).
         DAYZ_INVENTORY_SCREEN_HANDLER = Registry.register(
                 BuiltInRegistries.MENU,
                 Identifier.fromNamespaceAndPath(MOD_ID, "dayz_inventory"),
-                new ExtendedScreenHandlerType<>(DayZInventoryScreenHandler::new, DayZInventoryOpenData.CODEC)
+                new ExtendedMenuType<>(DayZInventoryScreenHandler::new, DayZInventoryOpenData.CODEC)
         );
 
         // 1.20.5+ replaced per-channel receivers with a single typed payload.
         // Registering on the common entrypoint covers both sides.
-        PayloadTypeRegistry.playC2S().register(DayZInventoryPayload.TYPE, DayZInventoryPayload.CODEC);
+        // PayloadTypeRegistry#playC2S was renamed to serverboundPlay in 26.2;
+        // serverboundPlay() returns the RegistryFriendlyByteBuf-typed registry,
+        // which is what this payload's CODEC is declared against.
+        PayloadTypeRegistry.serverboundPlay().register(DayZInventoryPayload.TYPE, DayZInventoryPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(DayZInventoryPayload.TYPE, (payload, context) -> {
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.wrappedBuffer(payload.data()));

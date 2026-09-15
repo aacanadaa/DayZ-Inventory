@@ -8,27 +8,22 @@
  */
 
 plugins {
-    id 'fabric-loom' version "${loom_version}"
+    // 26.2 moved the plugin id under the net.fabricmc namespace.
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modCompileOnly "net.fabricmc:fabric-loader:${project.loader_version}"
-    modCompileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    // No `mappings` line: Minecraft 26.x ships unobfuscated, so there is nothing
+    // to map and nothing to remap. Asking for `loom.officialMojangMappings()`
+    // fails the build with "Failed to find official mojang mappings for 26.2",
+    // because the version manifest no longer publishes a client_mappings entry.
+    compileOnly "net.fabricmc:fabric-loader:${project.loader_version}"
+    compileOnly "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
-loom {
-    mixin {
-        // The mixin configs in common/src/main/resources declare
-        // "refmap": "dayz-inventory.refmap.json". Loom defaults to naming the
-        // generated refmap after the project directory ("common-refmap.json"),
-        // which does not match, so the Fabric mixins would fail to remap at
-        // runtime. Forcing the name here keeps Fabric in sync with the declared
-        // refmap (Forge's MixinGradle emits the same name via forge/build.gradle).
-        defaultRefmapName = "dayz-inventory.refmap.json"
-    }
-}
+// No loom.mixin block: with no mappings there is no refmap to name, and Loom
+// no longer enables the mixin annotation processor by default.
 
 configurations {
     runtimeClasspath {
