@@ -17,7 +17,7 @@
 package com.suoim.dayzinventory.client.mixin;
 
 import com.suoim.dayzinventory.client.DayZInventoryScreen;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import org.objectweb.asm.Opcodes;
@@ -29,9 +29,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Makes the virtual Hands panel count as hovering the Hands slot.
  * <p>
- * The hook point has moved twice now. 1.21 removed
+ * The hook point has moved three times now. 1.21 removed
  * isHovering(Slot, double, double) and assigned hoveredSlot from render; 1.21.11
- * split the render pipeline so that assignment now happens in renderContents.
+ * split the render pipeline so that assignment moved to renderContents; 26.2
+ * renamed that method to extractContents as part of the render-state rewrite,
+ * which is the current target. The assignment itself still happens there:
+ * extractContents opens with {@code this.hoveredSlot = this.getHoveredSlot(mouseX, mouseY)}.
  * <p>
  * 1. {@code isHovering(Slot, double, double)} is gone - {@code render} now walks
  * the slot list and assigns {@code hoveredSlot} directly, so that assignment is
@@ -47,7 +50,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
 
     @Inject(
-        method = "renderContents",
+        method = "extractContents",
         at = @At(
             value = "FIELD",
             target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;hoveredSlot:Lnet/minecraft/world/inventory/Slot;",
@@ -55,7 +58,7 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
             shift = At.Shift.AFTER
         )
     )
-    private void dayz$applyVirtualHandsHover(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+    private void dayz$applyVirtualHandsHover(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         if ((Object) this instanceof DayZInventoryScreen dayZScreen) {
             dayZScreen.applyVirtualHandsHover(mouseX, mouseY);
         }

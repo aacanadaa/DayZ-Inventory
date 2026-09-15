@@ -19,6 +19,7 @@ package com.suoim.dayzinventory.client.mixin;
 import com.suoim.dayzinventory.DayZInventoryPackets;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.player.LocalPlayer;
@@ -28,13 +29,26 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(Minecraft.class)
-public class MinecraftClientMixin {
-    /**
-     * Redirects the vanilla inventory screen to the DayZ screen for survival
-     * players by cancelling the screen open and asking the server to open its
-     * own menu instead.
-     */
+/**
+ * Redirects the vanilla inventory screen to the DayZ screen for survival
+ * players by cancelling the screen open and asking the server to open its own
+ * menu instead.
+ * <p>
+ * This was {@code MinecraftClientMixin} on {@code Minecraft#setScreen} through
+ * 1.21.11. 26.2 deleted {@code Minecraft#setScreen}, so the hook moved to
+ * {@link Gui#setScreen}, which is where every screen switch now funnels:
+ * {@code Minecraft#handleKeybinds} opens the inventory with
+ * {@code this.gui.setScreen(new InventoryScreen(...))} directly, and
+ * {@code Minecraft#setScreenAndShow} delegates to the same method.
+ * <p>
+ * Targeting {@code Gui#setScreen} rather than {@code Minecraft#setScreenAndShow}
+ * is deliberate. The E-key path never calls {@code setScreenAndShow}, so a mixin
+ * on that method would simply never be reached - and with this config's
+ * {@code required: true} a mixin that resolves but is never invoked reports
+ * nothing at all.
+ */
+@Mixin(Gui.class)
+public class GuiMixin {
     @Inject(method = "setScreen", at = @At("HEAD"), cancellable = true)
     private void onSetScreen(Screen screen, CallbackInfo ci) {
         if (!(screen instanceof InventoryScreen)) {

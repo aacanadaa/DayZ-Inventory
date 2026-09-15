@@ -8,7 +8,7 @@
  */
 
 plugins {
-    id 'net.neoforged.moddev' version '2.0.146'
+    id 'net.neoforged.moddev' version '2.0.147'
     id 'me.modmuss50.mod-publish-plugin'
 }
 
@@ -64,6 +64,16 @@ dependencies {
 
 base {
     archivesName = "dayz-inventory-neoforge-${project.minecraft_version}"
+}
+
+// neoforge.mods.toml carries an expanded "${version}". Without this the file
+// ships the literal placeholder and the jar cannot load, and a hardcoded value
+// drifts silently - a 1.4.1 jar once reported itself as 1.4.0 in crash reports.
+tasks.named('processResources', ProcessResources) {
+    inputs.property "version", project.version
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand "version": project.version
+    }
 }
 
 publishMods {

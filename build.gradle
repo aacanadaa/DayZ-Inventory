@@ -48,14 +48,15 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         it.options.encoding = 'UTF-8'
-        // Minecraft 1.20.5+ requires Java 21. The 1.20.1 branch stays on 17.
-        it.options.release = 21
+        // Minecraft 26.2 requires Java 25. The 1.20.1 branch stays on 17, and
+        // the 1.21.x branches on 21.
+        it.options.release = 25
     }
 
     java {
         withSourcesJar()
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_25
+        targetCompatibility = JavaVersion.VERSION_25
     }
 
     jar {
