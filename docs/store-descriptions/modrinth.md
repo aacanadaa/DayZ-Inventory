@@ -2,7 +2,7 @@
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
-**Really recommended with [DayZ Hotbar](https://www.curseforge.com/minecraft/mc-mods/dayz-hotbar)** — seamless integration. The two are built as a pair, so the HUD and the inventory screen share one look.
+**Really recommended with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — seamless integration. The two are built as a pair, so the HUD and the inventory screen share one look.
 
 **Now available for Minecraft 26.2, 1.21.11, 1.21.1 and 1.20.1.**
 
@@ -59,7 +59,7 @@ Every optional integration is probed at runtime. The mod never requires them and
    - **1.21.11** with **Fabric Loader** or **NeoForge**
    - **1.21.1** with **Fabric Loader** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
-2. Download the file matching your Minecraft version and loader from the **Files** tab.
+2. Download the file matching your Minecraft version and loader from the **Versions** tab.
 3. Drop it into your `mods/` folder.
 
 **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.x or 26.x, and vice versa. Each download is labelled with its version and loader.
@@ -90,7 +90,8 @@ Trinkets is Fabric-only. NeoForge needs no additional libraries — it has its o
 - **Source Code** — https://github.com/aacanadaa/DayZ-Inventory
 - **Report a Bug or Request a Feature** — https://github.com/aacanadaa/DayZ-Inventory/issues
 - **Changelog** — https://github.com/aacanadaa/DayZ-Inventory/blob/main/CHANGELOG.md
-- **Modrinth** — https://modrinth.com/mod/dayz-inventory
+- **CurseForge** — https://www.curseforge.com/minecraft/mc-mods/dayz-inventory
+- **DayZ Hotbar** — https://modrinth.com/mod/dayz-hotbar
 
 ---
 
