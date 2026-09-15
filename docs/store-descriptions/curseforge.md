@@ -2,10 +2,11 @@
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
-**Now available for Minecraft 1.21.11, 1.21.1 and 1.20.1.**
+**Now available for Minecraft 26.2, 1.21.11, 1.21.1 and 1.20.1.**
 
 | Minecraft | Loaders |
 | :--- | :--- |
+| **26.2** | Fabric · NeoForge (Java 25) |
 | **1.21.11** | Fabric · NeoForge (Java 21) |
 | **1.21.1** | Fabric · NeoForge (Java 21) |
 | **1.20.1** | Fabric · Forge (Java 17) |
@@ -52,17 +53,40 @@ Every optional integration is probed at runtime. The mod never requires them and
 ## Installation
 
 1. Install the Minecraft version you want:
+   - **26.2** with **Fabric Loader** or **NeoForge**
    - **1.21.11** with **Fabric Loader** or **NeoForge**
    - **1.21.1** with **Fabric Loader** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from the **Files** tab.
 3. Drop it into your `mods/` folder.
 
-**Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.1, and vice versa. Each download is labelled with its version and loader.
+**Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.x or 26.x, and vice versa. Each download is labelled with its version and loader.
 
 ---
 
 ## Dependencies
+
+### Fabric (26.2)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 26.2 |
+| **Mandatory** | Fabric Loader | 0.19.3 or newer |
+| **Mandatory** | Fabric API | 0.160.0+26.2 or newer |
+| **Mandatory** | Java | 25 |
+| *Optional* | JEI / REI / EMI | Any 26.2 build |
+| *Optional* | Trinkets | Any 26.2 build |
+| *Optional* | Curios API | Any 26.2 build |
+
+### NeoForge (26.2)
+
+| Type | Dependency | Required Version |
+| :--- | :--- | :--- |
+| **Mandatory** | Minecraft | 26.2 |
+| **Mandatory** | NeoForge | 26.2 or newer |
+| **Mandatory** | Java | 25 |
+| *Optional* | JEI | Any 26.2 build |
+| *Optional* | Curios API | Any 26.2 build |
 
 ### Fabric (1.21.11)
 

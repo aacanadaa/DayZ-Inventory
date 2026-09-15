@@ -1,3 +1,73 @@
+# DayZ Inventory 1.5.0 — now on Minecraft 26.2
+
+**DayZ Inventory is now available for Minecraft 26.2 on Fabric and NeoForge.**
+
+The DayZ UI is unchanged — the Vicinity grid, Proximity Scanner, 2x2 crafting, the 2.0x Hands slot
+and drag-to-equip all behave exactly as on 1.21.11, 1.21.1 and 1.20.1. This release is about reaching
+the current Minecraft version, and it is the port the 1.4.0 notes said could not be a port.
+
+## The rewrite the last release deferred
+
+The 1.4.0 entry explained why the mod stopped at 1.21.11: Minecraft 26.1 was the first **unobfuscated**
+release, and 26.x replaced the GUI rendering model, which made it "a rewrite of this mod's entire
+custom screen rather than a port". That rewrite is this release.
+
+Two changes account for almost all of it:
+
+- **Minecraft is no longer obfuscated.** Mojang stopped publishing mappings at 26.1, so there is
+  nothing to remap: no mappings, no refmaps, no remap step, no reobfuscation. The build got simpler
+  rather than harder. Loom's plugin id moved to `net.fabricmc.fabric-loom`, the `mod*` dependency
+  configurations are gone (plain `implementation` now), and `remapJar` no longer exists.
+- **The GUI draws through a render-state pipeline.** `GuiGraphics` is gone, replaced by
+  `GuiGraphicsExtractor`, and every `render*` method became `extract*`. Nothing draws immediately any
+  more — each call records state that the game replays later.
+
+One consequence is worth spelling out, because it is not obvious: a mixin whose target has been
+renamed does not degrade, it **crashes**. This mod's client mixins are declared `required: true`, so
+the redirect that swaps the vanilla inventory for the DayZ screen — which hooked
+`Minecraft#setScreen` — would have failed at launch rather than quietly doing nothing.
+`Minecraft#setScreen` was deleted in 26.2, so that hook moved to `Gui#setScreen`, which is where both
+the E-key path and `setScreenAndShow` actually go.
+
+## What changed
+
+Internal only, but it explains the scale:
+
+- **`renderBg` was removed outright.** `AbstractContainerScreen` no longer has that extension point,
+  so the DayZ panel drawing became a private helper called from the screen's own render state.
+- **`drawString` became `text`**, and **`ClickType` became `ContainerInput`**.
+- **`Recipe#assemble` dropped its `RegistryAccess` argument**, which affected the 2x2 crafting result.
+- **`imageWidth`/`imageHeight` are now `final`**, so the screen size goes through the constructor
+  instead of being assigned in the subclass.
+- **Fabric API restructured.** `fabric-screen-handler-api-v1` is now `fabric-menu-api-v1`
+  (`ExtendedScreenHandlerFactory`/`ExtendedScreenHandlerType` became
+  `ExtendedMenuProvider`/`ExtendedMenuType`), following Mojang's screen-handler → menu rename, and
+  `PayloadTypeRegistry#playC2S` became `serverboundPlay`.
+- **Fabric development runs now apply mixins.** The long-standing caveat that `:fabric:runClient`
+  silently skips this mod's mixins was a consequence of the mapping/refmap mismatch, which no longer
+  exists. On this branch the dev client shows the real screen.
+
+## Java 25
+
+**Minecraft 26.2 requires Java 25** (Mojang ship it as `java-runtime-epsilon`). The 1.21.x branches
+stay on Java 21 and 1.20.1 on Java 17.
+
+## NeoForge
+
+The NeoForge module targets **26.2.x**, with dependency ranges updated to `neoforge [26.2,)` and
+`minecraft [26.2,26.3)`. As before, NeoForge needs no refmap — it has run on official Mojang names
+since 1.20.2.
+
+Forge is not built on this line. The ecosystem moved to NeoForge past 1.20.x; the 1.20.1 branch still
+ships Forge.
+
+## Still on an older version?
+
+Nothing changes for you. 1.20.1 (Fabric and Forge), 1.21.1 and 1.21.11 (Fabric and NeoForge) keep
+being built and will keep receiving fixes — pick the download matching your Minecraft version.
+
+---
+
 # DayZ Inventory 1.4.0 — now on Minecraft 1.21.11
 
 **DayZ Inventory is now available for Minecraft 1.21.11 on Fabric and NeoForge.**
