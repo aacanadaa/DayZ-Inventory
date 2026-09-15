@@ -64,69 +64,18 @@ Every optional integration is probed at runtime. The mod never requires them and
 
 ## Dependencies
 
-### Fabric (1.21.11)
+Pick the row for your Minecraft version and loader. Optional entries are probed at runtime — the mod never requires them and will not crash if they are absent.
 
-| Type | Dependency | Required Version |
-| :--- | :--- | :--- |
-| **Mandatory** | Minecraft | 1.21.11 |
-| **Mandatory** | Fabric Loader | 0.15.0 or newer |
-| **Mandatory** | Fabric API | Any 1.21.11 build |
-| **Mandatory** | Java | 21 |
-| *Optional* | JEI / REI / EMI | Any 1.21.11 build |
-| *Optional* | Trinkets | Any 1.21.11 build |
-| *Optional* | Curios API | Any 1.21.11 build |
+| Minecraft | Loader | Java | Required | Optional |
+| :--- | :--- | :--- | :--- | :--- |
+| **1.21.11** | Fabric | 21 | Fabric Loader 0.15.0+, Fabric API | JEI / REI / EMI, Trinkets, Curios |
+| **1.21.11** | NeoForge | 21 | NeoForge 21.11+ | JEI, Curios |
+| **1.21.1** | Fabric | 21 | Fabric Loader 0.15.0+, Fabric API | JEI / REI / EMI, Trinkets, Curios |
+| **1.21.1** | NeoForge | 21 | NeoForge 21.1+ | JEI, Curios |
+| **1.20.1** | Fabric | 17 | Fabric Loader 0.15.0+, Fabric API | JEI / REI / EMI, Trinkets, Curios |
+| **1.20.1** | Forge | 17 | Forge 47.0.0+ | JEI, Curios 5.0.0+ |
 
-### NeoForge (1.21.11)
-
-| Type | Dependency | Required Version |
-| :--- | :--- | :--- |
-| **Mandatory** | Minecraft | 1.21.11 |
-| **Mandatory** | NeoForge | 21.11 or newer |
-| **Mandatory** | Java | 21 |
-| *Optional* | JEI | Any 1.21.11 build |
-| *Optional* | Curios API | Any 1.21.11 build |
-
-### Fabric (1.21.1)
-
-| Type | Dependency | Required Version |
-| :--- | :--- | :--- |
-| **Mandatory** | Minecraft | 1.21.1 |
-| **Mandatory** | Fabric Loader | 0.15.0 or newer |
-| **Mandatory** | Fabric API | Any 1.21.1 build |
-| **Mandatory** | Java | 21 |
-| *Optional* | JEI / REI / EMI | Any 1.21.1 build |
-| *Optional* | Trinkets | Any 1.21.1 build |
-| *Optional* | Curios API | Any 1.21.1 build |
-
-### NeoForge (1.21.1)
-
-| Type | Dependency | Required Version |
-| :--- | :--- | :--- |
-| **Mandatory** | Minecraft | 1.21.1 |
-| **Mandatory** | NeoForge | 21.1 or newer |
-| **Mandatory** | Java | 21 |
-| *Optional* | JEI | Any 1.21.1 build |
-| *Optional* | Curios API | Any 1.21.1 build |
-
-### Fabric (1.20.1)
-
-| Type | Dependency | Required Version |
-| :--- | :--- | :--- |
-| **Mandatory** | Minecraft | 1.20.1 |
-| **Mandatory** | Fabric Loader | 0.15.0 or newer |
-| **Mandatory** | Fabric API | Any 1.20.1 build |
-| *Optional* | JEI / REI / EMI | Any 1.20.1 build |
-| *Optional* | Trinkets | Any 1.20.1 build |
-| *Optional* | Curios API | Any 1.20.1 build |
-
-### Forge (1.20.1)
-
-| Type | Dependency | Required Version |
-| :--- | :--- | :--- |
-| **Mandatory** | Minecraft | 1.20.1 |
-| **Mandatory** | Forge | 47.0.0 or newer |
-| *Optional* | JEI | Any 1.20.1 build |
-| *Optional* | Curios API | 5.0.0 or newer |
+Trinkets is Fabric-only. NeoForge needs no additional libraries — it has its own loader and networking built in.
 
 ---
 
