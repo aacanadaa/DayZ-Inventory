@@ -11,6 +11,8 @@
 
 A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft.
 
+**Really recommended with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — seamless integration. The two are built as a pair, so the HUD and the inventory screen share one look.
+
 | Minecraft | Loaders |
 | :--- | :--- |
 | **1.21.11** | Fabric · NeoForge |
