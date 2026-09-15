@@ -15,6 +15,7 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 
 | Minecraft | Loaders |
 | :--- | :--- |
+| **26.2** | Fabric · NeoForge |
 | **1.21.11** | Fabric · NeoForge |
 | **1.21.1** | Fabric · NeoForge |
 | **1.20.1** | Fabric · Forge |
@@ -53,13 +54,14 @@ All optional integrations are probed at runtime. The mod never requires them and
 ## Installation
 
 1. Install the Minecraft version you want:
+   - **26.2** with **Fabric Loader** or **NeoForge**
    - **1.21.11** with **Fabric Loader** or **NeoForge**
    - **1.21.1** with **Fabric Loader** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
 3. Drop it into your `mods/` folder.
 
-> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.x, and vice versa. Each download is labelled with its version and loader.
+> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.x or 26.x, and vice versa. Each download is labelled with its version and loader.
 
 ---
 
@@ -70,6 +72,8 @@ runtime — the mod never requires them and will not crash if they are absent.
 
 | Minecraft | Loader | Java | Required | Optional |
 | :--- | :--- | :--- | :--- | :--- |
+| **26.2** | Fabric | 25 | Fabric Loader `>=0.19.3`, Fabric API `0.160.0+26.2` | JEI / REI / EMI, Trinkets, Curios |
+| **26.2** | NeoForge | 25 | NeoForge `>=26.2` | JEI, Curios |
 | **1.21.11** | Fabric | 21 | Fabric Loader `>=0.15.0`, Fabric API | JEI / REI / EMI, Trinkets, Curios |
 | **1.21.11** | NeoForge | 21 | NeoForge `>=21.11` | JEI, Curios |
 | **1.21.1** | Fabric | 21 | Fabric Loader `>=0.15.0`, Fabric API | JEI / REI / EMI, Trinkets, Curios |
@@ -88,6 +92,7 @@ Each Minecraft version lives on its own branch:
 
 | Branch | Minecraft | Loaders | JDK |
 | :--- | :--- | :--- | :--- |
+| `26.2` | 26.2 | Fabric, NeoForge | **25** |
 | `1.21.11` | 1.21.11 | Fabric, NeoForge | **21** |
 | `1.21.1` | 1.21.1 | Fabric, NeoForge | **21** |
 | `main` | 1.20.1 | Fabric, Forge | **17** |
@@ -95,7 +100,7 @@ Each Minecraft version lives on its own branch:
 ```bash
 git clone https://github.com/aacanadaa/DayZ-Inventory.git
 cd DayZ-Inventory
-git checkout 1.21.11   # or 1.21.1, or stay on main for 1.20.1
+git checkout 26.2   # or 1.21.11, 1.21.1, or stay on main for 1.20.1
 ./gradlew build
 ```
 
@@ -103,6 +108,8 @@ Output JARs:
 
 | Branch | Loader | Path |
 | :--- | :--- | :--- |
+| 26.2 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<mc>-<version>.jar` |
+| 26.2 | NeoForge | `neoforge/build/libs/dayz-inventory-neoforge-<mc>-<version>.jar` |
 | 1.21.11 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<mc>-<version>.jar` |
 | 1.21.11 | NeoForge | `neoforge/build/libs/dayz-inventory-neoforge-<mc>-<version>.jar` |
 | 1.21.1 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
@@ -110,10 +117,13 @@ Output JARs:
 | 1.20.1 | Fabric | `fabric/build/libs/dayz-inventory-fabric-<version>.jar` |
 | 1.20.1 | Forge | `forge/build/libs/dayz-inventory-forge-<version>.jar` |
 
-> **Developing on the GUI?** Fabric development runs (`:fabric:runClient`) start the game but do
-> not apply mixins, because the project uses Mojang official mappings and Fabric's dev-time mixin
-> remapper expects intermediary. The released Fabric jar is unaffected. Build the jar and test it in
-> a launcher instead. See `CLAUDE.md` for the full explanation.
+> **Developing on the GUI?** On `1.20.1`, `1.21.1` and `1.21.11`, Fabric development runs
+> (`:fabric:runClient`) start the game but do **not** apply mixins, because those branches use Mojang
+> official mappings and Fabric's dev-time mixin remapper expects intermediary. The released Fabric jar
+> is unaffected — build the jar and test it in a launcher instead. See `CLAUDE.md`.
+>
+> This does **not** apply on `26.2`. Minecraft has shipped unobfuscated since 26.1, so there are no
+> mappings and no refmap, and `:fabric:runClient` applies mixins normally.
 
 ---
 

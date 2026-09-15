@@ -4,10 +4,11 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 
 **Really recommended with [DayZ Hotbar](https://www.curseforge.com/minecraft/mc-mods/dayz-hotbar)** — seamless integration. The two are built as a pair, so the HUD and the inventory screen share one look.
 
-**Now available for Minecraft 1.21.11, 1.21.1 and 1.20.1.**
+**Now available for Minecraft 26.2, 1.21.11, 1.21.1 and 1.20.1.**
 
 | Minecraft | Loaders |
 | :--- | :--- |
+| **26.2** | Fabric · NeoForge (Java 25) |
 | **1.21.11** | Fabric · NeoForge (Java 21) |
 | **1.21.1** | Fabric · NeoForge (Java 21) |
 | **1.20.1** | Fabric · Forge (Java 17) |
@@ -54,13 +55,14 @@ Every optional integration is probed at runtime. The mod never requires them and
 ## Installation
 
 1. Install the Minecraft version you want:
+   - **26.2** with **Fabric Loader** or **NeoForge**
    - **1.21.11** with **Fabric Loader** or **NeoForge**
    - **1.21.1** with **Fabric Loader** or **NeoForge**
    - **1.20.1** with **Fabric Loader** or **Forge**
 2. Download the file matching your Minecraft version and loader from the **Files** tab.
 3. Drop it into your `mods/` folder.
 
-**Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.1, and vice versa. Each download is labelled with its version and loader.
+**Pick carefully.** A Fabric build will not load on Forge or NeoForge, a 1.20.1 build will not load on 1.21.x or 26.x, and vice versa. Each download is labelled with its version and loader.
 
 ---
 
@@ -70,6 +72,8 @@ Pick the row for your Minecraft version and loader. Optional entries are probed 
 
 | Minecraft | Loader | Java | Required | Optional |
 | :--- | :--- | :--- | :--- | :--- |
+| **26.2** | Fabric | 25 | Fabric Loader 0.19.3+, Fabric API 0.160.0+26.2 | JEI / REI / EMI, Trinkets, Curios |
+| **26.2** | NeoForge | 25 | NeoForge 26.2+ | JEI, Curios |
 | **1.21.11** | Fabric | 21 | Fabric Loader 0.15.0+, Fabric API | JEI / REI / EMI, Trinkets, Curios |
 | **1.21.11** | NeoForge | 21 | NeoForge 21.11+ | JEI, Curios |
 | **1.21.1** | Fabric | 21 | Fabric Loader 0.15.0+, Fabric API | JEI / REI / EMI, Trinkets, Curios |
