@@ -184,10 +184,18 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 
         if (optional.isPresent()) {
             RecipeHolder<CraftingRecipe> recipeHolder = optional.get();
+//? if >=1.21.11 {
             if (this.resultSlots.setRecipeUsed(serverPlayer, recipeHolder)) {
+//?} else {
+            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)) {
+//?}
+//? if >=26.2 {
                 // 26.2 dropped the RegistryAccess parameter from Recipe#assemble -
                 // it now takes only the CraftingInput.
                 result = recipeHolder.value().assemble(craftingInput);
+//?} else {
+                result = recipeHolder.value().assemble(craftingInput, serverPlayer.level().registryAccess());
+//?}
             }
         }
 

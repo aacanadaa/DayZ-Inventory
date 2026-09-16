@@ -1,6 +1,6 @@
 {
     "pack": {
         "description": "DayZ Inventory Resources",
-        "pack_format": 34
+        "pack_format": ${pack_format}
     }
 }

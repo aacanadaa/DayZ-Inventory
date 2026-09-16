@@ -1,3 +1,73 @@
+# DayZ Inventory 1.6.0 — one source tree, three Minecraft versions
+
+**The mod is unchanged. How it is built is not.**
+
+Until now every Minecraft version lived on its own Git branch: `main` for 1.20.1, and `1.21.1`,
+`1.21.11` and `26.2` alongside it. A bug fix had to be merged into each of them, and each merge had
+to be built and tested on its own. This release replaces that with a single branch that builds
+1.21.1, 1.21.11 and 26.2 for **both Fabric and NeoForge** from one source tree, and publishes all of
+them automatically.
+
+Nothing about the inventory screen changed. The Vicinity grid, Proximity Scanner, 2x2 crafting, the
+2.0x Hands slot, drag-to-equip and every optional integration behave exactly as before.
+
+## What this means for you
+
+- **Download the same way.** The files on Modrinth and CurseForge are still one per Minecraft
+  version and loader; the names now look like `dayz-inventory-fabric-26.2-1.6.0+mc26.2.jar`, with the
+  Minecraft version spelled out.
+- **1.20.1 is not gone.** The 1.20.1 files (Fabric and Forge) remain published and still work. They
+  come from the older per-version build and are not part of the unified tree yet — see below.
+- **Forge is not in the unified tree either.** Forge stopped at 1.20.x, so the only Forge targets
+  ever were 1.20.1 and 1.21.1.
+
+## How it is built now
+
+[Stonecutter](https://stonecutter.kikugie.dev/) preprocesses one shared source tree for several
+Minecraft versions, and the loader modules stay exactly as they were:
+
+```
+common/     loader-agnostic code, shared by every version
+fabric/     Fabric entrypoints
+neoforge/   NeoForge entrypoints
+forge/      legacy Forge module (present, not built)
+```
+
+Version differences are marked inline with `//? if` comments, so a method whose signature changed
+between 1.21.1 and 26.2 reads as one file with the two variants next to each other instead of as two
+branches that drift apart. Renames that touch dozens of lines — `ResourceLocation` to `Identifier`,
+`isClientSide` to `isClientSide()`, `GuiGraphics` to `GuiGraphicsExtractor` — are declared once in the
+build and applied automatically.
+
+| Minecraft | Fabric | NeoForge | Java |
+| :--- | :---: | :---: | :---: |
+| 26.2 | ✅ | ✅ | 25 |
+| 1.21.11 | ✅ | ✅ | 21 |
+| 1.21.1 | ✅ | ✅ | 21 |
+
+```bash
+./gradlew chiseledBuild          # every version × every loader
+./gradlew :fabric:26.2:build     # one target
+```
+
+## Automated publishing
+
+Every jar is now published with its own Minecraft version and loader tags, taken from
+`versions/<mc>/gradle.properties` rather than typed per release, so an artifact can no longer go up
+under the wrong game version. `./gradlew publishAll` releases the whole matrix; on a `v*` tag CI
+builds everything, attaches the jars to the GitHub Release and publishes to both platforms.
+
+Note that CurseForge routes every upload through human review: the API accepts the file and never
+returns a link, so a green CurseForge run means *submitted*, not *live*.
+
+## Still to come
+
+1.20.1 and Forge are scaffolded but not ported. 1.20.1 predates the 1.20.5 networking rewrite, so it
+has no custom payload records at all, and `forge/` still holds 1.20.1-era `SimpleChannel` code. The
+breakpoints are written down in `docs/BUILDING.en.md` so the port is a matter of following the list.
+
+---
+
 # DayZ Inventory 1.5.0 — now on Minecraft 26.2
 
 **DayZ Inventory is now available for Minecraft 26.2 on Fabric and NeoForge.**

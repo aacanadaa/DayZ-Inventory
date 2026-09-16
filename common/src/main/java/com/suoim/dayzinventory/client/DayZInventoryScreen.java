@@ -22,7 +22,9 @@ import com.suoim.dayzinventory.mixin.SlotAccessor;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//? if >=1.21.11 {
 import net.minecraft.client.input.MouseButtonEvent;
+//?}
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -74,7 +76,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     public DayZInventoryScreen(DayZInventoryScreenHandler handler, Inventory inventory, Component title) {
         // 26.2 made imageWidth/imageHeight final, so the size has to be passed
         // through the five-argument constructor rather than assigned here.
+        // Below that the fields are still assignable in the constructor body.
+//? if >=26.2 {
         super(handler, inventory, title, 540, 220);
+//?} else {
+        super(handler, inventory, title);
+        this.imageWidth = 540;
+        this.imageHeight = 220;
+//?}
     }
 
     private float getGuiScale() {
@@ -349,10 +358,17 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
+// 1.21.11 replaced the raw (mouseX, mouseY, button) input parameters with
+// event objects; below that the coordinates still arrive as arguments.
+//? if >=1.21.11 {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mouseX = event.x();
         double mouseY = event.y();
         int button = event.button();
+//?} else {
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        boolean doubleClick = false;
+//?}
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
@@ -438,7 +454,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                     if (index < vicinityItems.size()) {
                         // Ground Item Clicked
                         ItemEntity itemEntity = vicinityItems.get(index);
+//? if >=1.21.11 {
                         if ((event.modifiers() & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) {
+//?} else {
+                        if (Screen.hasShiftDown()) {
+//?}
                             FriendlyByteBuf buf = new FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
                             buf.writeInt(itemEntity.getId());
                             Platform.HELPER.sendPacketToServer(DayZInventoryPackets.QUICK_PICKUP_ITEM_PACKET, buf);
@@ -492,13 +512,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 }
             }
         }
+//? if >=1.21.11 {
         return super.mouseClicked(new MouseButtonEvent(scaledX, scaledY, event.buttonInfo()), doubleClick);
+//?} else {
+        return super.mouseClicked(scaledX, scaledY, button);
+//?}
     }
 
     @Override
+//? if >=1.21.11 {
     public boolean mouseReleased(MouseButtonEvent event) {
         double mouseX = event.x();
         double mouseY = event.y();
+//?} else {
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+//?}
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
@@ -587,15 +615,26 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.draggedSlot = null;
         }
 
+//? if >=1.21.11 {
         return super.mouseReleased(new MouseButtonEvent(scaledX, scaledY, event.buttonInfo()));
+//?} else {
+        return super.mouseReleased(scaledX, scaledY, button);
+//?}
     }
 
     @Override
+//? if >=1.21.11 {
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         float scale = getGuiScale();
         return super.mouseDragged(new MouseButtonEvent(event.x() / scale, event.y() / scale, event.buttonInfo()),
                                    dragX / scale, dragY / scale);
     }
+//?} else {
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        float scale = getGuiScale();
+        return super.mouseDragged(mouseX / scale, mouseY / scale, button, dragX / scale, dragY / scale);
+    }
+//?}
 
     private Slot getSlotAt(double mouseX, double mouseY) {
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
@@ -630,7 +669,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
+//? if >=1.21.11 {
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top) {
+//?} else {
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+//?}
         if (getSlotAt(mouseX, mouseY) != null) {
             return false;
         }
@@ -656,7 +699,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
      */
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // Intentionally empty - see the javadoc above.
+//? if >=1.21.11 {
+        return;
+//?} else {
+        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+//?}
     }
 
     @Override
@@ -690,7 +737,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         this.updateSlotPositions();
         // The DayZ panels are laid out in the scaled coordinate space, so they
         // have to be drawn here rather than from extractBackground.
+//? if >=1.21.11 {
         this.drawDayZPanels(guiGraphics, partialTick, scaledMouseX, scaledMouseY);
+//?}
         super.extractRenderState(guiGraphics, scaledMouseX, scaledMouseY, partialTick);
         this.extractTooltip(guiGraphics, scaledMouseX, scaledMouseY);
 
@@ -748,7 +797,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
      * override does not exist. It is now a plain private helper called from
      * {@link #extractRenderState}, which is what it always effectively was.
      */
+//? if >=26.2 {
     private void drawDayZPanels(GuiGraphicsExtractor guiGraphics, float partialTick, int mouseX, int mouseY) {
+//?} else {
+    @Override
+    protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+//?}
         int leftColumnX = getColumnX(0);
         int middleColumnX = getColumnX(1);
         int rightColumnX = getColumnX(2);

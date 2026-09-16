@@ -16,6 +16,17 @@ logs/
 crash-reports/
 
 # ---------------------------------------------------------------------------
+# Stonecutter
+# ---------------------------------------------------------------------------
+# Each <branch>/versions/<mc>/ directory is a generated build node. Only the
+# version property files under versions/ are source-controlled.
+common/versions/*/
+fabric/versions/*/
+forge/versions/*/
+neoforge/versions/*/
+.sc_active_version
+
+# ---------------------------------------------------------------------------
 # Temporary build / compiler output
 # ---------------------------------------------------------------------------
 *.log
