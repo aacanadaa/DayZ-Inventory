@@ -67,10 +67,20 @@ tasks.register("publishAll") {
     group = "publishing"
     description = "Publishes every node in the matrix to Modrinth and CurseForge"
     dependsOn(publishTargets)
-    // CurseForge accepts one upload at a time gracefully; the API rejects a
-    // burst with a rate-limit error rather than queueing it.
-    publishTargets.zipWithNext { first, second ->
-        tasks.matching { it.path == second }.configureEach { mustRunAfter(first) }
+}
+
+// CurseForge accepts one upload at a time gracefully; a burst comes back as a
+// rate-limit error rather than being queued, so the nodes are ordered.
+//
+// This is deliberately *not* inside the `publishAll` registration block:
+// querying the task container (`tasks.matching { ... }.configureEach { ... }`)
+// while another task is being created throws
+// "DefaultTaskCollection#configureEach(Action) on task set cannot be executed in
+// the current context". At the top level of the controller script the same call
+// is fine, and `configureEach` still applies lazily to tasks created later.
+publishTargets.zipWithNext { first, second ->
+    tasks.configureEach {
+        if (path == second) mustRunAfter(first)
     }
 }
 

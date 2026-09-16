@@ -111,8 +111,33 @@ jobs:
       # CurseForge routes every upload through human review: the API accepts the
       # file and never returns a URL, so a successful run here means "submitted",
       # not "live". Modrinth returns immediately.
-      - name: Publish every node
+      # Fails before Gradle starts, with a message that names the variable.
+      # Without this the only symptom is an auth error from inside the publish
+      # plugin that does not say what is missing.
+      - name: Check publishing tokens
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: |
+          missing=0
+          if [ -z "$MODRINTH_TOKEN" ] && [ -z "$MODRINTH_PAT" ]; then
+            echo "::error::No Modrinth token. Add a repository secret named MODRINTH_TOKEN."
+            missing=1
+          fi
+          if [ -z "$CURSEFORGE_API_KEY" ] && [ -z "$CURSEFORGE_TOKEN" ]; then
+            echo "::error::No CurseForge token. Add a repository secret named CURSEFORGE_API_KEY."
+            missing=1
+          fi
+          exit $missing
+
+      - name: Publish every node
+        env:
+          # Both names are forwarded; the build falls back from the documented
+          # one to the legacy one, so whichever secret already exists is used.
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
         run: ./gradlew publishAll -Ppublish.dry_run=false --stacktrace
