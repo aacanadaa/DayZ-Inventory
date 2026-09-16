@@ -4,50 +4,71 @@ Guidance for Claude Code when working in this repository.
 
 ## Project Overview
 
-**DayZ Inventory** is a Minecraft **26.2** mod that replaces the vanilla inventory screen with a
-DayZ-style UI: a Vicinity grid (nearby ground items + containers), a dynamic Hands attachment slot,
-an integrated 2x2 crafting grid, and drag-to-equip onto the Survivor panel.
+**DayZ Inventory** is a Minecraft mod that replaces the vanilla inventory screen with a DayZ-style
+UI: a Vicinity grid (nearby ground items + containers), a dynamic Hands attachment slot, an
+integrated 2x2 crafting grid, and drag-to-equip onto the Survivor panel.
 
-It ships for **two loaders from one codebase**: **Fabric** and **NeoForge**. Both artifacts are
-built from the same Gradle build.
+It ships for **two loaders from one codebase**: **Fabric** and **NeoForge**.
 
-- **Mod version**: `1.5.0`
+- **Mod version**: `1.6.0`
 - **Group / package root**: `com.suoim.dayzinventory`
 - **Mod ID**: `dayz_inventory`
 - **License**: Apache License 2.0 (see `LICENSE`)
-- **Modrinth slug**: `dayz-inventory` (project id `8asZxzdc`)
+- **Modrinth slug**: `dayz-inventory` (project id `8asZxzdc`), CurseForge project `1596267`
 
-This branch targets **26.2**, which is the first line built on an **unobfuscated** Minecraft and the
-first with the rewritten GUI render model. Both changes are structural, not cosmetic — read
-*Critical Gotchas* before touching build config or anything under `client/`.
+### One source tree, three Minecraft versions
+
+This is a **Stonecutter** project. There is no longer a branch per Minecraft version. The enabled
+matrix is **26.2, 1.21.11 and 1.21.1, each for Fabric and NeoForge** — six artifacts from one tree —
+and the version differences are marked inline with `//? if` comments.
+
+**Read [docs/BUILDING.en.md](docs/BUILDING.en.md) first.** It covers the project tree, the
+convention plugins, the conditional-compilation conventions and the publishing setup. The rest of
+this file is the accumulated "things that have actually broken here" list.
+
+26.2 is the newest target and the one that differs most: it is the first line built on an
+**unobfuscated** Minecraft and the first with the rewritten GUI render model. Both changes are
+structural, not cosmetic — read *Critical Gotchas* before touching build config or anything under
+`client/`.
 
 ## Repository Layout
 
-This is a multi-loader Gradle project using a shared `common` module.
+Stonecutter branches, one per module, each producing one node per Minecraft version it supports
+(`:fabric:26.2`, `:neoforge:1.21.11`, ...):
 
 ```
-common/     Loader-agnostic code: screen, screen handler, packets, mixins, platform interface
+settings.gradle.kts          the version matrix + the Stonecutter tree
+stonecutter.gradle.kts       controller: active version, chiseledBuild, publishAll, matrix
+gradle.properties            mod metadata, publishing ids, shared tool versions
+build-logic/                 convention plugins: dayz-common and dayz-loader
+versions/<mc>/gradle.properties   one file per Minecraft version - its only coordinates
+common/     Loader-agnostic code: screen, menu, packets, mixins, platform interface
 fabric/     Fabric entrypoints + FabricPlatformHelper
-neoforge/   NeoForge entrypoints + NeoForgePlatformHelper + ModNetwork
-forge/      Present on disk but NOT built on this branch (see below)
+neoforge/   NeoForge entrypoints + NeoForgePlatformHelper
+forge/      Legacy Forge module - present, NOT built (see below)
 ```
+
+`<branch>/versions/<mc>/` are build directories; they are gitignored and regenerated.
 
 - `common/` uses **Loom** for its Minecraft dependency, but its code must stay loader-neutral. It
   must never import `net.fabricmc.*` or NeoForge classes outside of the platform abstraction.
 - Loader-specific behaviour is reached through `IPlatformHelper`
   (`common/src/main/java/com/suoim/dayzinventory/platform/`). The active implementation is assigned
   to the static field `Platform.HELPER` during each loader's initialization.
+- Each loader jar compiles the `common` node's **processed sources**, not its jar. Do not "simplify"
+  that to a project dependency: below 26.1 the mixin refmap can only be produced from annotated
+  sources, and a precompiled `common.jar` would hand Mixin classes it can never remap.
 
 ### Why `forge/` is not built
 
-`settings.gradle` has `include 'forge'` **commented out**; the built modules are `common`, `fabric`
-and `neoforge`. Forge does not carry forward past 1.20.x — the ecosystem moved to NeoForge, and the
-plugin, the package names and the networking stack all differ, which is why NeoForge is a separate
-module rather than a port of `forge/`. The `forge/` directory is left in place for reference; the
-**`main` branch (1.20.1) still ships Forge**.
+No `forge` branch is declared in `settings.gradle.kts`, so `forge/build.gradle.kts` is never applied.
+Its sources are still the 1.20.1-era `SimpleChannel` / `NetworkRegistry` stack, which does not exist
+from 1.20.5 on. The build script is scaffolding for the eventual port — ModDevGradle's `legacyforge`
+platform — and the exact breakpoints are listed in `docs/BUILDING.en.md` §7. 1.20.1 and Forge are
+still shipped from their own historical branches.
 
-Do not "restore" the Forge module here to fix a build that references it — it is not expected to
-compile on 26.2.
+Do not "restore" the Forge module to fix a build that references it — it is not expected to compile
+against 1.21.x without the payload-networking port.
 
 ### Platform abstraction rule
 
@@ -57,41 +78,53 @@ in both `FabricPlatformHelper` and `NeoForgePlatformHelper`**. Do not branch on 
 
 ## Build
 
-Requires **JDK 25** — Minecraft 26.2 ships as `java-runtime-epsilon`, major version 25. Do not
-hardcode `org.gradle.java.home` in `gradle.properties`; it is machine-specific and breaks CI. Set
-`JAVA_HOME` instead. The Gradle wrapper is **9.5.1**, which supports JDK 25.
+The launcher needs **JDK 25**. The Java 17 / 21 toolchains the other nodes need are downloaded by
+the foojay resolver from `versions/<mc>/gradle.properties`. Do not hardcode
+`org.gradle.java.home` in `gradle.properties`; it is machine-specific and breaks CI. Set
+`JAVA_HOME` instead. The Gradle wrapper is **9.7.0** — Loom 1.18.1 publishes
+`org.gradle.plugin.api-version = 9.7.0`, and an older wrapper fails with a variant-matching error
+that never mentions the Gradle version.
+
+**There is no bare `./gradlew build` any more** — `build` only exists per node, and the root project
+has none.
 
 ```bash
-JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew build
-
-./gradlew :fabric:build
-./gradlew :neoforge:build
-./gradlew :fabric:runClient
-./gradlew :neoforge:runClient
+JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew chiseledBuild   # whole matrix
+JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :fabric:26.2:build
+JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :neoforge:26.2:build
+./gradlew matrix                    # list the nodes
+./gradlew :fabric:26.2:runClient    # dev client for one node
 ```
 
-Output JARs:
+Output JARs live under the node, not the module:
 
 | Loader   | Path |
 | :------- | :--- |
-| Fabric   | `fabric/build/libs/dayz-inventory-fabric-26.2-<version>.jar` |
-| NeoForge | `neoforge/build/libs/dayz-inventory-neoforge-26.2-<version>.jar` |
+| Fabric   | `fabric/versions/<mc>/build/libs/dayz-inventory-fabric-<mc>-<version>.jar` |
+| NeoForge | `neoforge/versions/<mc>/build/libs/dayz-inventory-neoforge-<mc>-<version>.jar` |
 
 `archivesName` is `dayz-inventory-<loader>-${minecraft_version}` — the Minecraft version is part of
 the filename on purpose, so bumping the target version renames the artifact automatically.
 
-### NeoForge compiles `common` directly
+### Both loaders compile `common`'s processed sources
 
-`neoforge/build.gradle` adds `common`'s `java` and `resources` source directories to the NeoForge
-`main` source set, so common's classes and resources are compiled into NeoForge's own output. That
-keeps a single copy of every class — including the shared mixin classes — on the mod classpath.
+`dayz-loader` adds the `:common:<mc>` node's **generated** source tree to each loader's compile task,
+so common's classes and resources end up in the loader jar. That keeps a single copy of every class —
+including the shared mixin classes — on the mod classpath.
 
-Because of that, `common` must **not** also be added as a project dependency. Adding
+Because of that, `common` must **not** be added as a project dependency. Adding
 `implementation project(':common')` puts a second copy of every class and mixin config on the
-classpath.
+classpath, and below 26.1 it also brings Loom's intermediary refmap, which NeoForge and Forge cannot
+use.
 
-The module uses the **`net.neoforged.moddev`** plugin, and needs **no refmap and no MixinGradle**:
-NeoForge has run on official Mojang names since 1.20.2, so mixin selectors resolve as written.
+It has to be the *generated* tree and not the raw `common/src`: the raw tree still contains every
+version's conditional branches, and a refmap can only be produced from annotated sources.
+
+The NeoForge module uses **`net.neoforged.moddev`** and needs **no refmap and no MixinGradle**:
+NeoForge has run on official Mojang names since 1.20.2. The Fabric module uses
+**`dev.kikugie.loom-back-compat`**, which picks `fabric-loom-remap` below 26.1 and `fabric-loom`
+from 26.1 on — and only the remap flavour produces a refmap, which is why `common/build.gradle.kts`
+sets `useLegacyMixinAp` for the older nodes.
 
 ## Critical Gotchas
 
@@ -111,12 +144,12 @@ the client screen.
    - Loom's plugin id is now **`net.fabricmc.fabric-loom`** (it was `fabric-loom`).
    - The `mod*` configurations are gone: use plain **`implementation` / `compileOnly`**, not
      `modImplementation` / `modCompileOnly`.
-   - The `loom { mixin { defaultRefmapName = ... } }` block in `common/build.gradle` has been
-     **removed**, and no module declares a `MixinConfigs` manifest attribute. (`forge/build.gradle`
-     still has one, but that module is not built on this branch — see *Why `forge/` is not built*.)
-   - Mixins resolve by **official Mojang names natively on both loaders**. There is no refmap to
-     name and no `named:intermediary` refmap to verify — if you find yourself debugging refmap
-     contents, you are on the wrong branch.
+   - `common/build.gradle.kts` and `fabric/build.gradle.kts` only configure `loom { mixin { ... } }`
+     for nodes **below 26** — those are the ones that still need a refmap. No module declares a
+     `MixinConfigs` manifest attribute.
+   - Mixins resolve by **official Mojang names natively on both loaders**. Above 26.1 there is no
+     refmap to name; if you find yourself debugging refmap contents on 26.2, the cause is something
+     else. Below 26.1 the refmap is real and is named `dayz-inventory.refmap.json`.
 
    Class and method names in code are still **Mojang names** (`Minecraft`, `LocalPlayer`,
    `AbstractContainerScreen`, `KeyMapping`, ...), not Yarn names (`MinecraftClient`,
@@ -126,12 +159,15 @@ the client screen.
    configs are declared `"required": true`, so a bad target is a **crash at launch**, not a silent
    no-op. This is exactly what happened in the 26.2 port:
 
-   - The class formerly called `MinecraftClientMixin` is now **`GuiMixin`**
-     (`common/src/main/java/com/suoim/dayzinventory/client/mixin/GuiMixin.java`).
-   - It no longer mixes into `Minecraft`; it mixes into **`net.minecraft.client.gui.Gui`** and hooks
-     **`setScreen`**.
-   - Reason: **`Minecraft#setScreen` was deleted in 26.2.** The redirect that swaps the vanilla
-     inventory for the DayZ screen had hooked it.
+   - The class is now **`ScreenRedirectMixin`**
+     (`common/src/main/java/com/suoim/dayzinventory/client/mixin/ScreenRedirectMixin.java`). It was
+     briefly called `GuiMixin`, but it no longer mixes into `Gui` below 26.2, so a target-specific
+     name was misleading. The mixin config entry is a stable name, so the class can be renamed
+     without touching JSON.
+   - On 26.2 it mixes into **`net.minecraft.client.gui.Gui`** and hooks **`setScreen`**; below that
+     it still mixes into **`Minecraft`** via `//? if >=26.2`.
+   - Reason for the move: **`Minecraft#setScreen` was deleted in 26.2.** The redirect that swaps the
+     vanilla inventory for the DayZ screen had hooked it.
 
    Targeting `Gui#setScreen` is deliberate: that is where **every** screen switch funnels.
    `Minecraft#handleKeybinds` opens the inventory with `this.gui.setScreen(new InventoryScreen(...))`
@@ -192,15 +228,16 @@ the client screen.
    `DayZInventoryScreen#getBoundKey`. If you touch that method, keep it defensive — it must return
    `null` rather than throw when the field layout differs.
 
-9. **Java 25 bytecode.** `options.release = 25`, `sourceCompatibility` / `targetCompatibility` are
-   `VERSION_25`, and the mixin configs declare `"compatibilityLevel": "JAVA_25"` (formerly
-   `JAVA_17`). Gradle 9.5.1 supports JDK 25; do not move the toolchain without re-testing both
-   loaders.
+9. **The Java level is per version, not global.** `deps.java` in `versions/<mc>/gradle.properties`
+   drives the toolchain and `options.release` (17 on 1.20.1, 21 on 1.21.x, **25** on 26.x), and
+   `deps.mixin-compat` is expanded into the mixin configs as `compatibilityLevel`. A hardcoded
+   `JAVA_25` on a Java 21 node fails Mixin's own validation.
 
-10. **`neoforge.mods.toml`'s `version` must stay `${version}`.**
-    `neoforge/src/main/resources/META-INF/neoforge.mods.toml` carries `version="${version}"`,
-    expanded by `processResources` in `neoforge/build.gradle`. A hardcoded value drifted once and
-    shipped a 1.4.1 jar that reported itself as 1.4.0 in crash reports.
+10. **Every manifest placeholder must stay a placeholder.** `fabric.mod.json`, both `mods.toml`s,
+    `pack.mcmeta` and the mixin configs are expanded by `processResources` from the per-version
+    properties. A hardcoded `version` drifted once and shipped a 1.4.1 jar that reported itself as
+    1.4.0 in crash reports, and a hardcoded Minecraft range would ship a 1.21.11 jar claiming to be
+    for 26.2. Expanding an unknown token fails the build, which is the intended behaviour.
 
 11. **Fabric dev runs apply mixins normally on this branch.** `:fabric:runClient` starts the game
     with mixins applied and shows the real DayZ screen, so it *is* valid for judging GUI work.
@@ -236,26 +273,31 @@ When refactoring, do not regress these:
 
 ## GitHub Actions
 
-`.github/workflows/build.yml` builds both loaders on pushes to `[main, "1.*", "2*"]`, pull requests,
-tags, and manual dispatch. It uses **JDK 25**. On a `v*` tag it also attaches both JARs to a GitHub
-Release.
+`.github/workflows/build.yml` runs `./gradlew chiseledBuild` on pushes to `main` and `refactor/**`,
+on pull requests, tags and manual dispatch. It uses **JDK 25**; the foojay resolver supplies the
+other toolchains. On a `v*` tag a second job attaches every jar to the GitHub Release and a third
+publishes the whole matrix to both platforms.
 
-The `2*` filter is what covers the calendar-versioned branches (`26.2`, `26.3`, ...); `1.*` covers
-the pre-26 per-version branches. A plain `1.x` would match only a branch literally named that.
-
-Artifacts are read from `fabric/build/libs/` and `neoforge/build/libs/` — **not** the root
-`build/libs/`, which contains no mod JARs.
+Artifacts are read from `*/versions/*/build/libs/` — **not** the module-level `build/libs/` or the
+root one, neither of which contains mod jars any more.
 
 ## Publishing
 
-Publishing uses `me.modmuss50.mod-publish-plugin` (Minotaur) and is configured in
-`fabric/build.gradle` and `neoforge/build.gradle`.
+Publishing uses `me.modmuss50.mod-publish-plugin` (Minotaur), configured **once** in
+`build-logic/src/main/kotlin/dayz-loader.gradle.kts` and applied to every loader node.
 
-- Tokens are read from the environment (`MODRINTH_TOKEN`, `CURSEFORGE_TOKEN`). Never hardcode a
-  token in a build file or commit one.
+- Tokens are read from the environment. Never hardcode one in a build file or commit one:
+  `MODRINTH_TOKEN` (falls back to `MODRINTH_PAT`) and `CURSEFORGE_API_KEY` (falls back to
+  `CURSEFORGE_TOKEN`).
 - Modrinth project id: `8asZxzdc`. CurseForge project id: `1596267`.
-- `:fabric:publishMods` / `:neoforge:publishMods` publish to **both** platforms. Use the
-  platform-specific tasks (`publishModrinth`, `publishCurseforge`) when you only want one.
+- `./gradlew publishAll -Ppublish.dry_run=false` publishes the matrix; `publish.dry_run` defaults to
+  `true`, so a stray `publishMods` only logs. One platform:
+  `:fabric:26.2:publishModrinth` / `:fabric:26.2:publishCurseforge`.
+- Game version and loader tags come from the node, never from a literal, so a jar cannot be uploaded
+  under the wrong Minecraft version.
+- **CurseForge accepts the file and returns no URL** — every upload goes through human review, so a
+  green `publishCurseforge` means *submitted*, not *live*. Do not treat the missing response as a
+  failure.
 - Modrinth placeholder slugs must be real Modrinth project slugs or the publish fails with a 404 —
   e.g. REI is `rei`, not `roughlyenoughitems`. Verify before adding one.
 
@@ -273,6 +315,6 @@ Consequences when features change:
 
 ## Versioning
 
-`mod_version` in `gradle.properties` is the single source of truth. It is expanded into
-`fabric.mod.json` by `processResources` and into `neoforge.mods.toml` by the NeoForge module's own
-`processResources`. Bump it, then update `CHANGELOG.md`.
+`mod.version` in `gradle.properties` is the single source of truth. It is expanded by
+`processResources` into `fabric.mod.json`, `neoforge.mods.toml`, `mods.toml` and `pack.mcmeta`, and
+it is part of every artifact filename. Bump it, then update `CHANGELOG.md`.
