@@ -180,7 +180,7 @@ sc.replacements.string(sc.current.parsed < "1.21.11") {
 
 ## 7. 尚未启用的目标
 
-这两个目标目前仍由各自的分支发布，**没有**因为本次重构而回退。
+这两个目标目前仍由各自的分支发布（1.20.1 在 `1.20.1` 分支，Forge 在 `1.21.1-forge`），**没有**因为本次重构而回退。
 它们的 `versions/<mc>/gradle.properties` 都已就位，在 `settings.gradle.kts` 里取消一行注释即可接上构建。
 
 ### 1.20.1（Fabric、Forge）

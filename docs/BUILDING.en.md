@@ -194,7 +194,8 @@ configurations the unobfuscated Loom removed, so one build script covers both si
 
 ## 7. Targets that are not enabled yet
 
-Both are shipped from their own branches today and are **not** regressed by this tree. Each already
+Both are shipped from their own branches today — 1.20.1 from the `1.20.1` branch, Forge from
+`1.21.1-forge` — and are **not** regressed by this tree. Each already
 has a `versions/<mc>/gradle.properties`, and uncommenting one line in `settings.gradle.kts` is all
 the build wiring needed.
 
