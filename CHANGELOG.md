@@ -1,3 +1,36 @@
+# DayZ Inventory 1.7.2 — the Fabric files were development jars; this fixes that
+
+**If you downloaded DayZ Inventory for 1.21.1 or 1.21.11 on Fabric from the 1.7.1 release, replace
+it with 1.7.2.** Those two files were Loom's *development* jar and will not work in a normal
+game. Nothing else was affected: 26.2 on Fabric and every NeoForge and Forge file were correct, and
+the jars attached to the GitHub releases were always correct.
+
+The mod itself is unchanged.
+
+## What went wrong
+
+Below 26.1 Minecraft is obfuscated, and Loom splits the build in two:
+
+- its `jar` task writes a **development** jar named `<...>-dev.jar`, compiled against official
+  Mojang names, into `build/devlibs`;
+- its `remapJar` task writes the **shippable** jar, remapped to intermediary names, into
+  `build/libs`.
+
+The publish configuration picked between them with `tasks.names.contains("remapJar")`, intending
+"use `remapJar` when Loom provides one". But Loom registers `remapJar` from its own `afterEvaluate`,
+which runs *after* the publish configuration is set up, so the check was always false and the
+development jar was the one uploaded. Both Fabric nodes below 26.1 were affected; 26.2 has no remap
+step at all, which is why it was fine.
+
+The selection now uses the Minecraft version — the same condition `loom-back-compat` uses to choose
+the Loom flavour — and the task is resolved after evaluation. A build-time check refuses to publish
+anything whose name contains `-dev`, so a regression fails loudly instead of reaching users.
+
+The matching Modrinth versions have been deleted. The two CurseForge files have to be removed from
+the project dashboard by hand, because the upload token cannot delete files.
+
+---
+
 # DayZ Inventory 1.7.1 — the same build, actually on Modrinth and CurseForge
 
 Same code as 1.7.0. This release exists because 1.7.0's automated publishing run stopped partway:

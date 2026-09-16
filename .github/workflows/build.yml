@@ -16,6 +16,10 @@ on:
         type: choice
         options: [all, modrinth, curseforge]
         default: all
+      delete_modrinth_versions:
+        description: "Comma-separated Modrinth version IDs to delete, then exit"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -68,6 +72,31 @@ jobs:
             neoforge/versions/*/build/libs/*.jar
             !**/*-sources.jar
           if-no-files-found: error
+
+  # Maintenance hatch. A published Modrinth version cannot be replaced, so a bad
+  # upload has to be deleted before the corrected one goes up. Version IDs come
+  # from `GET https://api.modrinth.com/v2/project/<id>/version`.
+  modrinth-delete:
+    name: Delete Modrinth versions
+    if: github.event_name == 'workflow_dispatch' && inputs.delete_modrinth_versions != ''
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Delete versions
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN || vars.MODRINTH_TOKEN }}
+        run: |
+          if [ -z "$MODRINTH_TOKEN" ]; then
+            echo "::error::No Modrinth token."
+            exit 1
+          fi
+          for id in $(echo "${{ inputs.delete_modrinth_versions }}" | tr ',' ' '); do
+            [ -z "$id" ] && continue
+            echo -n "deleting $id -> "
+            curl -sS -o /dev/null -w "%{http_code}\n" -X DELETE \
+              -H "Authorization: $MODRINTH_TOKEN" \
+              "https://api.modrinth.com/v2/version/$id"
+          done
 
   release:
     name: Publish GitHub Release

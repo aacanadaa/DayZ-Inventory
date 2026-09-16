@@ -73,10 +73,20 @@ val loaderName = when (branch) {
     else -> "fabric"
 }
 
-// Fabric is remapped below 26.1 and used as-is from 26.1 on, where Mojang
-// stopped obfuscating and Loom dropped `remapJar` entirely. NeoForge and Forge
-// both take the plain `jar`.
-val modJarTaskName = if (tasks.names.contains("remapJar")) "remapJar" else "jar"
+// Which task writes the *shippable* jar.
+//
+// Below 26.1 Loom splits the build in two: `jar` writes the development jar -
+// named `<...>-dev.jar`, compiled against official names and therefore not
+// loadable in production - into build/devlibs, and `remapJar` writes the
+// remapped one into build/libs. From 26.1 on Minecraft is unobfuscated, there is
+// no remap step, and `jar` is correct.
+//
+// This must NOT be detected with `tasks.names.contains("remapJar")`: Loom
+// registers that task after this plugin runs, so the check is always false and
+// the development jar gets published. That is exactly what happened on 1.7.1 -
+// the two Fabric nodes below 26.1 went up as `...-dev.jar`. The version
+// condition is the same one `loom-back-compat` uses to pick the Loom flavour.
+val modJarTaskName = if (branch == "fabric" && sc.current.parsed < "26") "remapJar" else "jar"
 
 val modrinthToken = firstEnv("MODRINTH_TOKEN", "MODRINTH_PAT")
 val curseforgeToken = firstEnv("CURSEFORGE_API_KEY", "CURSEFORGE_TOKEN")
@@ -101,7 +111,6 @@ extensions.configure<ModPublishExtension>("publishMods") {
     version.set("${prop("mod.version")}+$mc")
     displayName.set("${prop("mod.name")} ${prop("mod.version")} for MC $mc")
     changelog.set(rootProject.file("CHANGELOG.md").let { if (it.exists()) it.readText() else "" })
-    file.set(tasks.named<Jar>(modJarTaskName).flatMap { it.archiveFile })
 
     type.set(ReleaseType.STABLE)
     // CurseForge puts every upload through human review, so a publish there is
@@ -142,6 +151,28 @@ extensions.configure<ModPublishExtension>("publishMods") {
         if (loaderName == "fabric") optional("trinkets") else optional("curios")
         client.set(true)
         server.set(true)
+    }
+}
+
+// The jar task is resolved here rather than inline above, because `remapJar` does
+// not exist yet when this plugin is applied: Loom registers it from its own
+// `afterEvaluate`, and this callback runs after that one because `dayz-loader` is
+// applied after `loom-back-compat`. Naming the task eagerly is what put the
+// development jar on Modrinth in 1.7.1.
+afterEvaluate {
+    extensions.configure<ModPublishExtension>("publishMods") {
+        val modJar = tasks.named<Jar>(modJarTaskName)
+
+        // Belt and braces. Loom's development jar is named `<...>-dev.jar` and
+        // cannot load in production, and publishing one is invisible until a
+        // user reports a crash. Fail the build instead of uploading it.
+        val modJarName = modJar.get().archiveFile.get().asFile.name
+        check(!modJarName.contains("-dev")) {
+            "Refusing to publish '$modJarName' for $path: that is a development jar, not the " +
+                "remapped artifact. Check the task named by modJarTaskName."
+        }
+
+        file.set(modJar.flatMap { it.archiveFile })
     }
 }
 
