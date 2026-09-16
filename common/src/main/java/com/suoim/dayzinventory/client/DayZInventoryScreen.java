@@ -77,7 +77,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // 26.2 made imageWidth/imageHeight final, so the size has to be passed
         // through the five-argument constructor rather than assigned here.
         // Below that the fields are still assignable in the constructor body.
-//? if >=26.2 {
+//? if >=26.1 {
         super(handler, inventory, title, 540, 220);
 //?} else {
         super(handler, inventory, title);
@@ -454,7 +454,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                     if (index < vicinityItems.size()) {
                         // Ground Item Clicked
                         ItemEntity itemEntity = vicinityItems.get(index);
-//? if >=1.21.11 {
+// 26.2 added InputWithModifiers#hasShiftDown, which is also the only correct
+// test from 26.3 on: Minecraft moved from GLFW to SDL there, so the raw
+// modifier bits are SDL keymods and GLFW_MOD_SHIFT no longer matches them.
+//? if >=26.1 {
+                        if (event.hasShiftDown()) {
+//?} elif >=1.21.11 {
                         if ((event.modifiers() & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) {
 //?} else {
                         if (Screen.hasShiftDown()) {
@@ -711,7 +716,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // Restore cursor positions on render frame tick if requested
         if (needsMouseRestore && this.minecraft != null) {
             needsMouseRestore = false;
+// 26.3 replaced GLFW with SDL3, so `org.lwjgl.glfw` is no longer on the compile
+// classpath at all. SDL_WarpMouseInWindow is the direct equivalent and takes
+// floats rather than doubles.
+//? if >=26.3 {
+            org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow(this.minecraft.getWindow().handle(), (float) lastMouseX, (float) lastMouseY);
+//?} else {
             org.lwjgl.glfw.GLFW.glfwSetCursorPos(this.minecraft.getWindow().handle(), lastMouseX, lastMouseY);
+//?}
             
             // Re-calculate scaled mouseX and mouseY so hover checks resolve correctly on this frame
             mouseX = (int) (lastMouseX * (double) this.minecraft.getWindow().getGuiScaledWidth() / (double) this.minecraft.getWindow().getWidth());
@@ -797,7 +809,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
      * override does not exist. It is now a plain private helper called from
      * {@link #extractRenderState}, which is what it always effectively was.
      */
-//? if >=26.2 {
+//? if >=26.1 {
     private void drawDayZPanels(GuiGraphicsExtractor guiGraphics, float partialTick, int mouseX, int mouseY) {
 //?} else {
     @Override

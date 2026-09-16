@@ -50,7 +50,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
 
     @Inject(
-//? if >=26.2 {
+//? if >=26.1 {
         method = "extractContents",
 //?} elif >=1.21.11 {
         method = "renderContents",
