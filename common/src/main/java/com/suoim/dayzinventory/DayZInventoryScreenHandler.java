@@ -33,7 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 //?}
 import net.minecraft.world.item.crafting.CraftingRecipe;
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.world.item.crafting.RecipeHolder;
 //?}
 import net.minecraft.world.item.crafting.RecipeType;
@@ -197,6 +197,19 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
             RecipeHolder<CraftingRecipe> recipeHolder = optional.get();
             if (this.resultSlots.setRecipeUsed(serverPlayer, recipeHolder)) {
                 result = recipeHolder.value().assemble(craftingInput);
+            }
+        }
+//?} elif >=1.20.5 {
+        // 1.20.5 wrapped recipes in a RecipeHolder but still passed the raw
+        // CraftingContainer; CraftingInput only arrives in 1.21.
+        Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.getServer()
+            .getRecipeManager()
+            .getRecipeFor(RecipeType.CRAFTING, this.craftSlots, serverPlayer.level());
+
+        if (optional.isPresent()) {
+            RecipeHolder<CraftingRecipe> recipeHolder = optional.get();
+            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)) {
+                result = recipeHolder.value().assemble(this.craftSlots, serverPlayer.level().registryAccess());
             }
         }
 //?} else {

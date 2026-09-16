@@ -92,8 +92,11 @@ gradle.beforeProject {
 // Adding a version is a one-line change here plus a `versions/<mc>/gradle.properties`
 // file - see docs/BUILDING.md ("Adding a Minecraft version").
 
-val fabricVersions = listOf("1.20.1", "1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
-val neoforgeVersions = listOf("1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val fabricVersions = listOf("1.20.1", "1.20.5", "1.20.6", "1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+// 1.20.5 is Fabric-only: NeoForge published that release without a
+// `moddev-config.json` (only an installer), which ModDevGradle needs, and Forge
+// has no 1.20.5 release at all.
+val neoforgeVersions = listOf("1.20.6", "1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // Forge stopped being a first-class target after 1.20.x and the ecosystem moved
 // to NeoForge, so 1.21.1 is the newest version Forge can be built for at all.
 //
@@ -103,7 +106,7 @@ val neoforgeVersions = listOf("1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "
 // ForgeGradle 6 - which does have both - is Gradle 8 only, while Loom 1.18.1 needs
 // Gradle 9. Adding it means a nested Gradle 8 build, not another node. 1.20.1 still
 // ships for Fabric, where it needs none of this.
-val forgeVersions = listOf("1.21.1")
+val forgeVersions = listOf("1.20.6", "1.21.1")
 val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
 
 // ---------------------------------------------------------------------------
