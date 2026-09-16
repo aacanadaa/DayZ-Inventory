@@ -10,7 +10,7 @@ integrated 2x2 crafting grid, and drag-to-equip onto the Survivor panel.
 
 It ships for **three loaders from one codebase**: **Fabric**, **NeoForge** and **Forge**.
 
-- **Mod version**: `1.7.0`
+- **Mod version**: `1.7.2`
 - **Group / package root**: `com.suoim.dayzinventory`
 - **Mod ID**: `dayz_inventory`
 - **License**: Apache License 2.0 (see `LICENSE`)
