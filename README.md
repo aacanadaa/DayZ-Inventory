@@ -30,7 +30,7 @@ HUD 和背包界面共享同一套视觉语言。
 新增一个版本只需要加一行加一个 `versions/<mc>/gradle.properties`。
 
 > **1.20.1 与 Forge 的现状**
-> 这两个目标目前仍由独立的历史分支发布，尚未合并进统一源码树。原因很具体：
+> 这两个目标目前仍由独立的历史分支发布（1.20.1 在 `1.20.1` 分支，Forge 在 `1.21.1-forge`），尚未合并进统一源码树。原因很具体：
 > 1.20.1 早于 1.20.5 的网络层重写，没有自定义 payload 记录；`forge/` 模块里仍是 1.20.1 时代的
 > `SimpleChannel` / `NetworkRegistry`。两者的构建骨架（`versions/1.20.1/gradle.properties`、
 > `forge/build.gradle.kts`）都已就位，剩下的只是源码层移植。

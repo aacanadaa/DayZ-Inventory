@@ -32,8 +32,8 @@ abstraction. The matrix is declared in `settings.gradle.kts`; adding a version i
 a `versions/<mc>/gradle.properties` file.
 
 > **About 1.20.1 and Forge**
-> These two targets are still shipped from their own historical branches and have not been folded
-> into the unified tree yet. The reason is specific rather than incidental: 1.20.1 predates the
+> These two targets are still shipped from their own historical branches — 1.20.1 from the `1.20.1`
+> branch, Forge from `1.21.1-forge` — and have not been folded into the unified tree yet. The reason is specific rather than incidental: 1.20.1 predates the
 > 1.20.5 networking rewrite, so there are no custom payload records, and `forge/` still contains
 > 1.20.1-era `SimpleChannel` / `NetworkRegistry` code. The build scaffolding for both is already in
 > place (`versions/1.20.1/gradle.properties`, `forge/build.gradle.kts`); what remains is source-level
