@@ -1,3 +1,8 @@
+//? if >=1.20.5 {
+// This whole file is 1.20.5+ only: StreamCodec and RegistryFriendlyByteBuf arrive in 1.20.5. Below that the mod sends a
+// bare ResourceLocation channel carrying a FriendlyByteBuf, and there is no typed
+// opening data at all - see the `//? if <1.21` branch in DayZInventoryScreenHandler
+// and the loader entrypoints. Commented out, the file is empty, which compiles.
 /*
  * DayZ Inventory
  * Copyright 2026 suoim
@@ -51,3 +56,4 @@ public record DayZInventoryOpenData(boolean hasContainer, int containerSize, boo
         return new DayZInventoryOpenData(true, containerSize, true, pos);
     }
 }
+//?}

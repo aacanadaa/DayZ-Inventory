@@ -29,9 +29,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.21 {
 import net.minecraft.world.item.crafting.CraftingInput;
+//?}
 import net.minecraft.world.item.crafting.CraftingRecipe;
+//? if >=1.21 {
 import net.minecraft.world.item.crafting.RecipeHolder;
+//?}
 import net.minecraft.world.item.crafting.RecipeType;
 import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
@@ -50,13 +54,15 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
              buf.readBoolean() ? buf.readBlockPos() : null);
     }
 
-    // Fabric client-side constructor. 1.21 passes the typed opening data produced
+//? if >=1.20.5 {
+    // Fabric client-side constructor. 1.20.5 passes the typed opening data produced
     // by ExtendedScreenHandlerFactory#getScreenOpeningData rather than a buffer.
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, DayZInventoryOpenData data) {
         this(syncId, playerInventory,
              data.hasContainer() ? new SimpleContainer(data.containerSize()) : null,
              data.hasPos() ? data.pos() : null);
     }
+//?}
 
     // Main constructor (used by client-side builder and server-side opener)
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, @Nullable Container containerInventory, @Nullable BlockPos containerPos) {
@@ -174,8 +180,13 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 
         ItemStack result = ItemStack.EMPTY;
 
+//? if >=1.21 {
         // 1.21 changed this API twice over: the raw CraftingContainer is now a
         // CraftingInput value, and recipes come back wrapped in a RecipeHolder.
+        //
+        // The two remaining differences are handled as build-level replacements
+        // rather than as inner conditionals: Stonecutter conditions cannot nest,
+        // and this block already sits inside one.
         CraftingInput craftingInput = this.craftSlots.asCraftInput();
 
         Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.level().getServer()
@@ -184,20 +195,22 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 
         if (optional.isPresent()) {
             RecipeHolder<CraftingRecipe> recipeHolder = optional.get();
-//? if >=1.21.11 {
             if (this.resultSlots.setRecipeUsed(serverPlayer, recipeHolder)) {
-//?} else {
-            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)) {
-//?}
-//? if >=26.1 {
-                // 26.2 dropped the RegistryAccess parameter from Recipe#assemble -
-                // it now takes only the CraftingInput.
                 result = recipeHolder.value().assemble(craftingInput);
-//?} else {
-                result = recipeHolder.value().assemble(craftingInput, serverPlayer.level().registryAccess());
-//?}
             }
         }
+//?} else {
+        Optional<CraftingRecipe> optional = serverPlayer.getServer()
+            .getRecipeManager()
+            .getRecipeFor(RecipeType.CRAFTING, this.craftSlots, serverPlayer.level());
+
+        if (optional.isPresent()) {
+            CraftingRecipe recipe = optional.get();
+            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipe)) {
+                result = recipe.assemble(this.craftSlots, serverPlayer.level().registryAccess());
+            }
+        }
+//?}
 
         this.resultSlots.setItem(0, result);
         // setRemoteSlot is protected in AbstractContainerMenu but accessible here since we extend it

@@ -16,12 +16,11 @@
  */
 package com.suoim.dayzinventory.fabric.platform;
 
-import com.suoim.dayzinventory.DayZInventoryOpenData;
-import com.suoim.dayzinventory.DayZInventoryPayload;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.fabric.DayZInventoryFabric;
 import com.suoim.dayzinventory.platform.IPlatformHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+// Raw below 26.1, renamed to ExtendedMenuProvider from 26.1; the build rewrites it.
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
@@ -37,6 +36,10 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
+//? if >=1.20.5 {
+import com.suoim.dayzinventory.DayZInventoryOpenData;
+import com.suoim.dayzinventory.DayZInventoryPayload;
+//?}
 
 public class FabricPlatformHelper implements IPlatformHelper {
     @Override
@@ -46,14 +49,19 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
     @Override
     public void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf) {
+//? if >=1.20.5 {
         // 1.20.5+ sends typed payloads; there is no longer a (channel, buffer) send.
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(buf.readerIndex(), bytes);
         ClientPlayNetworking.send(new DayZInventoryPayload(packetId, bytes));
+//?} else {
+        ClientPlayNetworking.send(packetId, buf);
+//?}
     }
 
     @Override
     public void openPlayerInventory(ServerPlayer player) {
+//? if >=1.20.5 {
         player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
             @Override
             public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
@@ -70,6 +78,26 @@ public class FabricPlatformHelper implements IPlatformHelper {
                 return new DayZInventoryScreenHandler(syncId, playerInventory, null, null);
             }
         });
+//?} else {
+        // Before 1.20.5 the factory writes its own opening data into the buffer.
+        player.openMenu(new ExtendedScreenHandlerFactory() {
+            @Override
+            public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
+                buf.writeBoolean(false); // No container
+                buf.writeBoolean(false); // No container pos
+            }
+
+            @Override
+            public Component getDisplayName() {
+                return Component.translatable("container.inventory");
+            }
+
+            @Override
+            public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
+                return new DayZInventoryScreenHandler(syncId, playerInventory, null, null);
+            }
+        });
+//?}
     }
 
     @Override
@@ -85,6 +113,7 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
         if (container != null) {
             final Container finalContainer = container;
+//? if >=1.20.5 {
             player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
                 @Override
                 public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
@@ -101,6 +130,27 @@ public class FabricPlatformHelper implements IPlatformHelper {
                     return new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos);
                 }
             });
+//?} else {
+            player.openMenu(new ExtendedScreenHandlerFactory() {
+                @Override
+                public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
+                    buf.writeBoolean(true); // Has container
+                    buf.writeInt(finalContainer.getContainerSize());
+                    buf.writeBoolean(true); // Has container pos
+                    buf.writeBlockPos(pos);
+                }
+
+                @Override
+                public Component getDisplayName() {
+                    return state.getBlock().getName();
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
+                    return new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos);
+                }
+            });
+//?}
         }
     }
 

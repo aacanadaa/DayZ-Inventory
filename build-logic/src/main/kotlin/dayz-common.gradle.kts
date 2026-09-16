@@ -133,6 +133,16 @@ sc.replacements.string(sc.current.parsed < "26.1") {
     replace("PayloadTypeRegistry.serverboundPlay()", "PayloadTypeRegistry.playC2S()")
 }
 
+// The >=1.21 recipe block in DayZInventoryScreenHandler has two older spellings.
+// They are replacements rather than `//? if` blocks because Stonecutter conditions
+// cannot nest, and that block already sits inside a `//? if >=1.21`.
+sc.replacements.string(sc.current.parsed < "1.21.11") {
+    replace("setRecipeUsed(serverPlayer, recipeHolder)", "setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)")
+}
+sc.replacements.string(sc.current.parsed < "26.1") {
+    replace(".assemble(craftingInput)", ".assemble(craftingInput, serverPlayer.level().registryAccess())")
+}
+
 // 26.3 renamed InputConstants.Type.KEYSYM to KEYBOARD.
 sc.replacements.string(sc.current.parsed >= "26.3") {
     replace("Type.KEYSYM", "Type.KEYBOARD")
