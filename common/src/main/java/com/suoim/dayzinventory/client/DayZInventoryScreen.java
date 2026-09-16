@@ -20,7 +20,12 @@ import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.DayZInventoryPackets;
 import com.suoim.dayzinventory.mixin.SlotAccessor;
 import com.suoim.dayzinventory.platform.Platform;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//? if >=1.21.11 {
+import net.minecraft.client.input.MouseButtonEvent;
+//?}
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -32,6 +37,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundEvents;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,9 +74,16 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     private static boolean needsMouseRestore = false;
 
     public DayZInventoryScreen(DayZInventoryScreenHandler handler, Inventory inventory, Component title) {
+        // 26.2 made imageWidth/imageHeight final, so the size has to be passed
+        // through the five-argument constructor rather than assigned here.
+        // Below that the fields are still assignable in the constructor body.
+//? if >=26.2 {
+        super(handler, inventory, title, 540, 220);
+//?} else {
         super(handler, inventory, title);
         this.imageWidth = 540;
         this.imageHeight = 220;
+//?}
     }
 
     private float getGuiScale() {
@@ -155,52 +168,54 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     /**
-     * True when the given slot should count as hovered at these coordinates.
+     * Marks the Hands slot as hovered when the cursor is over the virtual Hands
+     * panel.
      * <p>
-     * The Hands attachment slot is virtual: it is drawn in the middle column but
-     * backs the real hotbar slot, so vanilla needs to be told the panel counts as
-     * a hover of that slot. This lives here rather than in
-     * {@code AbstractContainerScreenMixin} because the mixin would otherwise have
-     * to {@code @Shadow} {@code menu}, {@code leftPos}, {@code topPos} and
-     * {@code imageHeight} - and those shadows carry no refmap entries, so they
-     * fail to resolve on intermediary (Fabric) and SRG (Forge) runtimes and crash
-     * on launch. This class inherits all four from
-     * {@link AbstractContainerScreen}, so it can read them directly.
+     * Called from {@code AbstractContainerScreenMixin} at the point where
+     * vanilla assigns {@code hoveredSlot}. Writing the field happens here rather
+     * than in the mixin because this class inherits {@code hoveredSlot} from
+     * {@link AbstractContainerScreen}, so no {@code @Shadow} is needed - and
+     * shadowing that field does not resolve on 1.21 production runtimes.
      */
-    public boolean isVirtualHandsSlotHovered(Slot slot, double mouseX, double mouseY) {
-        if (slot == null) {
-            return false;
+    public void applyVirtualHandsHover(int mouseX, int mouseY) {
+        Slot handsSlot = getVirtualHandsHoverSlot(mouseX, mouseY);
+        if (handsSlot != null) {
+            this.hoveredSlot = handsSlot;
+        }
+    }
+
+    private Slot getVirtualHandsHoverSlot(double mouseX, double mouseY) {
+        if (!(this.menu instanceof DayZInventoryScreenHandler handler)) {
+            return null;
         }
 
-        // this.menu is already typed DayZInventoryScreenHandler here, so no cast.
-        int containerSize = this.menu.getContainerInventory() != null
-            ? this.menu.getContainerInventory().getContainerSize() : 0;
+        int containerSize = handler.getContainerInventory() != null
+            ? handler.getContainerInventory().getContainerSize() : 0;
 
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
-            selectedSlot = this.minecraft.player.getInventory().selected;
+            selectedSlot = this.minecraft.player.getInventory().getSelectedSlot();
         }
         int handsSlotIdx = containerSize + 27 + selectedSlot;
-        if (slot.index != handsSlotIdx) {
-            return false;
+        if (handsSlotIdx < 0 || handsSlotIdx >= this.menu.slots.size()) {
+            return null;
         }
 
-        // Hovering the real slot in the right column...
-        boolean hoveringPhysical = mouseX >= (this.leftPos + slot.x) && mouseX < (this.leftPos + slot.x + 18)
-            && mouseY >= (this.topPos + slot.y) && mouseY < (this.topPos + slot.y + 18);
+        Slot handsSlot = this.menu.slots.get(handsSlotIdx);
+        if (handsSlot == null) {
+            return null;
+        }
 
-        // ...or the virtual panel body in the middle column.
+        ItemStack handsStack = handsSlot.getItem();
         int middleColumnX = this.getColumnX(1);
         int handsPanelY = this.topPos + this.imageHeight - 75;
-
-        ItemStack handsStack = slot.getItem();
         int bodyY = handsPanelY + (handsStack.isEmpty() ? 15 : 27);
         int bodyHeight = handsStack.isEmpty() ? 55 : 43;
 
-        boolean hoveringVirtual = mouseX >= (middleColumnX - 4) && mouseX < (middleColumnX + 166)
+        boolean hovering = mouseX >= (middleColumnX - 4) && mouseX < (middleColumnX + 166)
             && mouseY >= bodyY && mouseY < (bodyY + bodyHeight);
 
-        return hoveringPhysical || hoveringVirtual;
+        return hovering ? handsSlot : null;
     }
 
     public int getColumnX(int colIndex) {
@@ -329,21 +344,31 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
-        
+
         if (isMouseOverVicinity(scaledX, scaledY)) {
-            this.scrollAmount = Math.max(0.0, this.scrollAmount - amount * 12.0);
+            this.scrollAmount = Math.max(0.0, this.scrollAmount - scrollY * 12.0);
             this.updateSlotPositions();
             return true;
         }
-        return super.mouseScrolled(scaledX, scaledY, amount);
+        return super.mouseScrolled(scaledX, scaledY, scrollX, scrollY);
     }
 
     @Override
+// 1.21.11 replaced the raw (mouseX, mouseY, button) input parameters with
+// event objects; below that the coordinates still arrive as arguments.
+//? if >=1.21.11 {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
+//?} else {
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        boolean doubleClick = false;
+//?}
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
@@ -396,7 +421,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 // Bypass redirection to open the vanilla InventoryScreen where Trinkets slots render perfectly
                 Platform.allowVanillaInventory = true;
-                this.minecraft.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(this.minecraft.player));
+                // 26.2 deleted Minecraft#setScreen; Gui#setScreen is the real
+                // screen setter, and it is what the redirect mixin hooks.
+                this.minecraft.gui.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(this.minecraft.player));
                 Platform.allowVanillaInventory = false;
                 return true;
             }
@@ -427,7 +454,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                     if (index < vicinityItems.size()) {
                         // Ground Item Clicked
                         ItemEntity itemEntity = vicinityItems.get(index);
+//? if >=1.21.11 {
+                        if ((event.modifiers() & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) {
+//?} else {
                         if (Screen.hasShiftDown()) {
+//?}
                             FriendlyByteBuf buf = new FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
                             buf.writeInt(itemEntity.getId());
                             Platform.HELPER.sendPacketToServer(DayZInventoryPackets.QUICK_PICKUP_ITEM_PACKET, buf);
@@ -481,11 +512,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 }
             }
         }
+//? if >=1.21.11 {
+        return super.mouseClicked(new MouseButtonEvent(scaledX, scaledY, event.buttonInfo()), doubleClick);
+//?} else {
         return super.mouseClicked(scaledX, scaledY, button);
+//?}
     }
 
     @Override
+//? if >=1.21.11 {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+//?} else {
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
+//?}
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
@@ -506,7 +547,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 Platform.HELPER.sendPacketToServer(DayZInventoryPackets.PICKUP_ITEM_PACKET, buf);
             } else if (releasedOverSurvivor) {
                 // Auto equip ground item if equippable
-                net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(this.draggedStack);
+                net.minecraft.world.entity.EquipmentSlot equipSlot = this.minecraft.player.getEquipmentSlotForItem(this.draggedStack);
                 int targetSlotIdx = -1;
                 if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
                     targetSlotIdx = containerSize + 36;
@@ -537,14 +578,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         if (this.draggedSlot != null) {
             Slot releaseSlot = this.getSlotAt(scaledX, scaledY);
             if (releaseSlot != null && releaseSlot != this.draggedSlot) {
-                this.slotClicked(releaseSlot, releaseSlot.index, 0, net.minecraft.world.inventory.ClickType.PICKUP);
+                this.slotClicked(releaseSlot, releaseSlot.index, 0, net.minecraft.world.inventory.ContainerInput.PICKUP);
                 this.draggedSlot = null;
                 return true;
             } else if (releasedOverSurvivor && releaseSlot != this.draggedSlot) {
                 // Dragged onto survivor panel -> auto equip if equippable (skip if dropping back on the source slot)
                 ItemStack draggedItem = this.menu.getCarried();
                 if (!draggedItem.isEmpty()) {
-                    net.minecraft.world.entity.EquipmentSlot equipSlot = net.minecraft.world.entity.LivingEntity.getEquipmentSlotForItem(draggedItem);
+                    net.minecraft.world.entity.EquipmentSlot equipSlot = this.minecraft.player.getEquipmentSlotForItem(draggedItem);
                     int targetSlotIdx = -1;
                     if (equipSlot == net.minecraft.world.entity.EquipmentSlot.HEAD) {
                         targetSlotIdx = containerSize + 36;
@@ -560,28 +601,40 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                     
                     if (targetSlotIdx != -1) {
                         Slot armorSlot = this.menu.slots.get(targetSlotIdx);
-                        this.slotClicked(armorSlot, targetSlotIdx, 0, net.minecraft.world.inventory.ClickType.PICKUP);
+                        this.slotClicked(armorSlot, targetSlotIdx, 0, net.minecraft.world.inventory.ContainerInput.PICKUP);
                         this.draggedSlot = null;
                         return true;
                     }
                 }
             } else if (scaledX < leftPos || scaledY < topPos || scaledX > leftPos + imageWidth || scaledY > topPos + imageHeight) {
                 // Drop item outside bounds
-                this.slotClicked(null, -999, 0, net.minecraft.world.inventory.ClickType.PICKUP);
+                this.slotClicked(null, -999, 0, net.minecraft.world.inventory.ContainerInput.PICKUP);
                 this.draggedSlot = null;
                 return true;
             }
             this.draggedSlot = null;
         }
 
+//? if >=1.21.11 {
+        return super.mouseReleased(new MouseButtonEvent(scaledX, scaledY, event.buttonInfo()));
+//?} else {
         return super.mouseReleased(scaledX, scaledY, button);
+//?}
     }
 
     @Override
+//? if >=1.21.11 {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        float scale = getGuiScale();
+        return super.mouseDragged(new MouseButtonEvent(event.x() / scale, event.y() / scale, event.buttonInfo()),
+                                   dragX / scale, dragY / scale);
+    }
+//?} else {
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         float scale = getGuiScale();
         return super.mouseDragged(mouseX / scale, mouseY / scale, button, dragX / scale, dragY / scale);
     }
+//?}
 
     private Slot getSlotAt(double mouseX, double mouseY) {
         int containerSize = this.menu.getContainerInventory() != null ? this.menu.getContainerInventory().getContainerSize() : 0;
@@ -592,7 +645,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
-            selectedSlot = this.minecraft.player.getInventory().selected;
+            selectedSlot = this.minecraft.player.getInventory().getSelectedSlot();
         }
         Slot handsSlot = this.menu.slots.get(containerSize + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();
@@ -616,7 +669,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
+//? if >=1.21.11 {
+    protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top) {
+//?} else {
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
+//?}
         if (getSlotAt(mouseX, mouseY) != null) {
             return false;
         }
@@ -626,20 +683,45 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         return mouseX < left || mouseY < top || mouseX > left + imageWidth || mouseY > top + imageHeight;
     }
 
+    /**
+     * Deliberately empty.
+     * <p>
+     * 26.2 calls this from {@code Screen#extractRenderStateWithTooltipAndSubtitles},
+     * which runs <b>before</b> {@link #extractRenderState} and outside this screen's
+     * GUI scale. Vanilla puts two things here - the full-screen dim and the container
+     * background (this screen's DayZ panels) - and they need opposite treatment: the
+     * dim must be drawn at identity pose or it only covers {@code width/scale} of the
+     * screen, while the panels must be drawn <i>under</i> the scale or the layout is
+     * wrong.
+     * <p>
+     * So neither is done here. {@link #extractRenderState} draws the dim at identity
+     * and then calls {@link #drawDayZPanels} once the scale is applied.
+     */
     @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+//? if >=1.21.11 {
+        return;
+//?} else {
+        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+//?}
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         // Restore cursor positions on render frame tick if requested
         if (needsMouseRestore && this.minecraft != null) {
             needsMouseRestore = false;
-            org.lwjgl.glfw.GLFW.glfwSetCursorPos(this.minecraft.getWindow().getWindow(), lastMouseX, lastMouseY);
+            org.lwjgl.glfw.GLFW.glfwSetCursorPos(this.minecraft.getWindow().handle(), lastMouseX, lastMouseY);
             
             // Re-calculate scaled mouseX and mouseY so hover checks resolve correctly on this frame
             mouseX = (int) (lastMouseX * (double) this.minecraft.getWindow().getGuiScaledWidth() / (double) this.minecraft.getWindow().getWidth());
             mouseY = (int) (lastMouseY * (double) this.minecraft.getWindow().getGuiScaledHeight() / (double) this.minecraft.getWindow().getHeight());
         }
 
-        // Draw the background dim overlay at full physical 1x scale
-        this.renderBackground(guiGraphics);
+        // Full-screen dim, drawn here at identity pose before the GUI scale is
+        // applied below, so it always covers the entire screen. These are the
+        // same colours vanilla's Screen#renderTransparentBackground uses.
+        guiGraphics.fillGradient(0, 0, this.width, this.height, -1072689136, -804253680);
 
         float scale = getGuiScale();
         int scaledMouseX = (int) (mouseX / scale);
@@ -649,17 +731,22 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         this.hoveredContainer = null;
 
         // Push pose and apply scale
-        guiGraphics.pose().pushPose();
-        guiGraphics.pose().scale(scale, scale, 1.0f);
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().scale(scale, scale);
 
         this.updateSlotPositions();
-        super.render(guiGraphics, scaledMouseX, scaledMouseY, partialTick);
-        this.renderTooltip(guiGraphics, scaledMouseX, scaledMouseY);
+        // The DayZ panels are laid out in the scaled coordinate space, so they
+        // have to be drawn here rather than from extractBackground.
+//? if >=1.21.11 {
+        this.drawDayZPanels(guiGraphics, partialTick, scaledMouseX, scaledMouseY);
+//?}
+        super.extractRenderState(guiGraphics, scaledMouseX, scaledMouseY, partialTick);
+        this.extractTooltip(guiGraphics, scaledMouseX, scaledMouseY);
 
         // Render custom dragged stack on cursor
         if (this.draggedStack != null && !this.draggedStack.isEmpty()) {
-            guiGraphics.renderFakeItem(this.draggedStack, scaledMouseX - 8, scaledMouseY - 8);
-            guiGraphics.renderItemDecorations(this.font, this.draggedStack, scaledMouseX - 8, scaledMouseY - 8);
+            guiGraphics.fakeItem(this.draggedStack, scaledMouseX - 8, scaledMouseY - 8);
+            guiGraphics.itemDecorations(this.font, this.draggedStack, scaledMouseX - 8, scaledMouseY - 8);
         }
 
         // Render tooltip for vicinity items
@@ -678,12 +765,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 int row = (int) ((clickY - 5) / 18);
                 int index = row * 9 + col;
                 if (index >= 0 && index < vicinityItems.size()) {
-                    guiGraphics.renderTooltip(this.font, vicinityItems.get(index).getItem(), scaledMouseX, scaledMouseY);
+                    guiGraphics.setTooltipForNextFrame(this.font, vicinityItems.get(index).getItem(), scaledMouseX, scaledMouseY);
                 }
             }
         }
         
-        guiGraphics.pose().popPose();
+        guiGraphics.pose().popMatrix();
 
         // Render unscaled Container Details Tooltip at 1x global scale if hovered
         if (this.hoveredContainer != null && this.minecraft != null && this.minecraft.player != null) {
@@ -693,17 +780,29 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             double dist = Math.sqrt(this.minecraft.player.distanceToSqr(this.hoveredContainer.pos.getX() + 0.5, this.hoveredContainer.pos.getY() + 0.5, this.hoveredContainer.pos.getZ() + 0.5));
             tooltipText.add(Component.literal("Distance: " + String.format("%.1f", dist) + "m").withStyle(net.minecraft.ChatFormatting.GREEN));
             
-            guiGraphics.renderComponentTooltip(this.font, tooltipText, mouseX, mouseY);
+            guiGraphics.setComponentTooltipForNextFrame(this.font, tooltipText, mouseX, mouseY);
         }
     }
 
     @Override
-    protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        // Disable default label rendering (we render custom headers in renderBg)
+    protected void extractLabels(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        // Disable default label rendering (we render custom headers in drawDayZPanels)
     }
 
+    /**
+     * Draws the DayZ panels.
+     * <p>
+     * This is no longer an override: 26.2 removed
+     * {@code AbstractContainerScreen#renderBg} entirely, so the method it used to
+     * override does not exist. It is now a plain private helper called from
+     * {@link #extractRenderState}, which is what it always effectively was.
+     */
+//? if >=26.2 {
+    private void drawDayZPanels(GuiGraphicsExtractor guiGraphics, float partialTick, int mouseX, int mouseY) {
+//?} else {
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+//?}
         int leftColumnX = getColumnX(0);
         int middleColumnX = getColumnX(1);
         int rightColumnX = getColumnX(2);
@@ -737,8 +836,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         drawSectionPanel(guiGraphics, rx - PAD, topPos + 28, PANEL_W, 56);
         drawSectionPanel(guiGraphics, rx - PAD, topPos + 90, PANEL_W, 90);
         guiGraphics.fill(rx - PAD, topPos + 107, rx - PAD + PANEL_W, topPos + 108, 0x10FFFFFF); // separator
-        guiGraphics.drawString(this.font, "CRAFTING", rx + 80 - (this.font.width("CRAFTING") / 2), topPos + 96, 0xFFDFDFDF, false);
-        guiGraphics.drawString(this.font, "->", rx + 72, topPos + 130, 0xFFDFDFDF, false);
+        guiGraphics.text(this.font, "CRAFTING", rx + 80 - (this.font.width("CRAFTING") / 2), topPos + 96, 0xFFDFDFDF, false);
+        guiGraphics.text(this.font, "->", rx + 72, topPos + 130, 0xFFDFDFDF, false);
         drawSectionPanel(guiGraphics, rx - PAD, topPos + imageHeight - 32, PANEL_W, 20);
 
         // Draw recipe viewer toggle button if JEI/REI/EMI is loaded
@@ -756,7 +855,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                                scaledMouseY >= btnY && scaledMouseY < btnY + btnH;
             guiGraphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, hoverBtn ? 0x35FFFFFF : 0x15FFFFFF);
             int textW = this.font.width(toggleBtnText);
-            guiGraphics.drawString(this.font, toggleBtnText, btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
+            guiGraphics.text(this.font, toggleBtnText, btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
         }
 
         // Draw Curios button if Curios is loaded
@@ -771,7 +870,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                                scaledMouseY >= btnY && scaledMouseY < btnY + btnH;
             guiGraphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, hoverBtn ? 0x35FFFFFF : 0x15FFFFFF);
             int textW = this.font.width("CURIOS");
-            guiGraphics.drawString(this.font, "CURIOS", btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
+            guiGraphics.text(this.font, "CURIOS", btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
         }
 
         // Draw Trinkets button if Trinkets is loaded
@@ -784,14 +883,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                                scaledMouseY >= btnY && scaledMouseY < btnY + btnH;
             guiGraphics.fill(btnX, btnY, btnX + btnW, btnY + btnH, hoverBtn ? 0x35FFFFFF : 0x15FFFFFF);
             int textW = this.font.width("TRINKETS");
-            guiGraphics.drawString(this.font, "TRINKETS", btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
+            guiGraphics.text(this.font, "TRINKETS", btnX + (btnW - textW) / 2, btnY + (btnH - 8) / 2 + 1, 0xFFDFDFDF, false);
         }
 
         // 2. Draw Column Header Texts
         int lx2 = getColumnX(0), mx2 = getColumnX(1), rx2 = getColumnX(2);
-        guiGraphics.drawString(this.font, "VICINITY",  lx2 + (162 - this.font.width("VICINITY"))  / 2, topPos + 9, 0xFFFFFFFF, true);
-        guiGraphics.drawString(this.font, "SURVIVOR",  mx2 + (162 - this.font.width("SURVIVOR"))  / 2, topPos + 9, 0xFFFFFFFF, true);
-        guiGraphics.drawString(this.font, "INVENTORY", rx2 + (162 - this.font.width("INVENTORY")) / 2, topPos + 9, 0xFFFFFFFF, true);
+        guiGraphics.text(this.font, "VICINITY",  lx2 + (162 - this.font.width("VICINITY"))  / 2, topPos + 9, 0xFFFFFFFF, true);
+        guiGraphics.text(this.font, "SURVIVOR",  mx2 + (162 - this.font.width("SURVIVOR"))  / 2, topPos + 9, 0xFFFFFFFF, true);
+        guiGraphics.text(this.font, "INVENTORY", rx2 + (162 - this.font.width("INVENTORY")) / 2, topPos + 9, 0xFFFFFFFF, true);
 
         // 3. Draw Hands Panel at the bottom of the middle column
         int mx3 = getColumnX(1);
@@ -800,11 +899,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         
         drawSectionPanel(guiGraphics, mx3 - 2, handsPanelY, 166, 70);
         guiGraphics.fill(mx3 - 2, handsPanelY + 15, mx3 + 164, handsPanelY + 16, 0x10FFFFFF); // divider line
-        guiGraphics.drawString(this.font, "HANDS", mx3 + 81 - (this.font.width("HANDS") / 2), handsPanelY + 4, 0xFFDFDFDF, false);
+        guiGraphics.text(this.font, "HANDS", mx3 + 81 - (this.font.width("HANDS") / 2), handsPanelY + 4, 0xFFDFDFDF, false);
         
         int selectedSlot = 0;
         if (this.minecraft != null && this.minecraft.player != null) {
-            selectedSlot = this.minecraft.player.getInventory().selected;
+            selectedSlot = this.minecraft.player.getInventory().getSelectedSlot();
         }
         Slot handsSlot = this.menu.slots.get(containerSize2 + 27 + selectedSlot);
         ItemStack handsStack = handsSlot.getItem();
@@ -814,7 +913,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         if (!handsStack.isEmpty()) {
             String handsItemName = handsStack.getHoverName().getString().toUpperCase();
             guiGraphics.fill(mx3 - 2, handsPanelY + 27, mx3 + 164, handsPanelY + 28, 0x10FFFFFF);
-            guiGraphics.drawString(this.font, handsItemName, mx3 + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
+            guiGraphics.text(this.font, handsItemName, mx3 + 81 - (this.font.width(handsItemName) / 2), handsPanelY + 17, 0xFFDFDFDF, false);
         }
 
         // Draw custom hover highlight for the Hands slot body
@@ -826,53 +925,51 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         // Render the 2.0x scaled hand item icon
         if (!handsStack.isEmpty()) {
-            guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(middleColumnX + 65, bodyY + 5, 100);
-            guiGraphics.pose().scale(2.0F, 2.0F, 1.0F);
-            guiGraphics.renderFakeItem(handsStack, 0, 0);
-            guiGraphics.renderItemDecorations(this.font, handsStack, 0, 0);
-            guiGraphics.pose().popPose();
+            guiGraphics.pose().pushMatrix();
+            guiGraphics.pose().translate(middleColumnX + 65, bodyY + 5);
+            guiGraphics.pose().scale(2.0F, 2.0F);
+            guiGraphics.fakeItem(handsStack, 0, 0);
+            guiGraphics.itemDecorations(this.font, handsStack, 0, 0);
+            guiGraphics.pose().popMatrix();
         }
 
         if (this.minecraft != null && this.minecraft.player != null) {
-            // Draw 3D Player entity
+            // Draw 3D Player entity.
+            //
+            // 1.21.11 removed InventoryScreen.renderEntityInInventory; only the
+            // follows-mouse variant survives, and it performs the manual body/head
+            // rotation this block used to do by hand. The bounding box and scale
+            // mirror vanilla's own inventory preview, scaled up for this panel.
             int renderX = middleColumnX + 81;
             int renderY = topPos + 135;
             int renderScale = 55;
-            
-            float f = (float) Math.atan((double) ((renderX - mouseX) / 40.0F));
-            float g = (float) Math.atan((double) ((topPos + 80 - mouseY) / 40.0F));
-            Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
-            Quaternionf cameraPose = (new Quaternionf()).rotateX(g * 20.0F * ((float) Math.PI / 180.0F));
-            pose.mul(cameraPose);
+            int halfWidth = 45;
+            int halfHeight = 64;
 
-            float backupBodyRot = this.minecraft.player.yBodyRot;
-            float backupYRot = this.minecraft.player.getYRot();
-            float backupXRot = this.minecraft.player.getXRot();
-            float backupHeadRotO = this.minecraft.player.yHeadRotO;
-            float backupHeadRot = this.minecraft.player.yHeadRot;
+            // This does NOT draw immediately: it queues a render state that is
+            // drawn in a later pass, outside this screen's GUI scale. So the box
+            // has to be converted from our scaled layout space into real screen
+            // coordinates, or the model lands wherever those numbers happen to
+            // fall on screen instead of inside the panel.
+            float guiScale = getGuiScale();
 
-            this.minecraft.player.yBodyRot = 180.0F + f * 20.0F;
-            this.minecraft.player.setYRot(180.0F + f * 40.0F);
-            this.minecraft.player.setXRot(-g * 20.0F);
-            this.minecraft.player.yHeadRot = this.minecraft.player.getYRot();
-            this.minecraft.player.yHeadRotO = this.minecraft.player.getYRot();
+            // renderY used to mean the model's FEET - the old API translated to
+            // (x, y) before drawing, and models are drawn from the feet up. The
+            // replacement centres the model in the box instead, so the box centre
+            // has to be raised by half the model's rendered height to land the
+            // model where it used to sit.
+            float modelHeightPx = this.minecraft.player.getBbHeight() * (float) renderScale;
+            int boxCentreY = renderY - Math.round(modelHeightPx / 2.0f);
 
-            InventoryScreen.renderEntityInInventory(
+            InventoryScreen.extractEntityInInventoryFollowsMouse(
                 guiGraphics,
-                renderX,
-                renderY,
-                renderScale,
-                pose,
-                cameraPose,
+                Math.round((renderX - halfWidth) * guiScale), Math.round((boxCentreY - halfHeight) * guiScale),
+                Math.round((renderX + halfWidth) * guiScale), Math.round((boxCentreY + halfHeight) * guiScale),
+                Math.round(renderScale * guiScale),
+                0.0625F,
+                (float) mouseX * guiScale, (float) mouseY * guiScale,
                 this.minecraft.player
             );
-
-            this.minecraft.player.yBodyRot = backupBodyRot;
-            this.minecraft.player.setYRot(backupYRot);
-            this.minecraft.player.setXRot(backupXRot);
-            this.minecraft.player.yHeadRotO = backupHeadRotO;
-            this.minecraft.player.yHeadRot = backupHeadRot;
         }
 
         // 4. Draw DayZ-style Slot Backgrounds
@@ -900,7 +997,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
     }
 
-    private void renderVicinityList(GuiGraphics guiGraphics, int mouseX, int mouseY, float scale) {
+    private void renderVicinityList(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float scale) {
         int leftColumnX = getColumnX(0);
         int startY = topPos + 25;
         int viewportHeight = this.imageHeight - 40;
@@ -919,7 +1016,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         int rows = (int) Math.ceil(totalCount / 9.0);
         
         if (totalCount == 0) {
-            guiGraphics.drawString(this.font, "No items nearby", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFF888888, false);
+            guiGraphics.text(this.font, "No items nearby", leftColumnX + 4, startY + relY - (int) scrollAmount, 0xFF888888, false);
             relY += 15;
         } else {
             for (int i = 0; i < totalCount; i++) {
@@ -941,12 +1038,12 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
                     if (i < vicinityItems.size()) {
                         ItemStack stack = vicinityItems.get(i).getItem();
-                        guiGraphics.renderFakeItem(stack, itemX + 1, itemY + 1);
-                        guiGraphics.renderItemDecorations(this.font, stack, itemX + 1, itemY + 1);
+                        guiGraphics.fakeItem(stack, itemX + 1, itemY + 1);
+                        guiGraphics.itemDecorations(this.font, stack, itemX + 1, itemY + 1);
                     } else {
                         int containerIndex = i - vicinityItems.size();
                         ContainerBlockInfo container = nearbyContainers.get(containerIndex);
-                        guiGraphics.renderFakeItem(container.icon, itemX + 1, itemY + 1);
+                        guiGraphics.fakeItem(container.icon, itemX + 1, itemY + 1);
                         
                         if (hovering) {
                             this.hoveredContainer = container;
@@ -956,10 +1053,10 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                         boolean isOpen = openPos != null && openPos.equals(container.pos);
                         String chevron = isOpen ? "^" : "v";
                         
-                        guiGraphics.pose().pushPose();
-                        guiGraphics.pose().translate(0, 0, 200.0F);
-                        guiGraphics.drawString(this.font, chevron, itemX + 11, itemY + 9, 0xFFFFFFFF, true);
-                        guiGraphics.pose().popPose();
+                        guiGraphics.pose().pushMatrix();
+                        guiGraphics.pose().translate(0, 0);
+                        guiGraphics.text(this.font, chevron, itemX + 11, itemY + 9, 0xFFFFFFFF, true);
+                        guiGraphics.pose().popMatrix();
                     }
                 }
             }
@@ -983,11 +1080,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             
             if (headerY + 18 >= startY && headerY <= endY) {
                 drawSectionPanel(guiGraphics, leftColumnX - 1, headerY, 162, 18);
-                guiGraphics.drawString(this.font, containerName, leftColumnX + 5, headerY + 5, 0xFFDFDFDF, false);
+                guiGraphics.text(this.font, containerName, leftColumnX + 5, headerY + 5, 0xFFDFDFDF, false);
                 
                 boolean hoverClose = mouseX >= leftColumnX + 147 && mouseX < leftColumnX + 161 && mouseY >= headerY && mouseY <= headerY + 18;
                 int closeColor = hoverClose ? 0xFFE04040 : 0xFF888888;
-                guiGraphics.drawString(this.font, "x", leftColumnX + 150, headerY + 4, closeColor, false);
+                guiGraphics.text(this.font, "x", leftColumnX + 150, headerY + 4, closeColor, false);
             }
             
             relY += 18;
@@ -996,23 +1093,23 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         guiGraphics.disableScissor();
     }
 
-    private void drawSectionPanel(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+    private void drawSectionPanel(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height) {
         guiGraphics.fill(x, y, x + width, y + height, 0x9E0C0C0C);
     }
 
-    private void drawDayZSlot(GuiGraphics guiGraphics, int x, int y) {
+    private void drawDayZSlot(GuiGraphicsExtractor guiGraphics, int x, int y) {
         guiGraphics.fill(x + 1, y + 1, x + 17, y + 17, 0x18FFFFFF);
     }
 
-    private void drawDayZSlotLarge(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+    private void drawDayZSlotLarge(GuiGraphicsExtractor guiGraphics, int x, int y, int width, int height) {
         guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x15FFFFFF);
     }
 
     private void simulateKeyTap(int keyCode) {
         if (this.minecraft == null) return;
-        long window = this.minecraft.getWindow().getWindow();
-        this.minecraft.keyboardHandler.keyPress(window, keyCode, 0, 1, 0); // PRESS
-        this.minecraft.keyboardHandler.keyPress(window, keyCode, 0, 0, 0); // RELEASE
+        // KeyboardHandler#keyPress was removed in 1.21.11, so simulate a keybind
+        // click instead - which is what recipe viewers actually poll for.
+        KeyMapping.click(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
     }
 
     private void toggleRecipeViewerOverlay() {

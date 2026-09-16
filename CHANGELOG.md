@@ -1,3 +1,73 @@
+# DayZ Inventory 1.6.0 — one source tree, three Minecraft versions
+
+**The mod is unchanged. How it is built is not.**
+
+Until now every Minecraft version lived on its own Git branch: `main` for 1.20.1, and `1.21.1`,
+`1.21.11` and `26.2` alongside it. A bug fix had to be merged into each of them, and each merge had
+to be built and tested on its own. This release replaces that with a single branch that builds
+1.21.1, 1.21.11 and 26.2 for **both Fabric and NeoForge** from one source tree, and publishes all of
+them automatically.
+
+Nothing about the inventory screen changed. The Vicinity grid, Proximity Scanner, 2x2 crafting, the
+2.0x Hands slot, drag-to-equip and every optional integration behave exactly as before.
+
+## What this means for you
+
+- **Download the same way.** The files on Modrinth and CurseForge are still one per Minecraft
+  version and loader; the names now look like `dayz-inventory-fabric-26.2-1.6.0+mc26.2.jar`, with the
+  Minecraft version spelled out.
+- **1.20.1 is not gone.** The 1.20.1 files (Fabric and Forge) remain published and still work. They
+  come from the older per-version build and are not part of the unified tree yet — see below.
+- **Forge is not in the unified tree either.** Forge stopped at 1.20.x, so the only Forge targets
+  ever were 1.20.1 and 1.21.1.
+
+## How it is built now
+
+[Stonecutter](https://stonecutter.kikugie.dev/) preprocesses one shared source tree for several
+Minecraft versions, and the loader modules stay exactly as they were:
+
+```
+common/     loader-agnostic code, shared by every version
+fabric/     Fabric entrypoints
+neoforge/   NeoForge entrypoints
+forge/      legacy Forge module (present, not built)
+```
+
+Version differences are marked inline with `//? if` comments, so a method whose signature changed
+between 1.21.1 and 26.2 reads as one file with the two variants next to each other instead of as two
+branches that drift apart. Renames that touch dozens of lines — `ResourceLocation` to `Identifier`,
+`isClientSide` to `isClientSide()`, `GuiGraphics` to `GuiGraphicsExtractor` — are declared once in the
+build and applied automatically.
+
+| Minecraft | Fabric | NeoForge | Java |
+| :--- | :---: | :---: | :---: |
+| 26.2 | ✅ | ✅ | 25 |
+| 1.21.11 | ✅ | ✅ | 21 |
+| 1.21.1 | ✅ | ✅ | 21 |
+
+```bash
+./gradlew chiseledBuild          # every version × every loader
+./gradlew :fabric:26.2:build     # one target
+```
+
+## Automated publishing
+
+Every jar is now published with its own Minecraft version and loader tags, taken from
+`versions/<mc>/gradle.properties` rather than typed per release, so an artifact can no longer go up
+under the wrong game version. `./gradlew publishAll` releases the whole matrix; on a `v*` tag CI
+builds everything, attaches the jars to the GitHub Release and publishes to both platforms.
+
+Note that CurseForge routes every upload through human review: the API accepts the file and never
+returns a link, so a green CurseForge run means *submitted*, not *live*.
+
+## Still to come
+
+1.20.1 and Forge are scaffolded but not ported. 1.20.1 predates the 1.20.5 networking rewrite, so it
+has no custom payload records at all, and `forge/` still holds 1.20.1-era `SimpleChannel` code. The
+breakpoints are written down in `docs/BUILDING.en.md` so the port is a matter of following the list.
+
+---
+
 # DayZ Inventory 1.5.0 — now on Minecraft 26.2
 
 **DayZ Inventory is now available for Minecraft 26.2 on Fabric and NeoForge.**
@@ -65,123 +135,6 @@ ships Forge.
 
 Nothing changes for you. 1.20.1 (Fabric and Forge), 1.21.1 and 1.21.11 (Fabric and NeoForge) keep
 being built and will keep receiving fixes — pick the download matching your Minecraft version.
-
----
-
-# DayZ Inventory 1.4.3 (Minecraft 1.20.1)
-
-**Fixes the Forge build crashing on launch.** Update if you are on 1.20.1 Forge.
-
-If you downloaded 1.4.2 from Modrinth or CurseForge, that file was broken and this
-one replaces it. Nothing else changed.
-
-## Fixed: the Modrinth and CurseForge files were never reobfuscated
-
-1.4.2 fixed this for the build and for GitHub, but not for publishing, so two
-different 1.4.2 Forge jars existed:
-
-| Where it came from | `Registries.` reference | Size |
-| :--- | :--- | :--- |
-| GitHub release | `f_256798_` | 967,133 bytes |
-| Modrinth / CurseForge | `MENU` | 966,295 bytes |
-
-Forge resolves members against SRG at runtime, so the Modrinth and CurseForge jars
-died before the game window opened:
-
-```
-java.lang.NoSuchFieldError: MENU
-    at DayZInventoryForge.<clinit>(DayZInventoryForge.java:41)
-```
-
-The reobfuscation step was wired to `assemble`, but `publishMods` read the `jar`
-task's output and depended only on `jar` - and publishing on its own never runs
-`assemble`. So the fix-up silently did not happen on the publishing path, and the
-upload was of the development jar. `--dry-run` confirmed it: the publish task graph
-contained no reobfuscation step at all.
-
-Two separate problems were behind that. The reobfuscation step declared the *same
-output file* as the `jar` task, so which file was correct depended on task ordering;
-and publishing referenced a path rather than the task that produces it, so nothing
-tied the upload to the reobfuscation.
-
-Now the `jar` task writes to `build/devlibs`, a single task produces the reobfuscated
-jar in `build/libs`, and publishing reads that task's output - so publishing depends
-on reobfuscation instead of hoping another task ran first.
-
-Releases are now checked by opening the built jar and confirming its own classes
-reference SRG names, and by confirming `:forge:publishMods` shows the reobfuscation
-step in its task graph.
-
-## Not affected
-
-Fabric on 1.20.1, and both loaders on 1.21.1 and 1.21.11, are unaffected and stay on
-their current versions.
-
----
-
-# DayZ Inventory 1.4.2 (Minecraft 1.20.1)
-
-**Fixes the Forge build crashing on launch.** Update if you are on 1.20.1 Forge.
-
-(1.4.1 was published but still failed to launch - it fixed one of two faults. Use 1.4.2.)
-
-## Fixed: Forge crashed as soon as you opened a container
-
-The 1.4.0 Forge jar failed during Mixin application, before the inventory screen
-could appear:
-
-```
-@Shadow field menu was not located in the target class
-net.minecraft.client.gui.screens.AbstractContainerScreen
-```
-
-One of the mixins shadowed four fields of the container screen, and those shadows
-produce no refmap entry. Forge resolves shadow fields purely from the refmap, so it
-went looking for fields literally named `menu` and failed. Fabric resolves them
-through its own mapping resolver, which is why only Forge was affected.
-
-The check now lives in the screen class itself, which inherits those fields and can
-read them without shadowing anything. Behaviour is unchanged.
-
-This slipped through because the development client runs on official names, where
-the shadows resolve by name - only the packaged jar was ever affected. Releases are
-now checked against the built jar, not just a development run.
-
-## Fixed: Forge crashed during mod construction
-
-With the mixin fault above out of the way, the next one appeared immediately:
-
-```
-java.lang.NoSuchFieldError: MENU
-    at DayZInventoryForge.<clinit>(DayZInventoryForge.java:41)
-```
-
-The shipped Forge jar had **never been reobfuscated**. ForgeGradle writes the
-reobfuscated jar to its own output directory, and the file that was being packaged -
-the one in `build/libs` - kept the game's official field names. Forge runs on SRG,
-so `Registries.MENU` did not exist at runtime; it should have been
-`Registries.f_256798_`. The published jar contained zero SRG references anywhere.
-
-The reobfuscated jar is now the one packaged, so `build/libs` always contains
-something Forge can actually load.
-
-## Why both of these reached you
-
-Development runs use the game's official names, where both faults resolve cleanly.
-`:forge:runClient` worked perfectly throughout, and only the packaged jar was ever
-affected. Releases are now checked by inspecting the built jar itself rather than
-trusting a successful build or a working development client.
-
-## Also fixed
-
-`mods.toml` declared its version by hand and had drifted - a 1.4.1 jar still
-reported itself as 1.4.0 in crash reports. It now derives from the project version,
-as `fabric.mod.json` already did.
-
-## Not affected
-
-Fabric on 1.20.1, and both loaders on 1.21.1 and 1.21.11, are unaffected by this
-and stay on 1.4.0.
 
 ---
 

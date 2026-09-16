@@ -2,10 +2,9 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "com.suoim.dayzinventory.client.mixin",
-	"compatibilityLevel": "JAVA_17",
-	"refmap": "dayz-inventory.refmap.json",
+	"compatibilityLevel": "${mixin_compat}",
 	"client": [
-		"MinecraftClientMixin",
+		"ScreenRedirectMixin",
 		"AbstractContainerScreenMixin"
 	],
 	"injectors": {
