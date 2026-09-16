@@ -49,11 +49,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: dayz-inventory
-          # The shippable artifacts live under <branch>/versions/<mc>/build/libs.
-          # `-sources.jar` files are build output, not releases.
+          # Only the loader branches ship. The `common` branch is a compile-time
+          # intermediate - `chiseledBuild` builds it to catch errors early, but its
+          # jar carries no loader metadata and must never reach a release page.
+          # `-sources.jar` files are build output too.
           path: |
-            */versions/*/build/libs/*.jar
-            !*/versions/*/build/libs/*-sources.jar
+            fabric/versions/*/build/libs/*.jar
+            neoforge/versions/*/build/libs/*.jar
+            !**/*-sources.jar
           if-no-files-found: error
 
   release:
