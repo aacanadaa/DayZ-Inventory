@@ -27,7 +27,10 @@ the Loom flavour — and the task is resolved after evaluation. A build-time che
 anything whose name contains `-dev`, so a regression fails loudly instead of reaching users.
 
 The matching Modrinth versions have been deleted. The two CurseForge files have to be removed from
-the project dashboard by hand, because the upload token cannot delete files.
+the project dashboard by hand, because the upload token cannot delete files:
+
+- `dayz-inventory-fabric-1.21.1-1.7.1+mc1.21.1-dev.jar`
+- `dayz-inventory-fabric-1.21.11-1.7.1+mc1.21.11-dev.jar`
 
 ---
 
