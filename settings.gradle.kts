@@ -45,6 +45,9 @@ pluginManagement {
         id("dev.kikugie.loom-back-compat") version "0.4.2"
         id("net.neoforged.moddev") version "2.0.147"
         id("net.neoforged.moddev.legacyforge") version "2.0.147"
+        // ForgeGradle 7 is `net.minecraftforge:forgegradle`, published on the
+        // Gradle Plugin Portal as well as Forge's maven.
+        id("net.minecraftforge.gradle") version "7.0.40"
         id("me.modmuss50.mod-publish-plugin") version "2.1.1"
     }
 
@@ -91,7 +94,10 @@ gradle.beforeProject {
 
 val fabricVersions = listOf("1.21.1", "1.21.11", "26.2")
 val neoforgeVersions = listOf("1.21.1", "1.21.11", "26.2")
-val commonVersions = (fabricVersions + neoforgeVersions).distinct()
+// Forge stopped being a first-class target after 1.20.x and the ecosystem moved
+// to NeoForge, so 1.21.1 is the newest version Forge can be built for at all.
+val forgeVersions = listOf("1.21.1")
+val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
 
 // ---------------------------------------------------------------------------
 // Not enabled yet
@@ -107,14 +113,11 @@ val commonVersions = (fabricVersions + neoforgeVersions).distinct()
 //     `ExtendedScreenHandlerType` opening-data codec has to be replaced by
 //     `writeScreenOpeningData`. Still built from the `main` branch.
 //
-//   * Forge (1.20.1, 1.21.1) - `forge/` still holds the 1.20.1-era
-//     `SimpleChannel`/`NetworkRegistry` networking. Porting it to the payload
-//     model is the same work the NeoForge module already had done, against
-//     `net.minecraftforge` rather than `net.neoforged` packages.
+//   * Forge 1.20.1 - the one remaining Forge target. `versions/1.20.1/gradle.properties`
+//     already carries its coordinates; what is missing is the 1.20.1 source
+//     port itself (see the entry above). Adding `"1.20.1"` to `forgeVersions`
+//     is all the build wiring that is left.
 //
-// Uncommenting either line below is all the build wiring that is needed.
-//
-// val oldFabricVersions = listOf("1.20.1")
 // val forgeVersions = listOf("1.20.1", "1.21.1")
 
 stonecutter {
@@ -129,6 +132,7 @@ stonecutter {
         // read those files directly.
         branch("common") { versions(*commonVersions.toTypedArray()) }
         branch("fabric") { versions(*fabricVersions.toTypedArray()) }
+        branch("forge") { versions(*forgeVersions.toTypedArray()) }
         branch("neoforge") { versions(*neoforgeVersions.toTypedArray()) }
     }
 }

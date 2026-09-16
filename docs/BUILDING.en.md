@@ -183,14 +183,30 @@ all, which is the target most likely to be worked on.
 
 ## 6. The version matrix
 
-| Minecraft | Node | Java | Fabric Loom | Notes |
+| Minecraft | Nodes | Java | Fabric Loom | Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | 26.2 | `:fabric:26.2`, `:neoforge:26.2` | 25 | `fabric-loom` (unobfuscated) | no mappings, no refmaps, no remap step |
 | 1.21.11 | `:fabric:1.21.11`, `:neoforge:1.21.11` | 21 | `fabric-loom-remap` | last obfuscated line; input events are objects |
-| 1.21.1 | `:fabric:1.21.1`, `:neoforge:1.21.1` | 21 | `fabric-loom-remap` | payload networking; raw mouse coordinates |
+| 1.21.1 | `:fabric:1.21.1`, `:forge:1.21.1`, `:neoforge:1.21.1` | 21 | `fabric-loom-remap` | payload networking; raw mouse coordinates |
 
 `loom-back-compat` picks the Loom flavour from `sc.current.parsed < "26"` and aliases the `mod*`
 configurations the unobfuscated Loom removed, so one build script covers both sides of that split.
+
+### The Forge toolkit
+
+Forge has no workable plugin of its own here, so it is worth recording what was tried:
+
+| Toolkit | Usable? | Why |
+| :--- | :--- | :--- |
+| ForgeGradle 6 | no | Gradle 8 only, and Loom 1.18.1 needs Gradle 9 |
+| ModDevGradle `legacyforge` | no | asks for `net.minecraftforge:forge:<v>:universal-srg` - a classifier that only exists for the pre-1.20.2 SRG layout, so it cannot build 1.21.1 |
+| **ForgeGradle 7** | **yes** | the rewrite that runs on Gradle 9.3+; resolves Forge through its own mavenizer |
+
+ForgeGradle 7 is *stateless*: applying it does nothing until `minecraft.dependency(...)` is declared,
+and it does not add its own repositories once another plugin has already declared some.
+`forge/build.gradle.kts` therefore registers the mavenizer repository and Mojang's libraries
+repository explicitly. Without them the Forge dependency resolves to an empty module and every
+`net.minecraft.*` import fails - which reads as a source problem and is not one.
 
 ## 7. Targets that are not enabled yet
 
@@ -215,12 +231,16 @@ The `GuiGraphics` era also differs: `render` takes `(GuiGraphics, int, int, floa
 `renderContents`; the inventory-screen redirect mixin targets `Minecraft#setScreen`, not
 `Gui#setScreen`.
 
-### Forge (1.20.1, 1.21.1)
+### Forge
 
-`forge/` still contains 1.20.1-era `SimpleChannel` / `NetworkRegistry` / `registerMessage` code. The
-1.21.1 Forge module needs the same payload-based networking the NeoForge module already has, against
-`net.minecraftforge` packages. `forge/build.gradle.kts` uses ModDevGradle's `legacyforge` platform,
-which is wired up and resolving - only the sources need porting.
+Forge 1.21.1 is **done**. `forge/` was ported off the 1.20.1-era `SimpleChannel` /
+`NetworkRegistry` / `registerMessage` stack onto the payload API under `net.minecraftforge`, and
+`:forge:1.21.1` builds, packages and publishes like any other node. It finds its mixin configs
+through the `MixinConfigs` jar manifest attribute, because Forge does not understand the
+`[[mixins]]` blocks in `mods.toml` that NeoForge uses.
+
+1.20.1 Forge is blocked on the 1.20.1 port above, not on anything Forge-specific. Forge has no
+releases past 1.20.x, so 1.21.1 is the newest version it can ever be built for.
 
 ## 8. Adding a Minecraft version
 
@@ -228,7 +248,8 @@ which is wired up and resolving - only the sources need porting.
    `deps.minecraft`, `deps.java`, `deps.mixin-compat`, `deps.pack-format`, the loader versions and
    `meta.minecraft-range`.
 2. Add the version to the relevant list in `settings.gradle.kts`.
-3. Run `./gradlew :common:<mc>:compileJava` and port what breaks.
+3. Run `./gradlew :common:<mc>:compileJava` and port what breaks. Add the version to `forgeVersions`
+   as well if it is 1.20.1 or 1.21.1 - Forge has no later releases.
 4. Add the version to `README.md` / `README.en.md` and to the store descriptions in
    `docs/store-descriptions/`.
 5. `./gradlew chiseledBuild` to confirm the whole matrix still builds.
