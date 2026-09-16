@@ -1,49 +1,49 @@
 modLoader="javafml"
 loaderVersion="[4,)"
-license="Apache-2.0"
-issueTrackerURL="https://github.com/aacanadaa/DayZ-Inventory/issues"
+license="${mod_license}"
+issueTrackerURL="${mod_issues}"
 
 [[mods]]
-modId="dayz_inventory"
-# Expanded from project.version by processResources. Keep it a placeholder:
+modId="${mod_id}"
+# Expanded from gradle.properties by processResources. Keep it a placeholder:
 # a hardcoded value here drifted once and shipped a 1.4.1 jar that reported
 # itself as 1.4.0 in crash reports.
 version="${version}"
-displayName="DayZ Inventory"
-authors="suoim"
-description="A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the DayZ inventory system into Minecraft."
+displayName="${mod_name}"
+authors="${mod_author}"
+description="${mod_description}"
 displayURL="https://modrinth.com/mod/dayz-inventory"
 logoFile="assets/dayz_inventory/icon.png"
 
-[[dependencies.dayz_inventory]]
+[[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
-versionRange="[26.2,)"
+versionRange="${neoforge_range}"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.dayz_inventory]]
+[[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
-versionRange="[26.2,26.3)"
+versionRange="${minecraft_range}"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.dayz_inventory]]
+[[dependencies.${mod_id}]]
 modId="jei"
 type="optional"
 versionRange="*"
 ordering="AFTER"
 side="CLIENT"
 
-[[dependencies.dayz_inventory]]
+[[dependencies.${mod_id}]]
 modId="curios"
 type="optional"
 versionRange="*"
 ordering="AFTER"
 side="BOTH"
 
-# NeoForge has no MixinGradle step and no refmap: it runs on official Mojang
+# NeoForge has no MixinGradle step and no refmap: it has run on official Mojang
 # names since 1.20.2, so the selectors in the shared configs resolve as written.
 [[mixins]]
 config="dayz-inventory.mixins.json"

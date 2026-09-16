@@ -50,7 +50,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
 
     @Inject(
+//? if >=26.2 {
         method = "extractContents",
+//?} elif >=1.21.11 {
+        method = "renderContents",
+//?} else {
+        method = "render",
+//?}
         at = @At(
             value = "FIELD",
             target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;hoveredSlot:Lnet/minecraft/world/inventory/Slot;",

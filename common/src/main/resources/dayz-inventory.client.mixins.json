@@ -2,9 +2,9 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "com.suoim.dayzinventory.client.mixin",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "${mixin_compat}",
 	"client": [
-		"GuiMixin",
+		"ScreenRedirectMixin",
 		"AbstractContainerScreenMixin"
 	],
 	"injectors": {
