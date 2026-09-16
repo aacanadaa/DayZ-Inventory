@@ -96,6 +96,13 @@ val fabricVersions = listOf("1.20.1", "1.21.1", "1.21.11", "26.1", "26.1.1", "26
 val neoforgeVersions = listOf("1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // Forge stopped being a first-class target after 1.20.x and the ecosystem moved
 // to NeoForge, so 1.21.1 is the newest version Forge can be built for at all.
+//
+// 1.20.1 is deliberately absent. Forge 1.20.1 runs on SRG names, so it needs both
+// reobfuscation and a Searge mixin refmap; ForgeGradle 7 has neither (it asks for a
+// companion "Renamer Gradle" for the first and has no mixin support at all), and
+// ForgeGradle 6 - which does have both - is Gradle 8 only, while Loom 1.18.1 needs
+// Gradle 9. Adding it means a nested Gradle 8 build, not another node. 1.20.1 still
+// ships for Fabric, where it needs none of this.
 val forgeVersions = listOf("1.21.1")
 val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
 

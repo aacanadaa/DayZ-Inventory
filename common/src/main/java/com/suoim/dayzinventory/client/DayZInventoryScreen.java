@@ -436,12 +436,9 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             if (scaledX >= btnX && scaledX < btnX + btnW &&
                 scaledY >= btnY && scaledY < btnY + btnH) {
                 this.minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
-                // Bypass redirection to open the vanilla InventoryScreen where Trinkets slots render perfectly
-                Platform.allowVanillaInventory = true;
-                // 26.2 deleted Minecraft#setScreen; Gui#setScreen is the real
-                // screen setter, and it is what the redirect mixin hooks.
-                this.minecraft.gui.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(this.minecraft.player));
-                Platform.allowVanillaInventory = false;
+                // Bypass redirection to open the vanilla InventoryScreen, which is
+                // where Trinkets - and Curios - render their slots.
+                openVanillaInventoryForOptionalMods();
                 return true;
             }
         }
@@ -1179,38 +1176,137 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         guiGraphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0x15FFFFFF);
     }
 
-    private void simulateKeyTap(int keyCode) {
-        if (this.minecraft == null) return;
-        // KeyboardHandler#keyPress was removed in 1.21.11, so simulate a keybind
-        // click instead - which is what recipe viewers actually poll for.
-        KeyMapping.click(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+    // KeyboardHandler#keyPress was removed in 1.21.11, so every one of these
+    // optional integrations works by simulating a keybind click, which is what the
+    // other mods actually poll for.
+
+    /**
+     * Presses and releases a bound key.
+     * <p>
+     * This takes the {@link InputConstants.Key} itself rather than an int on
+     * purpose. A key carries whether it is a keyboard key or a mouse button, and
+     * reducing it to {@code getValue()} loses that: a mouse-bound action would be
+     * re-created as the keysym with the same number and press something unrelated.
+     */
+    private void simulateKeyTap(com.mojang.blaze3d.platform.InputConstants.Key key) {
+        if (this.minecraft == null || key == null) return;
+        KeyMapping.click(key);
     }
 
+    /** Kept for the fallback paths that only have a raw GLFW key code. */
+    private void simulateKeyTap(int keyCode) {
+        simulateKeyTap(InputConstants.Type.KEYSYM.getOrCreate(keyCode));
+    }
+
+    /**
+     * Toggles the installed recipe viewer's overlay.
+     * <p>
+     * The viewer's own "toggle overlay" keybind is looked up and pressed, rather
+     * than assuming {@code O}. JEI, REI and EMI do not share a default, the default
+     * can be unbound, and a player can rebind it - and pressing a key nothing is
+     * bound to is a silent no-op, which is exactly how this read as "JEI does not
+     * work". {@code O} is still the fallback so nothing changes when no viewer
+     * keybind is found.
+     */
     private void toggleRecipeViewerOverlay() {
+        if (this.minecraft == null) return;
+
+        net.minecraft.client.KeyMapping viewerKey = findKeyMapping(
+            "key.jei.toggleOverlay",
+            "key.rei.toggleOverlay", "key.rei.overlay",
+            "key.emi.toggleOverlay", "key.emi.overlay");
+        if (viewerKey != null && !viewerKey.isUnbound()) {
+            simulateKeyTap(getBoundKey(viewerKey));
+            return;
+        }
+
         simulateKeyTap(79); // 79 is GLFW_KEY_O
     }
 
+    /**
+     * Opens the Curios panel.
+     * <p>
+     * Curios' own keybind is tried first, because it is the only way to reach its
+     * screen without hard-referencing an optional mod's classes. If that keybind is
+     * missing, unbound or unreadable, this falls back to opening the vanilla
+     * inventory screen - which is where Curios renders its slots anyway, and is the
+     * same route the Trinkets button takes. Previously a missing keybind meant the
+     * button silently did nothing.
+     */
     private void toggleCuriosOverlay() {
         if (this.minecraft == null) return;
-        net.minecraft.client.KeyMapping targetKey = null;
-        for (net.minecraft.client.KeyMapping key : this.minecraft.options.keyMappings) {
-            String name = key.getName();
-            if (name.equals("key.curios.open.desc") || name.contains("curios.open")) {
-                targetKey = key;
-                break;
+
+        net.minecraft.client.KeyMapping targetKey =
+            findKeyMapping("key.curios.open.desc", "key.curios.open");
+        if (targetKey == null) {
+            // Older and newer Curios builds have used a couple of spellings.
+            for (net.minecraft.client.KeyMapping key : this.minecraft.options.keyMappings) {
+                if (key.getName().contains("curios.open")) {
+                    targetKey = key;
+                    break;
+                }
             }
         }
+
         if (targetKey != null && !targetKey.isUnbound()) {
             com.mojang.blaze3d.platform.InputConstants.Key key = getBoundKey(targetKey);
             if (key != null) {
-                simulateKeyTap(key.getValue());
+                simulateKeyTap(key);
+                return;
             }
         }
+
+        openVanillaInventoryForOptionalMods();
     }
 
+    /**
+     * Lets the vanilla inventory screen open even though the redirect mixin would
+     * normally swap it for the DayZ one. Curios and Trinkets both render their
+     * slots on the vanilla screen, so this is the reliable way to reach them.
+     */
+    private void openVanillaInventoryForOptionalMods() {
+        Platform.allowVanillaInventory = true;
+        this.minecraft.gui.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(this.minecraft.player));
+        Platform.allowVanillaInventory = false;
+    }
+
+    /** First key mapping whose translation key is one of {@code names}, or null. */
+    private net.minecraft.client.KeyMapping findKeyMapping(String... names) {
+        if (this.minecraft == null) return null;
+        for (net.minecraft.client.KeyMapping key : this.minecraft.options.keyMappings) {
+            String name = key.getName();
+            for (String wanted : names) {
+                if (name.equals(wanted)) {
+                    return key;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Reads a key mapping's <em>current</em> binding by reflection.
+     * <p>
+     * {@code KeyMapping} has no public getter for it. The field literally named
+     * {@code key} is tried first: the class also declares {@code defaultKey}, and
+     * {@code getDeclaredFields()} order is not specified, so the old first-match
+     * scan could return the default binding and ignore a player's rebind. The
+     * loose scan is kept as a fallback for versions that name the field
+     * differently, and this must return {@code null} rather than throw when the
+     * layout does not match.
+     */
     private static com.mojang.blaze3d.platform.InputConstants.Key getBoundKey(net.minecraft.client.KeyMapping keyMapping) {
         try {
             for (java.lang.reflect.Field field : net.minecraft.client.KeyMapping.class.getDeclaredFields()) {
+                if (!field.getName().equals("key")) continue;
+                field.setAccessible(true);
+                Object obj = field.get(keyMapping);
+                if (obj instanceof com.mojang.blaze3d.platform.InputConstants.Key k) {
+                    return k;
+                }
+            }
+            for (java.lang.reflect.Field field : net.minecraft.client.KeyMapping.class.getDeclaredFields()) {
+                if (field.getName().equals("defaultKey")) continue;
                 if (field.getType().getName().endsWith("$Key") || field.getType().getSimpleName().equals("Key")) {
                     field.setAccessible(true);
                     Object obj = field.get(keyMapping);
