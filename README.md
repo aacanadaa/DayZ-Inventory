@@ -6,9 +6,9 @@
 [![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
 [![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-%E8%B5%9E%E5%8A%A9%E6%88%91-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/suoim)
-[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 
 把 Minecraft 的背包界面彻底重做成 **DayZ** 风格：一个 **Vicinity（周围环境）** 网格列出附近地面物品与容器，
 一个跟随快捷栏变化的 **Hands（手持）** 挂载槽，内嵌 **2x2 合成台**，以及把装备拖到 **Survivor（幸存者）**
