@@ -4,16 +4,18 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 
 **Really recommended with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — seamless integration. The two are built as a pair, so the HUD and the inventory screen share one look.
 
-**Now built from one source tree for Minecraft 26.2, 1.21.11 and 1.21.1 on Fabric and NeoForge.**
+**Now built from one source tree for Minecraft 26.2, 1.21.11 and 1.21.1 on Fabric, NeoForge and Forge.**
 
-| Minecraft | Fabric | NeoForge | Java |
-| :--- | :---: | :---: | :--- |
-| **26.2** | ✅ | ✅ | 25 |
-| **1.21.11** | ✅ | ✅ | 21 |
-| **1.21.1** | ✅ | ✅ | 21 |
+| Minecraft | Fabric | NeoForge | Forge | Java |
+| :--- | :---: | :---: | :---: | :--- |
+| **26.2** | ✅ | ✅ | — | 25 |
+| **1.21.11** | ✅ | ✅ | — | 21 |
+| **1.21.1** | ✅ | ✅ | ✅ | 21 |
 
-The previously released **1.20.1** files (Fabric and Forge) are still available on the Versions tab and
-still work; they come from the older per-version build and are not part of the unified tree yet.
+Forge stopped at 1.20.x — the ecosystem moved to NeoForge — so 1.21.1 is the newest version Forge can
+be built for at all. The previously released **1.20.1** files (Fabric and Forge) are still available on
+the Versions tab and still work; they come from the older per-version build and are not part of the
+unified tree yet.
 
 ![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](https://raw.githubusercontent.com/aacanadaa/DayZ-Inventory/main/docs/screenshots/ui-example.png)
 
@@ -59,11 +61,11 @@ Every optional integration is probed at runtime. The mod never requires them and
 1. Install the Minecraft version you want:
    - **26.2** with **Fabric Loader** or **NeoForge**
    - **1.21.11** with **Fabric Loader** or **NeoForge**
-   - **1.21.1** with **Fabric Loader** or **NeoForge**
+   - **1.21.1** with **Fabric Loader**, **NeoForge** or **Forge**
 2. Download the file matching your Minecraft version and loader from the **Versions** tab.
 3. Drop it into your `mods/` folder.
 
-**Pick carefully.** A Fabric build will not load on NeoForge, and a build for one Minecraft version will not load on another. Each download is labelled with its version and loader.
+**Pick carefully.** A Fabric build will not load on NeoForge or Forge, and a build for one Minecraft version will not load on another. Each download is labelled with its version and loader.
 
 ---
 
@@ -79,8 +81,9 @@ Pick the row for your Minecraft version and loader. Optional entries are probed 
 | **1.21.11** | NeoForge | 21 | NeoForge 21.11.45+ | JEI, Curios |
 | **1.21.1** | Fabric | 21 | Fabric Loader 0.16.14+, Fabric API 0.116.17+1.21.1 | JEI / REI / EMI, Trinkets, Curios |
 | **1.21.1** | NeoForge | 21 | NeoForge 21.1.250+ | JEI, Curios |
+| **1.21.1** | Forge | 21 | Forge 52.1.12+ | JEI, Curios |
 
-Trinkets is Fabric-only. NeoForge needs no additional libraries — it has its own loader and networking built in.
+Trinkets is Fabric-only. NeoForge and Forge need no additional libraries — they ship their own loader and networking.
 Minecraft 26.x requires **Java 25**; 1.21.x requires **Java 21**.
 
 ---

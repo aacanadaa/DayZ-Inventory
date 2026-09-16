@@ -1,3 +1,58 @@
+# DayZ Inventory 1.7.0 — Forge on 1.21.1, and the whole matrix publishes itself
+
+**Forge support is back, on 1.21.1.** The unified build now produces **seven** jars from one source
+tree: Fabric and NeoForge for 26.2, 1.21.11 and 1.21.1, plus Forge for 1.21.1.
+
+Nothing about the inventory screen changed. The Vicinity grid, Proximity Scanner, 2x2 crafting, the
+2.0x Hands slot, drag-to-equip and every optional integration behave exactly as before.
+
+## What is available now
+
+| Minecraft | Fabric | NeoForge | Forge | Java |
+| :--- | :---: | :---: | :---: | :---: |
+| 26.2 | ✅ | ✅ | — | 25 |
+| 1.21.11 | ✅ | ✅ | — | 21 |
+| 1.21.1 | ✅ | ✅ | ✅ | 21 |
+
+Forge stopped at 1.20.x — the ecosystem moved to NeoForge — so 1.21.1 is the newest version Forge
+can be built for at all.
+
+## Why Forge needed real work
+
+The Forge module was still the 1.20.1-era `SimpleChannel` / `NetworkRegistry` /
+`registerMessage` stack, which no longer exists. It has been ported to the same typed-payload model
+the Fabric and NeoForge modules use, against `net.minecraftforge` packages, and shares the same
+`DayZInventoryPayload` and packet-dispatch code as the rest of the mod.
+
+Building it took three attempts, which is worth writing down:
+
+- **ForgeGradle 6** only supports Gradle 8, and the newer Minecraft targets need Gradle 9 for Loom.
+- **ModDevGradle's `legacyforge`** asks for `net.minecraftforge:forge:<version>:universal-srg` — a
+  classifier that only exists for the pre-1.20.2 SRG layout — so it cannot build 1.21.1 at all.
+- **ForgeGradle 7** is the rewrite that runs on Gradle 9, and is what the module now uses.
+
+Since Forge has run on official Mojang names since 1.20.2, there is no reobfuscation step and no
+Searge refmap, exactly as on NeoForge.
+
+## 1.20.1 is still on its own branch
+
+1.20.1 predates the 1.20.5 networking rewrite — no custom payload records, and
+`ExtendedScreenHandlerType` does not take an opening-data codec yet — so it needs a genuine source
+port rather than a rebuild. It keeps shipping from the `1.20.1` branch, and the exact breakpoints
+are documented in `docs/BUILDING.en.md` for whoever picks it up.
+
+## Publishing
+
+Every jar now goes up with its own Minecraft version and loader tags, read from the build rather than
+typed per release, so nothing can be filed under the wrong game version. `./gradlew publishAll`
+publishes the matrix; on a `v*` tag CI builds everything, attaches the jars to the GitHub Release and
+publishes to both platforms.
+
+Note that CurseForge routes every upload through human review and never returns a link, so a green
+CurseForge run means *submitted*, not *live*.
+
+---
+
 # DayZ Inventory 1.6.0 — one source tree, three Minecraft versions
 
 **The mod is unchanged. How it is built is not.**

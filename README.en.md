@@ -23,21 +23,23 @@ integration. The two are built as a pair, so the HUD and the inventory screen sh
 | :--- | :---: | :---: | :---: |
 | **26.2** | ✅ | ✅ | — |
 | **1.21.11** | ✅ | ✅ | — |
-| **1.21.1** | ✅ | ✅ | see below |
+| **1.21.1** | ✅ | ✅ | ✅ |
 | **1.20.1** | see below | — | see below |
+
+Forge stopped at 1.20.x — the ecosystem moved to NeoForge — which makes 1.21.1 the newest version
+Forge can be built for at all.
 
 Every artifact is built from **one source tree**: [Stonecutter](https://stonecutter.kikugie.dev/)
 handles multi-version preprocessing and the `common/` + per-loader modules handle loader
 abstraction. The matrix is declared in `settings.gradle.kts`; adding a version is one line there plus
 a `versions/<mc>/gradle.properties` file.
 
-> **About 1.20.1 and Forge**
-> These two targets are still shipped from their own historical branches — 1.20.1 from the `1.20.1`
-> branch, Forge from `1.21.1-forge` — and have not been folded into the unified tree yet. The reason is specific rather than incidental: 1.20.1 predates the
-> 1.20.5 networking rewrite, so there are no custom payload records, and `forge/` still contains
-> 1.20.1-era `SimpleChannel` / `NetworkRegistry` code. The build scaffolding for both is already in
-> place (`versions/1.20.1/gradle.properties`, `forge/build.gradle.kts`); what remains is source-level
-> porting. The exact breakpoints are listed in [docs/BUILDING.en.md](docs/BUILDING.en.md).
+> **About 1.20.1**
+> 1.20.1 is still shipped from its own `1.20.1` branch and has not been folded into the unified tree
+> yet. It predates the 1.20.5 networking rewrite — there are no custom payload records, and
+> `ExtendedScreenHandlerType` does not take an opening-data codec yet — so it needs a real port
+> rather than a rebuild. The build scaffolding (`versions/1.20.1/gradle.properties`) is in place and
+> the exact breakpoints are listed in [docs/BUILDING.en.md](docs/BUILDING.en.md).
 
 ![The DayZ Inventory screen: a VICINITY grid of nearby items, a CHEST drawer open with shells, the SURVIVOR panel with the player in gear, CURIOS and JEI buttons in the header, an M1014 Battle Shotgun in the 2.0x HANDS slot, and the 2x2 CRAFTING grid](docs/screenshots/ui-example.png)
 
@@ -77,7 +79,8 @@ works fully with **none** of them installed.
 
 ## Installation
 
-1. Install **26.2**, **1.21.11** or **1.21.1** with **Fabric Loader** or **NeoForge**.
+1. Install **26.2** or **1.21.11** with **Fabric Loader** or **NeoForge**, or **1.21.1** with
+   **Fabric Loader**, **NeoForge** or **Forge**.
 2. Download the file whose name matches your Minecraft version *and* loader from
    [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or
    [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
@@ -96,6 +99,7 @@ works fully with **none** of them installed.
 | **1.21.11** | NeoForge | 21 | NeoForge `>=21.11.45` | JEI, Curios |
 | **1.21.1** | Fabric | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.116.17+1.21.1` | JEI / REI / EMI, Trinkets, Curios |
 | **1.21.1** | NeoForge | 21 | NeoForge `>=21.1.250` | JEI, Curios |
+| **1.21.1** | Forge | 21 | Forge `>=52.1.12` | JEI, Curios |
 
 Optional entries are probed at runtime — the mod never requires them and will not crash without them.
 
@@ -113,7 +117,7 @@ downloaded automatically by the foojay resolver, so nothing has to be installed 
 # A single target (artifacts land in <loader>/versions/<mc>/build/libs/).
 ./gradlew :fabric:26.2:build
 ./gradlew :neoforge:1.21.11:build
-./gradlew :fabric:1.21.1:build
+./gradlew :forge:1.21.1:build
 
 # List every node in the matrix.
 ./gradlew matrix

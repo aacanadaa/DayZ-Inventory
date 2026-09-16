@@ -8,9 +8,9 @@ Guidance for Claude Code when working in this repository.
 UI: a Vicinity grid (nearby ground items + containers), a dynamic Hands attachment slot, an
 integrated 2x2 crafting grid, and drag-to-equip onto the Survivor panel.
 
-It ships for **two loaders from one codebase**: **Fabric** and **NeoForge**.
+It ships for **three loaders from one codebase**: **Fabric**, **NeoForge** and **Forge**.
 
-- **Mod version**: `1.6.0`
+- **Mod version**: `1.7.0`
 - **Group / package root**: `com.suoim.dayzinventory`
 - **Mod ID**: `dayz_inventory`
 - **License**: Apache License 2.0 (see `LICENSE`)
@@ -19,8 +19,9 @@ It ships for **two loaders from one codebase**: **Fabric** and **NeoForge**.
 ### One source tree, three Minecraft versions
 
 This is a **Stonecutter** project. There is no longer a branch per Minecraft version. The enabled
-matrix is **26.2, 1.21.11 and 1.21.1, each for Fabric and NeoForge** — six artifacts from one tree —
-and the version differences are marked inline with `//? if` comments.
+matrix is **26.2, 1.21.11 and 1.21.1** — Fabric and NeoForge for all three, plus Forge on 1.21.1,
+which is seven artifacts from one tree — and the version differences are marked inline with
+`//? if` comments.
 
 **Read [docs/BUILDING.en.md](docs/BUILDING.en.md) first.** It covers the project tree, the
 convention plugins, the conditional-compilation conventions and the publishing setup. The rest of
@@ -45,7 +46,7 @@ versions/<mc>/gradle.properties   one file per Minecraft version - its only coor
 common/     Loader-agnostic code: screen, menu, packets, mixins, platform interface
 fabric/     Fabric entrypoints + FabricPlatformHelper
 neoforge/   NeoForge entrypoints + NeoForgePlatformHelper
-forge/      Legacy Forge module - present, NOT built (see below)
+forge/      Forge entrypoints - built for 1.21.1 only (Forge has no later releases)
 ```
 
 `<branch>/versions/<mc>/` are build directories; they are gitignored and regenerated.
@@ -59,16 +60,27 @@ forge/      Legacy Forge module - present, NOT built (see below)
   that to a project dependency: below 26.1 the mixin refmap can only be produced from annotated
   sources, and a precompiled `common.jar` would hand Mixin classes it can never remap.
 
-### Why `forge/` is not built
+### Forge is built with ForgeGradle 7, not ModDevGradle or ForgeGradle 6
 
-No `forge` branch is declared in `settings.gradle.kts`, so `forge/build.gradle.kts` is never applied.
-Its sources are still the 1.20.1-era `SimpleChannel` / `NetworkRegistry` stack, which does not exist
-from 1.20.5 on. The build script is scaffolding for the eventual port — ModDevGradle's `legacyforge`
-platform — and the exact breakpoints are listed in `docs/BUILDING.en.md` §7. 1.20.1 and Forge are
-still shipped from their own historical branches.
+`forge/` was ported off the 1.20.1-era `SimpleChannel` / `NetworkRegistry` stack onto the payload API
+under `net.minecraftforge`, and `:forge:1.21.1` builds and publishes like any other node.
 
-Do not "restore" the Forge module to fix a build that references it — it is not expected to compile
-against 1.21.x without the payload-networking port.
+The plugin choice is not free. ForgeGradle 6 is Gradle 8 only, and Loom 1.18.1 needs Gradle 9, so
+the two cannot share an invocation. ModDevGradle's `legacyforge` cannot build 1.21.1 either: it asks
+for `net.minecraftforge:forge:<v>:universal-srg`, a classifier that only exists for the pre-1.20.2
+SRG layout. ForgeGradle 7 is the rewrite that runs on Gradle 9.3+.
+
+ForgeGradle 7 is **stateless** and does not add repositories once another plugin has declared some,
+so `forge/build.gradle.kts` registers the mavenizer repository and Mojang's libraries repository by
+hand. Without both, the Forge dependency resolves to an empty module and every `net.minecraft.*`
+import fails — which looks like a broken source tree and is not one.
+
+Two smaller Forge-specific facts: mixin configs come from the `MixinConfigs` **jar manifest
+attribute** (Forge does not understand the `[[mixins]]` blocks in `mods.toml` that NeoForge uses),
+and since 1.20.2 there is no reobfuscation and no Searge refmap because Forge runs on official Mojang
+names.
+
+Do not "restore" the old `SimpleChannel` code to fix a build that references it.
 
 ### Platform abstraction rule
 
@@ -92,6 +104,7 @@ has none.
 JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew chiseledBuild   # whole matrix
 JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :fabric:26.2:build
 JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :neoforge:26.2:build
+JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :forge:1.21.1:build
 ./gradlew matrix                    # list the nodes
 ./gradlew :fabric:26.2:runClient    # dev client for one node
 ```
@@ -102,11 +115,12 @@ Output JARs live under the node, not the module:
 | :------- | :--- |
 | Fabric   | `fabric/versions/<mc>/build/libs/dayz-inventory-fabric-<mc>-<version>.jar` |
 | NeoForge | `neoforge/versions/<mc>/build/libs/dayz-inventory-neoforge-<mc>-<version>.jar` |
+| Forge    | `forge/versions/1.21.1/build/libs/dayz-inventory-forge-1.21.1-<version>.jar` |
 
 `archivesName` is `dayz-inventory-<loader>-${minecraft_version}` — the Minecraft version is part of
 the filename on purpose, so bumping the target version renames the artifact automatically.
 
-### Both loaders compile `common`'s processed sources
+### Every loader compiles `common`'s processed sources
 
 `dayz-loader` adds the `:common:<mc>` node's **generated** source tree to each loader's compile task,
 so common's classes and resources end up in the loader jar. That keeps a single copy of every class —

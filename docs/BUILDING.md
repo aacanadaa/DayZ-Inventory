@@ -173,15 +173,30 @@ sc.replacements.string(sc.current.parsed < "1.21.11") {
 | :--- | :--- | :--- | :--- | :--- |
 | 26.2 | `:fabric:26.2`、`:neoforge:26.2` | 25 | `fabric-loom`（不混淆） | 无 mappings、无 refmap、无 remap 步骤 |
 | 1.21.11 | `:fabric:1.21.11`、`:neoforge:1.21.11` | 21 | `fabric-loom-remap` | 最后一个混淆版本；输入事件已对象化 |
-| 1.21.1 | `:fabric:1.21.1`、`:neoforge:1.21.1` | 21 | `fabric-loom-remap` | payload 网络层；鼠标坐标仍是裸参数 |
+| 1.21.1 | `:fabric:1.21.1`、`:forge:1.21.1`、`:neoforge:1.21.1` | 21 | `fabric-loom-remap` | payload 网络层；鼠标坐标仍是裸参数 |
+
+### Forge 用的工具链
+
+Forge 没有能直接用的插件，所以把试过的都记下来：
+
+| 工具链 | 可用 | 原因 |
+| :--- | :--- | :--- |
+| ForgeGradle 6 | 否 | 只支持 Gradle 8，而 Loom 1.18.1 需要 Gradle 9 |
+| ModDevGradle `legacyforge` | 否 | 会去找 `net.minecraftforge:forge:<v>:universal-srg`，而这个 classifier 只存在于 1.20.2 之前的 SRG 体系，根本构建不了 1.21.1 |
+| **ForgeGradle 7** | **可以** | 支持 Gradle 9.3+ 的重写版，通过自带的 mavenizer 解析 Forge |
+
+ForgeGradle 7 是**无状态**的：不写 `minecraft.dependency(...)` 它什么都不做；而且一旦有别的插件
+声明过仓库，它就不会再自己添加仓库。所以 `forge/build.gradle.kts` 显式注册了 mavenizer 仓库和
+Mojang 的 libraries 仓库。少了这两步，Forge 依赖会解析成一个空模块，
+所有 `net.minecraft.*` 导入全部报错 —— 看起来像源码问题，其实不是。
 
 `loom-back-compat` 依据 `sc.current.parsed < "26"` 选择 Loom 变体，
 并为不混淆版 Loom 删掉的 `mod*` 配置提供别名，因此一份构建脚本同时覆盖这条分界线两侧。
 
 ## 7. 尚未启用的目标
 
-这两个目标目前仍由各自的分支发布（1.20.1 在 `1.20.1` 分支，Forge 在 `1.21.1-forge`），**没有**因为本次重构而回退。
-它们的 `versions/<mc>/gradle.properties` 都已就位，在 `settings.gradle.kts` 里取消一行注释即可接上构建。
+`1.20.1` 目前仍由自己的分支发布，**没有**因为本次重构而回退。
+它的 `versions/1.20.1/gradle.properties` 已就位，在 `settings.gradle.kts` 的版本列表里加上 `"1.20.1"` 即可接上构建。
 
 ### 1.20.1（Fabric、Forge）
 
@@ -197,20 +212,23 @@ sc.replacements.string(sc.current.parsed < "1.21.11") {
 `GuiGraphics` 时代也有差异：`render` 的签名是 `(GuiGraphics, int, int, float)`，没有 `renderContents`；
 背包重定向 mixin 的目标是 `Minecraft#setScreen` 而不是 `Gui#setScreen`。
 
-### Forge（1.20.1、1.21.1）
+### Forge
 
-`forge/` 里还是 1.20.1 时代的 `SimpleChannel` / `NetworkRegistry` / `registerMessage`。
-1.21.1 的 Forge 模块需要 NeoForge 模块已经做过的那套 payload 网络层，
-只是包名从 `net.neoforged` 换成 `net.minecraftforge`。
-`forge/build.gradle.kts` 用的是 ModDevGradle 的 `legacyforge` 平台，已经接好并能解析依赖 ——
-只差源码移植。
+**Forge 1.21.1 已经完成。** `forge/` 已从 1.20.1 时代的 `SimpleChannel` / `NetworkRegistry` /
+`registerMessage` 迁到 `net.minecraftforge` 下的 payload API，`:forge:1.21.1` 与其它 node 一样
+可以构建、打包和发布。它的 mixin 配置走的是 jar 清单里的 `MixinConfigs` 属性 ——
+因为 Forge 不认识 NeoForge 在 `mods.toml` 里用的 `[[mixins]]` 块。
+
+1.20.1 的 Forge 卡在上面那个 1.20.1 移植本身，而不是卡在 Forge 相关内容上。
+Forge 在 1.20.x 之后就没有新版本了，所以 1.21.1 是它能支持的最高版本。
 
 ## 8. 新增一个 Minecraft 版本
 
 1. 加 `versions/<mc>/gradle.properties`，照抄最接近的版本，改掉 `deps.minecraft`、`deps.java`、
    `deps.mixin-compat`、`deps.pack-format`、各加载器版本以及 `meta.minecraft-range`。
 2. 把版本号加进 `settings.gradle.kts` 里对应的列表。
-3. 跑 `./gradlew :common:<mc>:compileJava`，然后照着报错移植。
+3. 跑 `./gradlew :common:<mc>:compileJava`，然后照着报错移植。如果目标版本是 1.20.1 或 1.21.1，
+   记得也加进 `forgeVersions` —— Forge 没有更晚的版本。
 4. 把版本号补进 `README.md` / `README.en.md` 以及 `docs/store-descriptions/`。
 5. `./gradlew chiseledBuild` 确认整个矩阵仍然能构建。
 

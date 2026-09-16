@@ -22,18 +22,19 @@ HUD 和背包界面共享同一套视觉语言。
 | :--- | :---: | :---: | :---: |
 | **26.2** | ✅ | ✅ | — |
 | **1.21.11** | ✅ | ✅ | — |
-| **1.21.1** | ✅ | ✅ | 见下方说明 |
+| **1.21.1** | ✅ | ✅ | ✅ |
 | **1.20.1** | 见下方说明 | — | 见下方说明 |
+
+Forge 只做到 1.20.x 为止，之后生态整体转到了 NeoForge，所以 1.21.1 是 Forge 能支持的最后一个版本。
 
 整份代码来自 **同一个源码树**：用 [Stonecutter](https://stonecutter.kikugie.dev/) 做多版本预处理，
 用 `common/` + 各加载器模块做加载器抽象。目标矩阵在 `settings.gradle.kts` 里声明，
 新增一个版本只需要加一行加一个 `versions/<mc>/gradle.properties`。
 
-> **1.20.1 与 Forge 的现状**
-> 这两个目标目前仍由独立的历史分支发布（1.20.1 在 `1.20.1` 分支，Forge 在 `1.21.1-forge`），尚未合并进统一源码树。原因很具体：
-> 1.20.1 早于 1.20.5 的网络层重写，没有自定义 payload 记录；`forge/` 模块里仍是 1.20.1 时代的
-> `SimpleChannel` / `NetworkRegistry`。两者的构建骨架（`versions/1.20.1/gradle.properties`、
-> `forge/build.gradle.kts`）都已就位，剩下的只是源码层移植。
+> **1.20.1 的现状**
+> 1.20.1 目前仍由 `1.20.1` 分支发布，尚未合并进统一源码树。它早于 1.20.5 的网络层重写，
+> 没有自定义 payload 记录，`ExtendedScreenHandlerType` 也还不接受 opening-data codec，
+> 因此需要真正的移植而不是重新构建。构建骨架（`versions/1.20.1/gradle.properties`）已就位，
 > 具体断点见 [docs/BUILDING.md](docs/BUILDING.md)。
 
 ![DayZ Inventory 界面：VICINITY 网格、展开的 CHEST 抽屉、带装备的 SURVIVOR 面板、header 里的 CURIOS 与 JEI 按钮、2.0x 的 HANDS 槽以及 2x2 CRAFTING 合成格](docs/screenshots/ui-example.png)
@@ -68,7 +69,7 @@ HUD 和背包界面共享同一套视觉语言。
 
 ## 安装
 
-1. 准备好对应版本：**26.2** / **1.21.11** / **1.21.1**，搭配 **Fabric Loader** 或 **NeoForge**。
+1. 准备好对应版本：**26.2** / **1.21.11**（Fabric 或 NeoForge），或 **1.21.1**（Fabric、NeoForge 或 Forge）。
 2. 从 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 或
    [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files) 下载文件名里
    **版本号和加载器都对得上**的那个 jar。
@@ -87,6 +88,7 @@ HUD 和背包界面共享同一套视觉语言。
 | **1.21.11** | NeoForge | 21 | NeoForge `>=21.11.45` | JEI、Curios |
 | **1.21.1** | Fabric | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.116.17+1.21.1` | JEI / REI / EMI、Trinkets、Curios |
 | **1.21.1** | NeoForge | 21 | NeoForge `>=21.1.250` | JEI、Curios |
+| **1.21.1** | Forge | 21 | Forge `>=52.1.12` | JEI、Curios |
 
 可选依赖全部在运行时探测，缺少时不会崩溃。
 
@@ -104,7 +106,7 @@ resolver 自动下载，不需要手动安装。
 # 只构建某一个目标（产物在 <加载器>/versions/<mc>/build/libs/ 下）
 ./gradlew :fabric:26.2:build
 ./gradlew :neoforge:1.21.11:build
-./gradlew :fabric:1.21.1:build
+./gradlew :forge:1.21.1:build
 
 # 看看当前矩阵里有哪些节点
 ./gradlew matrix
