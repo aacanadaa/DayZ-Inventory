@@ -114,33 +114,43 @@ jobs:
       # CurseForge routes every upload through human review: the API accepts the
       # file and never returns a URL, so a successful run here means "submitted",
       # not "live". Modrinth returns immediately.
-      # Fails before Gradle starts, with a message that names the variable.
-      # Without this the only symptom is an auth error from inside the publish
-      # plugin that does not say what is missing.
+      # Fails before Gradle starts, with a message that names the variable, and
+      # reports which of the accepted names is populated. Without this the only
+      # symptom is an auth error from inside the publish plugin that does not say
+      # what is missing.
+      #
+      # Every name is read from `secrets` first and then from `vars`. The
+      # Secrets and Variables tabs sit side by side and look alike, and a token
+      # parked in Variables would otherwise be invisible here with no clue why.
+      # Secrets is still the right place for them.
       - name: Check publishing tokens
         env:
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN || vars.MODRINTH_TOKEN }}
+          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT || vars.MODRINTH_PAT }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY || vars.CURSEFORGE_API_KEY }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN || vars.CURSEFORGE_TOKEN }}
         run: |
+          for name in MODRINTH_TOKEN MODRINTH_PAT CURSEFORGE_API_KEY CURSEFORGE_TOKEN; do
+            if [ -n "${!name}" ]; then echo "$name: set"; else echo "$name: (empty)"; fi
+          done
+
           missing=0
           if [ -z "$MODRINTH_TOKEN" ] && [ -z "$MODRINTH_PAT" ]; then
-            echo "::error::No Modrinth token. Add a repository secret named MODRINTH_TOKEN."
+            echo "::error::No Modrinth token. Add a repository SECRET named MODRINTH_TOKEN (Settings -> Secrets and variables -> Actions -> Secrets tab, not Variables)."
             missing=1
           fi
           if [ -z "$CURSEFORGE_API_KEY" ] && [ -z "$CURSEFORGE_TOKEN" ]; then
-            echo "::error::No CurseForge token. Add a repository secret named CURSEFORGE_API_KEY."
+            echo "::error::No CurseForge token. Add a repository SECRET named CURSEFORGE_API_KEY (Settings -> Secrets and variables -> Actions -> Secrets tab, not Variables)."
             missing=1
           fi
           exit $missing
 
       - name: Publish every node
         env:
-          # Both names are forwarded; the build falls back from the documented
-          # one to the legacy one, so whichever secret already exists is used.
-          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          # All the accepted names are forwarded; the build falls back from the
+          # documented one to the legacy one, so whichever already exists is used.
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN || vars.MODRINTH_TOKEN }}
+          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT || vars.MODRINTH_PAT }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY || vars.CURSEFORGE_API_KEY }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN || vars.CURSEFORGE_TOKEN }}
         run: ./gradlew publishAll -Ppublish.dry_run=false --stacktrace
