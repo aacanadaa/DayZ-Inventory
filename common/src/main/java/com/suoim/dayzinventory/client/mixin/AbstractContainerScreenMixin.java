@@ -17,41 +17,56 @@
 package com.suoim.dayzinventory.client.mixin;
 
 import com.suoim.dayzinventory.client.DayZInventoryScreen;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.Slot;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Makes the virtual Hands panel count as hovering the Hands slot.
  * <p>
- * This mixin deliberately shadows nothing. It used to {@code @Shadow} {@code menu},
- * {@code leftPos}, {@code topPos} and {@code imageHeight}, but none of those
- * shadows carry a refmap entry - so on the remapped runtimes (intermediary on
- * Fabric, SRG on Forge) Mixin went looking for fields literally named
- * {@code menu} and friends, failed with
- * {@code @Shadow field menu was not located in the target class}, and took the
- * game down on launch.
+ * The hook point has moved three times now. 1.21 removed
+ * isHovering(Slot, double, double) and assigned hoveredSlot from render; 1.21.11
+ * split the render pipeline so that assignment moved to renderContents; 26.2
+ * renamed that method to extractContents as part of the render-state rewrite,
+ * which is the current target. The assignment itself still happens there:
+ * extractContents opens with {@code this.hoveredSlot = this.getHoveredSlot(mouseX, mouseY)}.
  * <p>
- * It only ever looked fine in development, where the game runs on official names
- * and the shadows resolve by name. The packaged jars crashed the moment the player
- * opened a container.
+ * 1. {@code isHovering(Slot, double, double)} is gone - {@code render} now walks
+ * the slot list and assigns {@code hoveredSlot} directly, so that assignment is
+ * the hook point.
  * <p>
- * The check now lives in {@link DayZInventoryScreen#isVirtualHandsSlotHovered}.
- * That class inherits all four fields from {@link AbstractContainerScreen}, so it
- * can read them without shadowing anything.
+ * 2. {@code @Shadow} on this target does not resolve at runtime any more
+ * (both {@code menu} and {@code hoveredSlot} failed with "was not located").
+ * The mixin therefore shadows nothing: it only calls into
+ * {@link DayZInventoryScreen}, which inherits those fields from
+ * {@link AbstractContainerScreen} and can read and write them directly.
  */
 @Mixin(AbstractContainerScreen.class)
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
 
-    @Inject(method = "isHovering(Lnet/minecraft/world/inventory/Slot;DD)Z", at = @At("HEAD"), cancellable = true)
-    private void onIsHovering(Slot slot, double mouseX, double mouseY, CallbackInfoReturnable<Boolean> cir) {
-        if ((Object) this instanceof DayZInventoryScreen dayZScreen
-                && dayZScreen.isVirtualHandsSlotHovered(slot, mouseX, mouseY)) {
-            cir.setReturnValue(true);
+    @Inject(
+//? if >=26.2 {
+        method = "extractContents",
+//?} elif >=1.21.11 {
+        method = "renderContents",
+//?} else {
+        method = "render",
+//?}
+        at = @At(
+            value = "FIELD",
+            target = "Lnet/minecraft/client/gui/screens/inventory/AbstractContainerScreen;hoveredSlot:Lnet/minecraft/world/inventory/Slot;",
+            opcode = Opcodes.PUTFIELD,
+            shift = At.Shift.AFTER
+        )
+    )
+    private void dayz$applyVirtualHandsHover(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        if ((Object) this instanceof DayZInventoryScreen dayZScreen) {
+            dayZScreen.applyVirtualHandsHover(mouseX, mouseY);
         }
     }
 }

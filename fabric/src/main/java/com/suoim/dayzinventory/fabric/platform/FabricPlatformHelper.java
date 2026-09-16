@@ -16,16 +16,18 @@
  */
 package com.suoim.dayzinventory.fabric.platform;
 
+import com.suoim.dayzinventory.DayZInventoryOpenData;
+import com.suoim.dayzinventory.DayZInventoryPayload;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.fabric.DayZInventoryFabric;
 import com.suoim.dayzinventory.platform.IPlatformHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -43,17 +45,19 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void sendPacketToServer(ResourceLocation packetId, FriendlyByteBuf buf) {
-        ClientPlayNetworking.send(packetId, buf);
+    public void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf) {
+        // 1.20.5+ sends typed payloads; there is no longer a (channel, buffer) send.
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        ClientPlayNetworking.send(new DayZInventoryPayload(packetId, bytes));
     }
 
     @Override
     public void openPlayerInventory(ServerPlayer player) {
-        player.openMenu(new ExtendedScreenHandlerFactory() {
+        player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
             @Override
-            public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
-                buf.writeBoolean(false); // No container
-                buf.writeBoolean(false); // No container pos
+            public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
+                return DayZInventoryOpenData.none();
             }
 
             @Override
@@ -81,13 +85,10 @@ public class FabricPlatformHelper implements IPlatformHelper {
 
         if (container != null) {
             final Container finalContainer = container;
-            player.openMenu(new ExtendedScreenHandlerFactory() {
+            player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
                 @Override
-                public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
-                    buf.writeBoolean(true); // Has container
-                    buf.writeInt(finalContainer.getContainerSize());
-                    buf.writeBoolean(true); // Has container pos
-                    buf.writeBlockPos(pos);
+                public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
+                    return DayZInventoryOpenData.forContainer(finalContainer.getContainerSize(), pos);
                 }
 
                 @Override

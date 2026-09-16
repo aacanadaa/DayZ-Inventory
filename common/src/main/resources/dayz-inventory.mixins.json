@@ -2,8 +2,7 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "com.suoim.dayzinventory.mixin",
-	"compatibilityLevel": "JAVA_17",
-	"refmap": "dayz-inventory.refmap.json",
+	"compatibilityLevel": "${mixin_compat}",
 	"mixins": [
 		"ChestBlockMixin",
 		"BarrelBlockMixin",

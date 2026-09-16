@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main]
+    branches: [main, "refactor/**"]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
@@ -12,10 +12,9 @@ permissions:
 
 jobs:
   build:
-    # Deliberately version- and loader-agnostic. This string is a required
-    # status check on branch protection, so naming it after the loader set means
-    # merging a branch that changed loaders would break protection here - and
-    # every PR into this branch would be blocked permanently.
+    # Deliberately version- and loader-agnostic: this string is a required status
+    # check on main's branch protection, so renaming it per Minecraft version (or
+    # per loader) would silently block PRs.
     name: Build
     runs-on: ubuntu-24.04
 
@@ -26,10 +25,14 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
 
-      - name: Set up JDK 17
+      # Minecraft 26.2 requires Java 25 (Mojang ship it as java-runtime-epsilon).
+      # The build matrix also targets Java 21 (1.21.x) and Java 17 (1.20.1); the
+      # foojay toolchain resolver in settings.gradle.kts downloads those on
+      # demand, so this job only has to provide the launcher JDK.
+      - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: "17"
+          java-version: "25"
           distribution: "temurin"
 
       - name: Set up Gradle
@@ -38,21 +41,19 @@ jobs:
       - name: Make gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        run: ./gradlew build --stacktrace
+      # Builds every loader for every Minecraft version in the matrix.
+      - name: Build every version and loader
+        run: ./gradlew chiseledBuild --stacktrace
 
-      - name: Upload Fabric JAR
+      - name: Upload mod jars
         uses: actions/upload-artifact@v7
         with:
-          name: dayz-inventory-fabric
-          path: fabric/build/libs/*.jar
-          if-no-files-found: error
-
-      - name: Upload Forge JAR
-        uses: actions/upload-artifact@v7
-        with:
-          name: dayz-inventory-forge
-          path: forge/build/libs/*.jar
+          name: dayz-inventory
+          # The shippable artifacts live under <branch>/versions/<mc>/build/libs.
+          # `-sources.jar` files are build output, not releases.
+          path: |
+            */versions/*/build/libs/*.jar
+            !*/versions/*/build/libs/*-sources.jar
           if-no-files-found: error
 
   release:
@@ -64,22 +65,79 @@ jobs:
       contents: write
 
     steps:
-      - name: Download Fabric JAR
-        uses: actions/download-artifact@v6
-        with:
-          name: dayz-inventory-fabric
-          path: dist/fabric
+      - name: Checkout repository
+        uses: actions/checkout@v7
 
-      - name: Download Forge JAR
+      - name: Download mod jars
         uses: actions/download-artifact@v6
         with:
-          name: dayz-inventory-forge
-          path: dist/forge
+          name: dayz-inventory
+          path: dist
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: |
-            dist/fabric/*.jar
-            dist/forge/*.jar
+          # Every matrix artifact is attached to the release; each filename
+          # already carries its Minecraft version and loader.
+          files: dist/**/*.jar
           generate_release_notes: true
+
+  publish:
+    name: Publish to Modrinth and CurseForge
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: "25"
+          distribution: "temurin"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      # Each node is published with its own game-version and loader tags, taken
+      # from versions/<mc>/gradle.properties, so no artifact can be uploaded
+      # under the wrong Minecraft version.
+      #
+      # CurseForge routes every upload through human review: the API accepts the
+      # file and never returns a URL, so a successful run here means "submitted",
+      # not "live". Modrinth returns immediately.
+      # Fails before Gradle starts, with a message that names the variable.
+      # Without this the only symptom is an auth error from inside the publish
+      # plugin that does not say what is missing.
+      - name: Check publishing tokens
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: |
+          missing=0
+          if [ -z "$MODRINTH_TOKEN" ] && [ -z "$MODRINTH_PAT" ]; then
+            echo "::error::No Modrinth token. Add a repository secret named MODRINTH_TOKEN."
+            missing=1
+          fi
+          if [ -z "$CURSEFORGE_API_KEY" ] && [ -z "$CURSEFORGE_TOKEN" ]; then
+            echo "::error::No CurseForge token. Add a repository secret named CURSEFORGE_API_KEY."
+            missing=1
+          fi
+          exit $missing
+
+      - name: Publish every node
+        env:
+          # Both names are forwarded; the build falls back from the documented
+          # one to the legacy one, so whichever secret already exists is used.
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          MODRINTH_PAT: ${{ secrets.MODRINTH_PAT }}
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+        run: ./gradlew publishAll -Ppublish.dry_run=false --stacktrace

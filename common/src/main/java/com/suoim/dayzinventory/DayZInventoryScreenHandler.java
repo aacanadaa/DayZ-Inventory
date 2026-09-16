@@ -29,7 +29,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
@@ -39,11 +41,21 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     private final BlockPos containerPos;
     private final Inventory playerInventory;
 
-    // Client-side constructor
+    // NeoForge client-side constructor. IMenuTypeExtension still hands over a
+    // FriendlyByteBuf, whereas Fabric's ExtendedScreenHandlerType passes typed
+    // opening data - so both shapes exist and each loader binds to its own.
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, FriendlyByteBuf buf) {
-        this(syncId, playerInventory, 
-             buf.readBoolean() ? new SimpleContainer(buf.readInt()) : null, 
+        this(syncId, playerInventory,
+             buf.readBoolean() ? new SimpleContainer(buf.readInt()) : null,
              buf.readBoolean() ? buf.readBlockPos() : null);
+    }
+
+    // Fabric client-side constructor. 1.21 passes the typed opening data produced
+    // by ExtendedScreenHandlerFactory#getScreenOpeningData rather than a buffer.
+    public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, DayZInventoryOpenData data) {
+        this(syncId, playerInventory,
+             data.hasContainer() ? new SimpleContainer(data.containerSize()) : null,
+             data.hasPos() ? data.pos() : null);
     }
 
     // Main constructor (used by client-side builder and server-side opener)
@@ -57,7 +69,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 
         // 1. Add Container Slots (first index)
         if (containerInventory != null) {
-            if (!playerInventory.player.level().isClientSide) {
+            if (!playerInventory.player.level().isClientSide()) {
                 containerInventory.startOpen(playerInventory.player);
             }
             for (int i = 0; i < containerSize; i++) {
@@ -84,7 +96,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         this.addSlot(new Slot(playerInventory, 39, 0, 0) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.HEAD;
+                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.HEAD;
             }
             @Override
             public int getMaxStackSize() {
@@ -94,7 +106,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         this.addSlot(new Slot(playerInventory, 38, 0, 0) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.CHEST;
+                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.CHEST;
             }
             @Override
             public int getMaxStackSize() {
@@ -104,7 +116,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         this.addSlot(new Slot(playerInventory, 37, 0, 0) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.LEGS;
+                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.LEGS;
             }
             @Override
             public int getMaxStackSize() {
@@ -114,7 +126,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         this.addSlot(new Slot(playerInventory, 36, 0, 0) {
             @Override
             public boolean mayPlace(ItemStack stack) {
-                return LivingEntity.getEquipmentSlotForItem(stack) == EquipmentSlot.FEET;
+                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.FEET;
             }
             @Override
             public int getMaxStackSize() {
@@ -145,7 +157,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     @Override
     public void slotsChanged(Container container) {
         super.slotsChanged(container);
-        if (!this.playerInventory.player.level().isClientSide) {
+        if (!this.playerInventory.player.level().isClientSide()) {
             this.updateCraftingResult();
         }
     }
@@ -157,18 +169,33 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
      * the logic here using only public APIs and this-accessible protected methods.
      */
     private void updateCraftingResult() {
-        if (this.playerInventory.player.level().isClientSide) return;
+        if (this.playerInventory.player.level().isClientSide()) return;
         ServerPlayer serverPlayer = (ServerPlayer) this.playerInventory.player;
 
         ItemStack result = ItemStack.EMPTY;
-        Optional<CraftingRecipe> optional = serverPlayer.getServer()
+
+        // 1.21 changed this API twice over: the raw CraftingContainer is now a
+        // CraftingInput value, and recipes come back wrapped in a RecipeHolder.
+        CraftingInput craftingInput = this.craftSlots.asCraftInput();
+
+        Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.level().getServer()
             .getRecipeManager()
-            .getRecipeFor(RecipeType.CRAFTING, this.craftSlots, serverPlayer.level());
+            .getRecipeFor(RecipeType.CRAFTING, craftingInput, serverPlayer.level());
 
         if (optional.isPresent()) {
-            CraftingRecipe recipe = optional.get();
-            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipe)) {
-                result = recipe.assemble(this.craftSlots, serverPlayer.level().registryAccess());
+            RecipeHolder<CraftingRecipe> recipeHolder = optional.get();
+//? if >=1.21.11 {
+            if (this.resultSlots.setRecipeUsed(serverPlayer, recipeHolder)) {
+//?} else {
+            if (this.resultSlots.setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)) {
+//?}
+//? if >=26.2 {
+                // 26.2 dropped the RegistryAccess parameter from Recipe#assemble -
+                // it now takes only the CraftingInput.
+                result = recipeHolder.value().assemble(craftingInput);
+//?} else {
+                result = recipeHolder.value().assemble(craftingInput, serverPlayer.level().registryAccess());
+//?}
             }
         }
 
@@ -199,7 +226,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);
-        if (this.containerInventory != null && !player.level().isClientSide) {
+        if (this.containerInventory != null && !player.level().isClientSide()) {
             this.containerInventory.stopOpen(player);
         }
         this.clearContainer(player, this.craftSlots);
@@ -223,7 +250,7 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
                 // From player inventory/hotbar
                 // 1. Try to move to armor/offhand if applicable
                 boolean movedToArmor = false;
-                EquipmentSlot equipmentSlot = LivingEntity.getEquipmentSlotForItem(itemStack);
+                EquipmentSlot equipmentSlot = player.getEquipmentSlotForItem(itemStack);
                 int targetIdx = -1;
                 
                 if (equipmentSlot == EquipmentSlot.HEAD) targetIdx = containerSize + 36;

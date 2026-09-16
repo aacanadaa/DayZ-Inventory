@@ -18,7 +18,7 @@ package com.suoim.dayzinventory;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -28,29 +28,30 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public class DayZInventoryPackets {
-    public static final ResourceLocation OPEN_INVENTORY_PACKET = new ResourceLocation("dayz_inventory", "open_inventory");
-    public static final ResourceLocation PICKUP_ITEM_PACKET = new ResourceLocation("dayz_inventory", "pickup_item");
-    public static final ResourceLocation QUICK_PICKUP_ITEM_PACKET = new ResourceLocation("dayz_inventory", "quick_pickup_item");
-    public static final ResourceLocation OPEN_CONTAINER_PACKET = new ResourceLocation("dayz_inventory", "open_container");
+    // The Identifier constructor is private since 1.21.
+    public static final Identifier OPEN_INVENTORY_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "open_inventory");
+    public static final Identifier PICKUP_ITEM_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "pickup_item");
+    public static final Identifier QUICK_PICKUP_ITEM_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "quick_pickup_item");
+    public static final Identifier OPEN_CONTAINER_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "open_container");
 
-    public static void handlePacketOnServer(ResourceLocation packetId, ServerPlayer player, FriendlyByteBuf buf) {
+    public static void handlePacketOnServer(Identifier packetId, ServerPlayer player, FriendlyByteBuf buf) {
         if (packetId.equals(OPEN_CONTAINER_PACKET)) {
             BlockPos pos = buf.readBlockPos();
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 if (player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 25.0) {
                     // Open container method
                     openContainerInventory(player, pos);
                 }
             });
         } else if (packetId.equals(OPEN_INVENTORY_PACKET)) {
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 openPlayerInventory(player);
             });
         } else if (packetId.equals(PICKUP_ITEM_PACKET)) {
             int entityId = buf.readInt();
             int slotId = buf.readInt();
             int amount = buf.readInt();
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 Entity entity = player.level().getEntity(entityId);
                 if (entity instanceof ItemEntity itemEntity && itemEntity.isAlive()) {
                     if (player.distanceToSqr(itemEntity) <= 16.0) {
@@ -75,7 +76,9 @@ public class DayZInventoryPackets {
                                         if (!player.getInventory().add(oldStack)) {
                                             player.drop(oldStack, false);
                                         }
-                                    } else if (slotStack.is(stack.getItem()) && java.util.Objects.equals(slotStack.getTag(), stack.getTag())) {
+                                    // ItemStack#getTag was removed in 1.20.5 when item NBT became
+                                    // data components; isSameItemSameComponents is the equivalent test.
+                                    } else if (ItemStack.isSameItemSameComponents(slotStack, stack)) {
                                         int max = Math.min(slot.getMaxStackSize(slotStack), slotStack.getMaxStackSize());
                                         int addable = max - slotStack.getCount();
                                         int added = Math.min(toAdd, addable);
@@ -101,7 +104,7 @@ public class DayZInventoryPackets {
             });
         } else if (packetId.equals(QUICK_PICKUP_ITEM_PACKET)) {
             int entityId = buf.readInt();
-            player.server.execute(() -> {
+            player.level().getServer().execute(() -> {
                 Entity entity = player.level().getEntity(entityId);
                 if (entity instanceof ItemEntity itemEntity && itemEntity.isAlive()) {
                     if (player.distanceToSqr(itemEntity) <= 16.0) {
