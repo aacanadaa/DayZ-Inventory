@@ -185,9 +185,14 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     private Slot getVirtualHandsHoverSlot(double mouseX, double mouseY) {
-        if (!(this.menu instanceof DayZInventoryScreenHandler handler)) {
+        // Written as a plain test plus cast rather than an instanceof pattern:
+        // below 26.1 AbstractContainerScreen#menu is already typed as the screen's
+        // own menu class, and `x instanceof X x` is a compile error when the
+        // expression type is already a subtype of the pattern type.
+        if (!(this.menu instanceof DayZInventoryScreenHandler)) {
             return null;
         }
+        DayZInventoryScreenHandler handler = (DayZInventoryScreenHandler) this.menu;
 
         int containerSize = handler.getContainerInventory() != null
             ? handler.getContainerInventory().getContainerSize() : 0;
@@ -343,8 +348,16 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         return mouseX >= leftColumnX && mouseX <= leftColumnX + 162 && mouseY >= topPos + 25 && mouseY <= topPos + 25 + viewportHeight;
     }
 
+    // 1.20.2 added the horizontal scroll axis to mouseScrolled; 1.20.1 only has
+    // the vertical amount.
+//? if >=1.20.2 {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+//?} else {
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
+        double scrollX = 0.0;
+//?}
         float scale = getGuiScale();
         double scaledX = mouseX / scale;
         double scaledY = mouseY / scale;
@@ -354,7 +367,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.updateSlotPositions();
             return true;
         }
+//? if >=1.20.2 {
         return super.mouseScrolled(scaledX, scaledY, scrollX, scrollY);
+//?} else {
+        return super.mouseScrolled(scaledX, scaledY, scrollY);
+//?}
     }
 
     @Override
@@ -702,14 +719,20 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
      * So neither is done here. {@link #extractRenderState} draws the dim at identity
      * and then calls {@link #drawDayZPanels} once the scale is applied.
      */
+    // 1.20.1 has no renderBackground(GuiGraphics, int, int, float) to override - it
+    // has only the one-argument form, and it draws the panels from renderBg via
+    // vanilla's render path - so on that node this method does not exist.
+//? if >=1.21.11 {
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-//? if >=1.21.11 {
         return;
-//?} else {
-        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
-//?}
     }
+//?} elif >=1.20.2 {
+    @Override
+    public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        this.renderBg(guiGraphics, partialTick, mouseX, mouseY);
+    }
+//?}
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
@@ -733,7 +756,11 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         // Full-screen dim, drawn here at identity pose before the GUI scale is
         // applied below, so it always covers the entire screen. These are the
         // same colours vanilla's Screen#renderTransparentBackground uses.
+//? if >=1.20.2 {
         guiGraphics.fillGradient(0, 0, this.width, this.height, -1072689136, -804253680);
+//?} else {
+        this.renderBackground(guiGraphics);
+//?}
 
         float scale = getGuiScale();
         int scaledMouseX = (int) (mouseX / scale);
@@ -946,6 +973,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
         }
 
         if (this.minecraft != null && this.minecraft.player != null) {
+//? if >=1.20.2 {
             // Draw 3D Player entity.
             //
             // 1.21.11 removed InventoryScreen.renderEntityInInventory; only the
@@ -982,6 +1010,40 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 (float) mouseX * guiScale, (float) mouseY * guiScale,
                 this.minecraft.player
             );
+//?} else {
+            int renderX = middleColumnX + 81;
+            int renderY = topPos + 135;
+            int renderScale = 55;
+            float f = (float) Math.atan((double) ((renderX - mouseX) / 40.0F));
+            float g = (float) Math.atan((double) ((topPos + 80 - mouseY) / 40.0F));
+            Quaternionf pose = (new Quaternionf()).rotateZ((float) Math.PI);
+            Quaternionf cameraPose = (new Quaternionf()).rotateX(g * 20.0F * ((float) Math.PI / 180.0F));
+            pose.mul(cameraPose);
+            float backupBodyRot = this.minecraft.player.yBodyRot;
+            float backupYRot = this.minecraft.player.getYRot();
+            float backupXRot = this.minecraft.player.getXRot();
+            float backupHeadRotO = this.minecraft.player.yHeadRotO;
+            float backupHeadRot = this.minecraft.player.yHeadRot;
+            this.minecraft.player.yBodyRot = 180.0F + f * 20.0F;
+            this.minecraft.player.setYRot(180.0F + f * 40.0F);
+            this.minecraft.player.setXRot(-g * 20.0F);
+            this.minecraft.player.yHeadRot = this.minecraft.player.getYRot();
+            this.minecraft.player.yHeadRotO = this.minecraft.player.getYRot();
+            InventoryScreen.renderEntityInInventory(
+                guiGraphics,
+                renderX,
+                renderY,
+                renderScale,
+                pose,
+                cameraPose,
+                this.minecraft.player
+            );
+            this.minecraft.player.yBodyRot = backupBodyRot;
+            this.minecraft.player.setYRot(backupYRot);
+            this.minecraft.player.setXRot(backupXRot);
+            this.minecraft.player.yHeadRotO = backupHeadRotO;
+            this.minecraft.player.yHeadRot = backupHeadRot;
+//?}
         }
 
         // 4. Draw DayZ-style Slot Backgrounds

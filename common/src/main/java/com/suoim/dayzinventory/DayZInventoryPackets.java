@@ -28,11 +28,23 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public class DayZInventoryPackets {
-    // The Identifier constructor is private since 1.21.
-    public static final Identifier OPEN_INVENTORY_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "open_inventory");
-    public static final Identifier PICKUP_ITEM_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "pickup_item");
-    public static final Identifier QUICK_PICKUP_ITEM_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "quick_pickup_item");
-    public static final Identifier OPEN_CONTAINER_PACKET = Identifier.fromNamespaceAndPath("dayz_inventory", "open_container");
+    // The channel id factory is version-dependent: the constructor was public
+    // until 1.21 and fromNamespaceAndPath replaced it from 1.21 on. Keeping it in
+    // one helper matters because DayZInventoryPayload's TYPE also needs an id, and
+    // that file is wrapped whole in `//? if >=1.20.5` so it cannot hold
+    // conditionals of its own.
+    public static Identifier id(String path) {
+//? if >=1.21 {
+        return Identifier.fromNamespaceAndPath("dayz_inventory", path);
+//?} else {
+        return new ResourceLocation("dayz_inventory", path);
+//?}
+    }
+
+    public static final Identifier OPEN_INVENTORY_PACKET = id("open_inventory");
+    public static final Identifier PICKUP_ITEM_PACKET = id("pickup_item");
+    public static final Identifier QUICK_PICKUP_ITEM_PACKET = id("quick_pickup_item");
+    public static final Identifier OPEN_CONTAINER_PACKET = id("open_container");
 
     public static void handlePacketOnServer(Identifier packetId, ServerPlayer player, FriendlyByteBuf buf) {
         if (packetId.equals(OPEN_CONTAINER_PACKET)) {
@@ -85,7 +97,11 @@ public class DayZInventoryPackets {
                                         }
                                     // ItemStack#getTag was removed in 1.20.5 when item NBT became
                                     // data components; isSameItemSameComponents is the equivalent test.
+//? if >=1.20.5 {
                                     } else if (ItemStack.isSameItemSameComponents(slotStack, stack)) {
+//?} else {
+                                    } else if (slotStack.is(stack.getItem()) && java.util.Objects.equals(slotStack.getTag(), stack.getTag())) {
+//?}
                                         int max = Math.min(slot.getMaxStackSize(slotStack), slotStack.getMaxStackSize());
                                         int addable = max - slotStack.getCount();
                                         int added = Math.min(toAdd, addable);

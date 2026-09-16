@@ -92,7 +92,7 @@ gradle.beforeProject {
 // Adding a version is a one-line change here plus a `versions/<mc>/gradle.properties`
 // file - see docs/BUILDING.md ("Adding a Minecraft version").
 
-val fabricVersions = listOf("1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val fabricVersions = listOf("1.20.1", "1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 val neoforgeVersions = listOf("1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // Forge stopped being a first-class target after 1.20.x and the ecosystem moved
 // to NeoForge, so 1.21.1 is the newest version Forge can be built for at all.

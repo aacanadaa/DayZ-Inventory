@@ -1,3 +1,8 @@
+//? if >=1.20.5 {
+// This whole file is 1.20.5+ only: CustomPacketPayload and StreamCodec arrive in 1.20.5. Below that the mod sends a
+// bare ResourceLocation channel carrying a FriendlyByteBuf, and there is no typed
+// opening data at all - see the `//? if <1.21` branch in DayZInventoryScreenHandler
+// and the loader entrypoints. Commented out, the file is empty, which compiles.
 /*
  * DayZ Inventory
  * Copyright 2026 suoim
@@ -34,7 +39,7 @@ import net.minecraft.resources.Identifier;
 public record DayZInventoryPayload(Identifier packetId, byte[] data) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<DayZInventoryPayload> TYPE =
-        new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("dayz_inventory", "main"));
+        new CustomPacketPayload.Type<>(DayZInventoryPackets.id("main"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, DayZInventoryPayload> CODEC =
         StreamCodec.composite(
@@ -48,3 +53,4 @@ public record DayZInventoryPayload(Identifier packetId, byte[] data) implements 
         return TYPE;
     }
 }
+//?}
