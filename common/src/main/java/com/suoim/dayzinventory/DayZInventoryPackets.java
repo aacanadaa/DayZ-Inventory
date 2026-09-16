@@ -74,7 +74,14 @@ public class DayZInventoryPackets {
                                         slot.set(newStack);
                                         stack.shrink(1);
                                         if (!player.getInventory().add(oldStack)) {
+//? if >=26.3 {
+                                            // 26.3 made the caller state whether the drop is
+                                            // client-predicted. This runs in a serverbound packet
+                                            // handler, so it is server-only by construction.
+                                            player.drop(oldStack, false, net.minecraft.util.Prediction.SERVER_ONLY);
+//?} else {
                                             player.drop(oldStack, false);
+//?}
                                         }
                                     // ItemStack#getTag was removed in 1.20.5 when item NBT became
                                     // data components; isSameItemSameComponents is the equivalent test.

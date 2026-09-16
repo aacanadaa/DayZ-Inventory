@@ -63,7 +63,7 @@ tasks.withType<JavaCompile>().configureEach {
 // `stonecutter { }` is only a DSL shorthand on scripts the plugin generates for;
 // inside a precompiled convention plugin the extension has to be reached through
 // the `sc` accessor from Utils.kt.
-val versionRenames = sc.current.parsed < "26.2"
+val versionRenames = sc.current.parsed < "26.1"
 
 sc.replacements.string(sc.current.parsed < "1.21.11") {
     // net.minecraft.resources.Identifier (1.21.11+)
@@ -92,10 +92,12 @@ sc.replacements.string(sc.current.parsed < "1.21.11") {
     replace("guiGraphics.setComponentTooltipForNextFrame(", "guiGraphics.renderComponentTooltip(")
 }
 
-// 26.2 rewrote the GUI as a render-state pipeline: GuiGraphics became
+// 26.1 rewrote the GUI as a render-state pipeline: GuiGraphics became
 // GuiGraphicsExtractor, every render* method became extract*, and a handful of
 // ItemStack drawing helpers lost their prefixes. These are pure renames, so they
-// are rewritten backwards for everything below 26.2.
+// are rewritten backwards for everything below 26.1. (26.1 is the first
+// unobfuscated release and already has the new GUI, which is why this boundary is
+// 26.1 and not 26.2.)
 sc.replacements.string(versionRenames) {
     replace("GuiGraphicsExtractor", "GuiGraphics")
     replace("extractBackground", "renderBackground")
@@ -106,25 +108,34 @@ sc.replacements.string(versionRenames) {
     replace("guiGraphics.text(", "guiGraphics.drawString(")
     replace("guiGraphics.fakeItem(", "guiGraphics.renderFakeItem(")
     replace("guiGraphics.itemDecorations(", "guiGraphics.renderItemDecorations(")
-    // ContainerInput is the 26.2 name for ClickType.
+    // ContainerInput is the 26.1+ name for ClickType.
     replace("ContainerInput", "ClickType")
-    // Minecraft#setScreen and #setScreenAndShow were deleted in 26.2; every
-    // screen switch now funnels through Gui#setScreen.
-    replace("this.minecraft.gui.setScreen(", "this.minecraft.setScreen(")
-    // 26.2 removed AbstractContainerScreen#renderBg, so the panel drawing became
+    // 26.1 removed AbstractContainerScreen#renderBg, so the panel drawing became
     // a private helper. It is still called explicitly on both sides.
     replace("this.drawDayZPanels(", "this.renderBg(")
 }
 
-// Fabric API followed Mojang's screen-handler -> menu rename for 26.2, moving
+// Minecraft#setScreen and #setScreenAndShow were deleted in 26.2 - *not* 26.1, which
+// still has them - so this one rename keeps the later boundary while the rest of
+// the GUI rewrite moved to 26.1.
+sc.replacements.string(sc.current.parsed < "26.2") {
+    replace("this.minecraft.gui.setScreen(", "this.minecraft.setScreen(")
+}
+
+// Fabric API followed Mojang's screen-handler -> menu rename for 26.1, moving
 // `fabric-screen-handler-api-v1` to `fabric-menu-api-v1` and renaming the types
 // with it. `PayloadTypeRegistry#playC2S` became `serverboundPlay` in the same
 // release.
-sc.replacements.string(sc.current.parsed < "26.2") {
+sc.replacements.string(sc.current.parsed < "26.1") {
     replace("net.fabricmc.fabric.api.menu.v1", "net.fabricmc.fabric.api.screenhandler.v1")
     replace("ExtendedMenuProvider", "ExtendedScreenHandlerFactory")
     replace("ExtendedMenuType", "ExtendedScreenHandlerType")
     replace("PayloadTypeRegistry.serverboundPlay()", "PayloadTypeRegistry.playC2S()")
+}
+
+// 26.3 renamed InputConstants.Type.KEYSYM to KEYBOARD.
+sc.replacements.string(sc.current.parsed >= "26.3") {
+    replace("Type.KEYSYM", "Type.KEYBOARD")
 }
 
 // NeoForge 1.21.11 moved the client-side packet distributor into a client-only
