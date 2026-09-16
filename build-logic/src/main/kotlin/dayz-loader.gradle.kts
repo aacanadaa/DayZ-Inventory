@@ -78,6 +78,24 @@ val loaderName = when (branch) {
 // both take the plain `jar`.
 val modJarTaskName = if (tasks.names.contains("remapJar")) "remapJar" else "jar"
 
+val modrinthToken = providers.environmentVariable("MODRINTH_TOKEN")
+    .orElse(providers.environmentVariable("MODRINTH_PAT"))
+val curseforgeToken = providers.environmentVariable("CURSEFORGE_API_KEY")
+    .orElse(providers.environmentVariable("CURSEFORGE_TOKEN"))
+
+// A real publish with no token fails deep inside the plugin with an auth error
+// that does not say which variable is missing. Say it here instead, once per
+// node, before anything is uploaded.
+val publishingForReal = (propOrNull("publish.dry_run")?.toBoolean() ?: true).not()
+if (publishingForReal) {
+    if (!modrinthToken.isPresent) {
+        logger.warn("[dayz] publish.dry_run=false but neither MODRINTH_TOKEN nor MODRINTH_PAT is set - Modrinth uploads will fail")
+    }
+    if (!curseforgeToken.isPresent) {
+        logger.warn("[dayz] publish.dry_run=false but neither CURSEFORGE_API_KEY nor CURSEFORGE_TOKEN is set - CurseForge uploads will fail")
+    }
+}
+
 extensions.configure<ModPublishExtension>("publishMods") {
     version.set(prop("mod.version"))
     displayName.set("${prop("mod.name")} ${prop("mod.version")} for MC $mc")
@@ -95,10 +113,7 @@ extensions.configure<ModPublishExtension>("publishMods") {
         projectId.set(prop("modrinth.id"))
         // `MODRINTH_PAT` is accepted as an alias because the CI secret has been
         // named both ways.
-        accessToken.set(
-            providers.environmentVariable("MODRINTH_TOKEN")
-                .orElse(providers.environmentVariable("MODRINTH_PAT"))
-        )
+        accessToken.set(modrinthToken)
         minecraftVersions.add(mc)
         modLoaders.add(loaderName)
         if (loaderName == "fabric") requires("fabric-api")
@@ -118,10 +133,7 @@ extensions.configure<ModPublishExtension>("publishMods") {
         projectSlug.set(prop("curseforge.slug"))
         // `CURSEFORGE_TOKEN` is kept as a fallback for the pre-existing CI
         // secret; `CURSEFORGE_API_KEY` is the documented name.
-        accessToken.set(
-            providers.environmentVariable("CURSEFORGE_API_KEY")
-                .orElse(providers.environmentVariable("CURSEFORGE_TOKEN"))
-        )
+        accessToken.set(curseforgeToken)
         minecraftVersions.add(mc)
         modLoaders.add(loaderName)
         if (loaderName == "fabric") requires("fabric-api")
