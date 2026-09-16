@@ -78,10 +78,8 @@ val loaderName = when (branch) {
 // both take the plain `jar`.
 val modJarTaskName = if (tasks.names.contains("remapJar")) "remapJar" else "jar"
 
-val modrinthToken = providers.environmentVariable("MODRINTH_TOKEN")
-    .orElse(providers.environmentVariable("MODRINTH_PAT"))
-val curseforgeToken = providers.environmentVariable("CURSEFORGE_API_KEY")
-    .orElse(providers.environmentVariable("CURSEFORGE_TOKEN"))
+val modrinthToken = firstEnv("MODRINTH_TOKEN", "MODRINTH_PAT")
+val curseforgeToken = firstEnv("CURSEFORGE_API_KEY", "CURSEFORGE_TOKEN")
 
 // A real publish with no token fails deep inside the plugin with an auth error
 // that does not say which variable is missing. Say it here instead, once per
@@ -97,7 +95,10 @@ if (publishingForReal) {
 }
 
 extensions.configure<ModPublishExtension>("publishMods") {
-    version.set(prop("mod.version"))
+    // The Minecraft version is part of the version number on purpose: Modrinth
+    // keys a version on its number, and the same mod version ships for several
+    // game versions into the same project.
+    version.set("${prop("mod.version")}+$mc")
     displayName.set("${prop("mod.name")} ${prop("mod.version")} for MC $mc")
     changelog.set(rootProject.file("CHANGELOG.md").let { if (it.exists()) it.readText() else "" })
     file.set(tasks.named<Jar>(modJarTaskName).flatMap { it.archiveFile })

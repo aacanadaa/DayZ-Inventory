@@ -10,6 +10,7 @@
 import dev.kikugie.stonecutter.build.StonecutterBuildExtension
 import java.util.concurrent.ConcurrentHashMap
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.maven
@@ -80,4 +81,20 @@ fun RepositoryHandler.strictMaven(url: String, alias: String, vararg groups: Str
     exclusiveContent {
         forRepository { maven(url) { name = alias } }
         filter { groups.forEach { includeGroup(it) } }
+    }
+
+/**
+ * The first non-blank environment variable among [names], or an absent provider.
+ *
+ * `providers.environmentVariable(name)` reports *present* for a variable that is
+ * defined but empty, and `Provider.orElse` only falls back when the receiver is
+ * absent - so an empty `CURSEFORGE_API_KEY` silently shadows a populated
+ * `CURSEFORGE_TOKEN`. CI forwards every accepted name, which means the unset ones
+ * arrive as empty strings and always win. This checks the values instead.
+ */
+fun Project.firstEnv(vararg names: String): Provider<String> =
+    providers.provider {
+        names.firstNotNullOfOrNull { name ->
+            System.getenv(name)?.takeIf { it.isNotBlank() }
+        }
     }

@@ -1,3 +1,26 @@
+# DayZ Inventory 1.7.1 — the same build, actually on Modrinth and CurseForge
+
+Same code as 1.7.0. This release exists because 1.7.0's automated publishing run stopped partway:
+the CurseForge upload was rejected and, because Gradle aborts on the first failure, most of the
+Modrinth uploads never ran either.
+
+Two build bugs caused it, both fixed here:
+
+- The token fallback did not work. `MODRINTH_TOKEN` / `CURSEFORGE_API_KEY` were read with
+  `Provider.orElse`, which only falls back when a variable is *absent* — but CI forwards every
+  accepted name, so the unset ones arrived as empty strings and shadowed
+  `MODRINTH_TOKEN` / `CURSEFORGE_TOKEN`, which were both set. The lookup now ignores blank values.
+- The published version number was the bare mod version, so every Minecraft version of the same
+  release wanted the same number in the same Modrinth project. It is now `1.7.1+mc<version>`, which
+  also matches the jar filenames.
+
+`./gradlew publishModrinthAll` and `./gradlew publishCurseforgeAll` were added so one platform can
+be re-run on its own, and the publish job can now be started by hand with a platform selector.
+
+Nothing about the mod changed.
+
+---
+
 # DayZ Inventory 1.7.0 — Forge on 1.21.1, and the whole matrix publishes itself
 
 **Forge support is back, on 1.21.1.** The unified build now produces **seven** jars from one source

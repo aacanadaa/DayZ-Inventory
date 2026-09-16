@@ -70,6 +70,26 @@ tasks.register("publishAll") {
     dependsOn(publishTargets)
 }
 
+// Per-platform aggregates, so one platform can be re-run on its own. That
+// matters after a partial upload: Modrinth rejects a second file with a name it
+// already has, so re-running `publishAll` after a CurseForge-only failure would
+// fail on every node that already went up.
+fun platformTasks(suffix: String) = stonecutter.tree.branches
+    .filter { it.id != "common" }
+    .flatMap { branch -> branch.keys.map { version -> ":${branch.id}:$version:$suffix" } }
+
+tasks.register("publishModrinthAll") {
+    group = "publishing"
+    description = "Publishes every node in the matrix to Modrinth"
+    dependsOn(platformTasks("publishModrinth"))
+}
+
+tasks.register("publishCurseforgeAll") {
+    group = "publishing"
+    description = "Publishes every node in the matrix to CurseForge"
+    dependsOn(platformTasks("publishCurseforge"))
+}
+
 // CurseForge accepts one upload at a time gracefully; a burst comes back as a
 // rate-limit error rather than being queued, so the nodes are ordered.
 //
