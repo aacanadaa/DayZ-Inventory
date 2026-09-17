@@ -235,10 +235,30 @@ val verifyJar by tasks.registering {
                 }
             }
 
+            // Fabric below 26.1 runs on intermediary names, so each mixin config
+            // must name the generated refmap. A config that omits it leaves every
+            // selector in official names Fabric cannot resolve, and the mod dies at
+            // launch with "No refMap loaded" - which is exactly what 1.8.1 shipped.
+            // The other loaders run on official names and ship no refmap; the name
+            // resolves to no file there and Mixin uses its no-op mapper.
+            if (branch == "fabric" && sc.current.parsed < "26") {
+                val refmapName = "dayz-inventory.refmap.json"
+                if (!names.contains(refmapName)) {
+                    missing += "refmap '$refmapName' is not in the jar"
+                }
+                names.filter { it.endsWith(".mixins.json") }.sorted().forEach { configName ->
+                    val config = zip.getInputStream(zip.getEntry(configName)).bufferedReader().use { it.readText() }
+                    val json = JsonSlurper().parseText(config) as Map<*, *>
+                    if (json["refmap"] != refmapName) {
+                        missing += "mixin '$configName' does not name refmap '$refmapName'"
+                    }
+                }
+            }
+
             if (missing.isNotEmpty()) {
                 throw GradleException(
                     "Packaging check failed for ${jarFile.name}:\n" +
-                        missing.joinToString("\n") { "  - missing $it" }
+                        missing.joinToString("\n") { "  - $it" }
                 )
             }
             logger.lifecycle("[dayz] $path: packaging check passed (${names.size} entries)")
