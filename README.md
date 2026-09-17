@@ -174,7 +174,7 @@ CI（`.github/workflows/build.yml`）在打 `v*` tag 时会构建整个矩阵、
 
 ## 版本号
 
-`gradle.properties` 里的 `mod.version` 是唯一真源，会被展开进 `fabric.mod.json`、`neoforge.mods.toml`
+`gradle.properties` 里的 `mod.version` 是唯一真源，会被展开进 `fabric.mod.json`、`neoforge.mods.toml`、`mods.toml`
 和 `pack.mcmeta`。改完记得更新 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 许可证
