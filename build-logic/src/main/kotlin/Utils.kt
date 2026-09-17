@@ -8,7 +8,6 @@
  */
 
 import dev.kikugie.stonecutter.build.StonecutterBuildExtension
-import java.util.concurrent.ConcurrentHashMap
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -53,20 +52,22 @@ val Project.modSlug: String get() = prop("mod.id").replace('_', '-')
 // would never see them. Reading the file explicitly - instead of relying on
 // Gradle's property merging - keeps a single copy per version and makes the
 // lookup identical for every branch.
-private val versionPropertiesCache = ConcurrentHashMap<String, Map<String, String>>()
-
+// Deliberately NOT cached in a field. A top-level `val` here becomes a static on
+// the build-logic classloader, and Gradle keeps that classloader alive in its
+// daemon between builds - so a cache populated before a version file was edited
+// would serve the old contents for every later build in the same daemon, with a
+// confusing "Missing required property" error as the only symptom. The files are
+// a few hundred bytes and are read a handful of times per node.
 private fun Project.versionProperties(): Map<String, String> {
     val node = mcNode
-    return versionPropertiesCache.getOrPut("${rootProject.projectDir}/$node") {
-        val candidates = listOf(
-            rootProject.file("versions/$node/gradle.properties"),
-            file("versions/$node/gradle.properties"),
-        )
-        val source = candidates.firstOrNull { it.isFile } ?: return@getOrPut emptyMap()
-        java.util.Properties().apply {
-            source.reader(Charsets.UTF_8).use { load(it) }
-        }.entries.associate { (key, value) -> key.toString() to value.toString() }
-    }
+    val candidates = listOf(
+        rootProject.file("versions/$node/gradle.properties"),
+        file("versions/$node/gradle.properties"),
+    )
+    val source = candidates.firstOrNull { it.isFile } ?: return emptyMap()
+    return java.util.Properties().apply {
+        source.reader(Charsets.UTF_8).use { load(it) }
+    }.entries.associate { (key, value) -> key.toString() to value.toString() }
 }
 
 fun Project.propOrNull(key: String): String? =

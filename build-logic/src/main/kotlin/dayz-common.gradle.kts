@@ -57,39 +57,48 @@ tasks.withType<JavaCompile>().configureEach {
 // ---------------------------------------------------------------------------
 // Version renames
 // ---------------------------------------------------------------------------
-// 1.21.11 renamed several widely used members. The shared sources are written
-// against the 26.2 names, so the older nodes get them rewritten backwards here
-// instead of every affected line being duplicated behind a `//? if` block.
+// Several versions renamed widely used members. The shared sources are written
+// against the newest names, so older nodes get them rewritten backwards here
+// instead of every affected line being duplicated behind a `//? if` block. Each
+// block below is scoped to the release where that rename actually happened.
 // `stonecutter { }` is only a DSL shorthand on scripts the plugin generates for;
 // inside a precompiled convention plugin the extension has to be reached through
 // the `sc` accessor from Utils.kt.
 val versionRenames = sc.current.parsed < "26.1"
 
-sc.replacements.string(sc.current.parsed < "1.21.11") {
-    // net.minecraft.resources.Identifier (1.21.11+)
-    replace("Identifier", "ResourceLocation")
-    // Level#isClientSide became a method (1.21.11+)
+// 1.21.9 made Level#isClientSide private, removed ServerPlayer#getServer in favour
+// of Level#getServer, and renamed Window#getWindow to Window#handle.
+sc.replacements.string(sc.current.parsed < "1.21.9") {
     replace("isClientSide()", "isClientSide")
-    // ServerPlayer#getServer was removed in favour of Level#getServer
     replace("player.level().getServer()", "player.getServer()")
     replace("serverPlayer.level().getServer()", "serverPlayer.getServer()")
-    // 1.21.11 swapped GuiGraphics#pose() from a PoseStack to a Matrix3x2fStack:
-    // pushPose/popPose became pushMatrix/popMatrix, and the 3-argument
-    // translate/scale lost their z component.
+    replace("this.minecraft.getWindow().handle()", "this.minecraft.getWindow().getWindow()")
+}
+
+// 1.21.11 renamed ResourceLocation to Identifier.
+sc.replacements.string(sc.current.parsed < "1.21.11") {
+    replace("Identifier", "ResourceLocation")
+}
+
+// The GUI stack swapped to Matrix3x2f in 1.21.6: pushPose/popPose became
+// pushMatrix/popMatrix, the three-argument translate/scale lost their z component,
+// and the immediate tooltip calls became setTooltipForNextFrame. These are not
+// 1.21.11 changes, and 1.21.5 still has the old PoseStack and the old tooltip call.
+sc.replacements.string(sc.current.parsed < "1.21.6") {
     replace("pose().pushMatrix()", "pose().pushPose()")
     replace("pose().popMatrix()", "pose().popPose()")
     replace("pose().scale(scale, scale)", "pose().scale(scale, scale, 1.0f)")
     replace("pose().scale(2.0F, 2.0F)", "pose().scale(2.0F, 2.0F, 1.0F)")
     replace("pose().translate(middleColumnX + 65, bodyY + 5)", "pose().translate(middleColumnX + 65, bodyY + 5, 100)")
     replace("pose().translate(0, 0)", "pose().translate(0, 0, 200.0F)")
-    // Inventory#getSelectedSlot is the 1.21.11 accessor for the old `selected` field.
-    replace("getInventory().getSelectedSlot()", "getInventory().selected")
-    // Window#handle renamed the raw GLFW handle accessor in 1.21.11.
-    replace("this.minecraft.getWindow().handle()", "this.minecraft.getWindow().getWindow()")
-    // The immediate tooltip calls were renamed when the GUI became a render-state
-    // pipeline (and again in 26.2).
     replace("guiGraphics.setTooltipForNextFrame(", "guiGraphics.renderTooltip(")
     replace("guiGraphics.setComponentTooltipForNextFrame(", "guiGraphics.renderComponentTooltip(")
+}
+
+// Inventory#getSelectedSlot replaced the plain `selected` field in 1.21.5, when the
+// field was made private.
+sc.replacements.string(sc.current.parsed < "1.21.5") {
+    replace("getInventory().getSelectedSlot()", "getInventory().selected")
 }
 
 // 26.1 rewrote the GUI as a render-state pipeline: GuiGraphics became
@@ -136,7 +145,9 @@ sc.replacements.string(sc.current.parsed < "26.1") {
 // The >=1.21 recipe block in DayZInventoryScreenHandler has two older spellings.
 // They are replacements rather than `//? if` blocks because Stonecutter conditions
 // cannot nest, and that block already sits inside a `//? if >=1.21`.
-sc.replacements.string(sc.current.parsed < "1.21.11") {
+// 1.21.2 dropped the Level argument from ResultSlot#setRecipeUsed, one version
+// after 1.21.1 shipped with it - so this boundary is 1.21.2, not 1.21.11.
+sc.replacements.string(sc.current.parsed < "1.21.2") {
     replace("setRecipeUsed(serverPlayer, recipeHolder)", "setRecipeUsed(serverPlayer.level(), serverPlayer, recipeHolder)")
 }
 sc.replacements.string(sc.current.parsed < "26.1") {
@@ -148,9 +159,9 @@ sc.replacements.string(sc.current.parsed >= "26.3") {
     replace("Type.KEYSYM", "Type.KEYBOARD")
 }
 
-// NeoForge 1.21.11 moved the client-side packet distributor into a client-only
+// NeoForge 1.21.7 moved the client-side packet distributor into a client-only
 // package; before that both sides share `neoforge.network.PacketDistributor`.
-sc.replacements.string(sc.current.parsed < "1.21.11") {
+sc.replacements.string(sc.current.parsed < "1.21.7") {
     replace("net.neoforged.neoforge.client.network.ClientPacketDistributor", "net.neoforged.neoforge.network.PacketDistributor")
     replace("ClientPacketDistributor.sendToServer(", "PacketDistributor.sendToServer(")
 }
