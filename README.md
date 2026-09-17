@@ -17,7 +17,62 @@
 **强烈建议搭配 [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar) 一起使用** —— 两者是一对：
 HUD 和背包界面共享同一套视觉语言。
 
-## 支持的版本与加载器
+## 支持的版本
+
+| 加载器 | Minecraft |
+| :--- | :--- |
+| **Fabric** | 1.20.1 – 26.3 |
+| **NeoForge** | 1.20.6 – 26.3 |
+| **Forge** | 1.20.6 – 1.21.11 |
+
+一共 **23 个 Minecraft 版本、53 个下载**，全部来自同一个源码树。每个文件名都标明了它对应的
+Minecraft 版本和加载器。每个版本的完整列表见下方[完整版本矩阵](#完整版本矩阵)，加载器的最低版本要求见[依赖](#依赖)。
+
+![DayZ Inventory 界面：VICINITY 网格、展开的 CHEST 抽屉、带装备的 SURVIVOR 面板、header 里的 CURIOS 与 JEI 按钮、2.0x 的 HANDS 槽以及 2x2 CRAFTING 合成格](docs/screenshots/ui-example.png)
+
+---
+
+## 功能
+
+### 统一的 Vicinity 网格与可展开抽屉
+- **近距扫描器**：每 10 tick 扫描一次玩家 3 格半径内的地面掉落物与容器方块（箱子、木桶、潜影盒）。
+- **单一滚动列**：把附近掉落物与容器合并进 VICINITY 标题下的同一个可滚动网格。
+- **容器选择器**：容器以槽位图标显示，悬停可看坐标与距离。
+- **内联抽屉**：点击容器图标即可在列表内联展开它的槽位抽屉。
+
+### 动态 Hands 挂载槽
+- **跟随快捷栏**：始终镜像当前选中的快捷栏槽位。
+- **加大的挂载槽**：半透明面板，把手里物品以 **2.0x**（32x32 像素）居中渲染。
+- **大写物品名横幅**：在标题下方显示物品名（例如 `HUNTING KNIFE`）。
+
+### 合成与装备交换
+- **原版 2x2 合成**：合成格与结果槽直接内嵌在自定义界面里，结果由服务端重算。
+- **拖拽穿戴**：把护甲/衣物拖到中间的 Survivor 面板即可自动穿上或替换。
+
+### 可选模组联动
+- **配方查看器（JEI / REI / EMI）**：header 上会出现风格一致的开关键。**完全可选** —— 没装就不画。
+- **Curios API**：装了才显示 CURIOS 按钮。
+- **Trinkets**：装了才显示 TRINKETS 按钮。
+
+所有联动都在运行时用 `isModLoaded` 探测。模组在**一个都不装**的情况下也能正常启动、打开界面并完整工作。
+
+---
+
+## 安装
+
+1. 只要你的 Minecraft 版本在上面表格里就能用：**Fabric** 覆盖全部 23 个版本，**NeoForge** 从
+   1.20.6 起，**Forge** 覆盖 1.20.6 – 1.21.11。
+2. 从 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 或
+   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files) 下载文件名里
+   **Minecraft 版本和加载器都对得上**的那个 jar。
+3. 丢进 `mods/` 文件夹。
+
+> **别下错。** Fabric 的构建在 Forge / NeoForge 上不会加载，NeoForge 的构建也不会在 Forge 上加载，
+> 不同 Minecraft 版本之间同样不能混用。每个文件名都标了 Minecraft 版本与加载器。
+
+---
+
+## 完整版本矩阵
 
 | Minecraft | Fabric | NeoForge | Forge | Java |
 | :--- | :---: | :---: | :---: | :---: |
@@ -57,47 +112,7 @@ Fabric 和 NeoForge 覆盖 1.20.6 及以后的每一个版本。矩阵里的空�
 用 `common/` + 各加载器模块做加载器抽象。目标矩阵在 `settings.gradle.kts` 里声明，
 新增一个版本只需要加一行加一个 `versions/<mc>/gradle.properties`。
 
-![DayZ Inventory 界面：VICINITY 网格、展开的 CHEST 抽屉、带装备的 SURVIVOR 面板、header 里的 CURIOS 与 JEI 按钮、2.0x 的 HANDS 槽以及 2x2 CRAFTING 合成格](docs/screenshots/ui-example.png)
-
 ---
-
-## 功能
-
-### 统一的 Vicinity 网格与可展开抽屉
-- **近距扫描器**：每 10 tick 扫描一次玩家 3 格半径内的地面掉落物与容器方块（箱子、木桶、潜影盒）。
-- **单一滚动列**：把附近掉落物与容器合并进 VICINITY 标题下的同一个可滚动网格。
-- **容器选择器**：容器以槽位图标显示，悬停可看坐标与距离。
-- **内联抽屉**：点击容器图标即可在列表内联展开它的槽位抽屉。
-
-### 动态 Hands 挂载槽
-- **跟随快捷栏**：始终镜像当前选中的快捷栏槽位。
-- **加大的挂载槽**：半透明面板，把手里物品以 **2.0x**（32x32 像素）居中渲染。
-- **大写物品名横幅**：在标题下方显示物品名（例如 `HUNTING KNIFE`）。
-
-### 合成与装备交换
-- **原版 2x2 合成**：合成格与结果槽直接内嵌在自定义界面里，结果由服务端重算。
-- **拖拽穿戴**：把护甲/衣物拖到中间的 Survivor 面板即可自动穿上或替换。
-
-### 可选模组联动
-- **配方查看器（JEI / REI / EMI）**：header 上会出现风格一致的开关键。**完全可选** —— 没装就不画。
-- **Curios API**：装了才显示 CURIOS 按钮。
-- **Trinkets**：装了才显示 TRINKETS 按钮。
-
-所有联动都在运行时用 `isModLoaded` 探测。模组在**一个都不装**的情况下也能正常启动、打开界面并完整工作。
-
----
-
-## 安装
-
-1. 只要你的 Minecraft 版本在上面矩阵里就能用：**Fabric** 覆盖全部 23 个版本，**NeoForge** 从
-   1.20.6 起，**Forge** 覆盖 1.20.6 – 1.21.11。
-2. 从 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 或
-   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files) 下载文件名里
-   **Minecraft 版本和加载器都对得上**的那个 jar。
-3. 丢进 `mods/` 文件夹。
-
-> **别下错。** Fabric 的构建在 Forge / NeoForge 上不会加载，NeoForge 的构建也不会在 Forge 上加载，
-> 不同 Minecraft 版本之间同样不能混用。每个文件名都标了 Minecraft 版本与加载器。
 
 ## 依赖
 

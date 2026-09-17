@@ -18,7 +18,70 @@ grid**, and drag-to-equip onto the **Survivor** panel.
 **Really recommended with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — seamless
 integration. The two are built as a pair, so the HUD and the inventory screen share one look.
 
-## Supported versions and loaders
+## Supported versions
+
+| Loader | Minecraft |
+| :--- | :--- |
+| **Fabric** | 1.20.1 – 26.3 |
+| **NeoForge** | 1.20.6 – 26.3 |
+| **Forge** | 1.20.6 – 1.21.11 |
+
+**23 Minecraft versions, 53 downloads**, all from one source tree. Each file is labelled with its
+Minecraft version and its loader. The [full version matrix](#full-version-matrix) below lists every
+version, and [Dependencies](#dependencies) has the required loader versions.
+
+![The DayZ Inventory screen: a VICINITY grid of nearby items, a CHEST drawer open with shells, the SURVIVOR panel with the player in gear, CURIOS and JEI buttons in the header, an M1014 Battle Shotgun in the 2.0x HANDS slot, and the 2x2 CRAFTING grid](docs/screenshots/ui-example.png)
+
+---
+
+## Features
+
+### Unified Vicinity Grid and Expandable Drawers
+- **Proximity Scanner**: rescans every 10 ticks for ground items and container blocks (chests,
+  barrels, shulker boxes) within a 3-block radius.
+- **Unified Column**: nearby ground items and storage blocks share one scrollable grid under the
+  VICINITY header.
+- **Container Selectors**: containers are drawn as slot icons with coordinate and distance tooltips.
+- **Inline Drawer Grids**: clicking a container selector expands its slots inline, below the grid.
+
+### Dynamic Hands Attachment Slot
+- **Active Hotbar Binding**: mirrors whichever hotbar slot is currently selected.
+- **Large Attachment Slot**: a fully translucent panel body in place of the default slot.
+- **Double-Scaled Render**: the held item is drawn at **2.0x** (32x32 px) centred in the panel.
+- **Capitalised Name Banner**: shows the item name (e.g. `HUNTING KNIFE`) under the header.
+
+### Crafting and Equipment Swapping
+- **Vanilla 2x2 Grid**: the crafting grid and result slot live inside the custom screen; the result
+  is recomputed server-side.
+- **Drag-to-Equip**: drag armour or clothing onto the middle Survivor panel to equip or swap it.
+
+### Optional Mod Integration
+- **Recipe Viewers (JEI / REI / EMI)**: a theme-aligned toggle button in the header, drawn only when
+  a supported viewer is installed.
+- **Curios API**: adds a CURIOS button to the Survivor header.
+- **Trinkets**: adds a TRINKETS button to the Survivor header.
+
+Every integration is probed at runtime with `isModLoaded`. The mod launches, opens its screen and
+works fully with **none** of them installed.
+
+---
+
+## Installation
+
+1. As long as your Minecraft version is in the table above you are covered: **Fabric** spans all
+   23 versions, **NeoForge** from 1.20.6 upward, and **Forge** from 1.20.6 to 1.21.11.
+2. Download the file whose name matches your Minecraft version *and* loader from
+   [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or
+   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
+3. Drop it into `mods/`.
+
+> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a NeoForge build will not
+> load on Forge, and builds for different Minecraft versions are not interchangeable. Each filename
+> carries its Minecraft version and loader.
+
+---
+
+## Full version matrix
 
 | Minecraft | Fabric | NeoForge | Forge | Java |
 | :--- | :---: | :---: | :---: | :---: |
@@ -59,54 +122,7 @@ handles multi-version preprocessing and the `common/` + per-loader modules handl
 abstraction. The matrix is declared in `settings.gradle.kts`; adding a version is one line there plus
 a `versions/<mc>/gradle.properties` file.
 
-![The DayZ Inventory screen: a VICINITY grid of nearby items, a CHEST drawer open with shells, the SURVIVOR panel with the player in gear, CURIOS and JEI buttons in the header, an M1014 Battle Shotgun in the 2.0x HANDS slot, and the 2x2 CRAFTING grid](docs/screenshots/ui-example.png)
-
 ---
-
-## Features
-
-### Unified Vicinity Grid and Expandable Drawers
-- **Proximity Scanner**: rescans every 10 ticks for ground items and container blocks (chests,
-  barrels, shulker boxes) within a 3-block radius.
-- **Unified Column**: nearby ground items and storage blocks share one scrollable grid under the
-  VICINITY header.
-- **Container Selectors**: containers are drawn as slot icons with coordinate and distance tooltips.
-- **Inline Drawer Grids**: clicking a container selector expands its slots inline, below the grid.
-
-### Dynamic Hands Attachment Slot
-- **Active Hotbar Binding**: mirrors whichever hotbar slot is currently selected.
-- **Large Attachment Slot**: a fully translucent panel body in place of the default slot.
-- **Double-Scaled Render**: the held item is drawn at **2.0x** (32x32 px) centred in the panel.
-- **Capitalised Name Banner**: shows the item name (e.g. `HUNTING KNIFE`) under the header.
-
-### Crafting and Equipment Swapping
-- **Vanilla 2x2 Grid**: the crafting grid and result slot live inside the custom screen; the result
-  is recomputed server-side.
-- **Drag-to-Equip**: drag armour or clothing onto the middle Survivor panel to equip or swap it.
-
-### Optional Mod Integration
-- **Recipe Viewers (JEI / REI / EMI)**: a theme-aligned toggle button in the header, drawn only when
-  a supported viewer is installed.
-- **Curios API**: adds a CURIOS button to the Survivor header.
-- **Trinkets**: adds a TRINKETS button to the Survivor header.
-
-Every integration is probed at runtime with `isModLoaded`. The mod launches, opens its screen and
-works fully with **none** of them installed.
-
----
-
-## Installation
-
-1. As long as your Minecraft version is in the matrix above you are covered: **Fabric** spans all
-   23 versions, **NeoForge** from 1.20.6 upward, and **Forge** from 1.20.6 to 1.21.11.
-2. Download the file whose name matches your Minecraft version *and* loader from
-   [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or
-   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
-3. Drop it into `mods/`.
-
-> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a NeoForge build will not
-> load on Forge, and builds for different Minecraft versions are not interchangeable. Each filename
-> carries its Minecraft version and loader.
 
 ## Dependencies
 

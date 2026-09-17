@@ -403,15 +403,22 @@ Publishing uses `me.modmuss50.mod-publish-plugin` (Minotaur), configured **once*
 
 ### Store descriptions
 
-`docs/store-descriptions/curseforge.md` is the **copy-paste source** for the CurseForge project
-page, because that page cannot be updated from the build. The `CURSEFORGE_TOKEN` used for uploads
-is a legacy upload-only token; the Eternal API that edits project metadata rejects it (403).
+`docs/store-descriptions/curseforge.md` and `docs/store-descriptions/modrinth.md` are the
+**copy-paste sources** for the two project pages. **Both are manual dashboard edits.** Nothing in
+the build touches either project body: `mod-publish-plugin` 2.1.1 only calls Modrinth's
+*create version* endpoint, so the only text it pushes is the per-version `changelog` — the project
+description is not sent at all. The `CURSEFORGE_TOKEN` used for uploads is a legacy upload-only
+token, and the Eternal API that edits project metadata rejects it (403), so CurseForge could not be
+automated this way even if the plugin supported it.
 
 Consequences when features change:
 
-- The Modrinth description **is** pushed via the API, so it must be updated deliberately.
-- The CurseForge description and the CurseForge **license field** are manual dashboard edits.
-  Keep the CurseForge description in sync with `README.md` by hand.
+- Update **both** store descriptions by hand, and keep them in sync with `README.md`. Keeping them
+  deliberately short is the point — a store page is not the place for the full version matrix, which
+  belongs in the README and `docs/BUILDING.md`. Both files open with a three-row loader table; the
+  23-row matrix and per-version dependency pins stay in the README.
+- The CurseForge **license field** is also a manual dashboard edit.
+- The only store text the build does publish is each version's changelog, read from `CHANGELOG.md`.
 
 ## Versioning
 
