@@ -16,11 +16,16 @@ plugins {
     id("dev.kikugie.loom-back-compat")
 }
 
-// Fabric keeps its client entrypoint in a separate source root; Stonecutter has
-// to know about it so the generated tree includes it.
-sourceSets.named("main") {
-    java.srcDir("src/client/java")
-}
+// The client entrypoint lives under `src/main/java`, NOT a separate `src/client`
+// root. `dayz-loader` applies the `dayz-common` convention plugin *during plugin
+// application*, which runs `sc.tasks.configureSource(mainSourceSet)` and then
+// points `compileJava` at the generated tree only. A source root added here in
+// the script body is therefore never preprocessed and never compiled - which is
+// exactly how the client entrypoint went missing from every Fabric jar while
+// `fabric.mod.json` still declared it, making the mod fail to load. Keeping every
+// source under `src/main/java` means there is nothing to miss. Client-only safety
+// comes from the `"environment": "client"` marker on the entrypoint, not from the
+// source root.
 
 dependencies {
     minecraft("com.mojang:minecraft:$mc")

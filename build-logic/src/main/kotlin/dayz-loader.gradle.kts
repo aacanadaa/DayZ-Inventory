@@ -16,6 +16,7 @@
  *      game version + loader tags - no manual tagging per release.
  */
 
+import groovy.json.JsonSlurper
 import me.modmuss50.mpp.ModPublishExtension
 import me.modmuss50.mpp.ReleaseType
 import org.gradle.jvm.tasks.Jar
@@ -23,6 +24,7 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import java.util.zip.ZipFile
 
 plugins {
     id("dayz-common")
@@ -152,6 +154,100 @@ extensions.configure<ModPublishExtension>("publishMods") {
         client.set(true)
         server.set(true)
     }
+}
+
+// ---------------------------------------------------------------------------
+// Packaging regression check
+// ---------------------------------------------------------------------------
+// 1.8.0 shipped Fabric jars whose client entrypoint class was declared in
+// `fabric.mod.json` but never compiled into the jar: it lived in a source root
+// that Stonecutter had already stopped looking at. The mod then refused to load
+// with an error naming a class a developer could see in the source tree, which
+// is the least helpful possible shape for that bug.
+//
+// This task resolves every class the jar's *own metadata* names - Fabric
+// entrypoints and every mixin config - against the classes actually in the jar,
+// so a missing class fails the build instead of shipping. The NeoForge and Forge
+// entrypoints cannot be read from their metadata (both are found by the `@Mod`
+// annotation, which is not listed in the toml), so their class names are named
+// here explicitly.
+val expectedEntrypoints = when (branch) {
+    "neoforge" -> listOf("com.suoim.dayzinventory.neoforge.DayZInventoryNeoForge")
+    "forge" -> listOf("com.suoim.dayzinventory.forge.DayZInventoryForge")
+    else -> emptyList()
+}
+
+// Resolved lazily: for Fabric below 26.1 the shippable jar is written by
+// `remapJar`, which Loom only registers from its own `afterEvaluate`. A provider
+// defers the lookup until the graph is built, so the name resolves on every
+// loader.
+val modJarProvider: Provider<Jar> = provider { tasks.named<Jar>(modJarTaskName).get() }
+
+val verifyJar by tasks.registering {
+    group = "verification"
+    description = "Resolves every entrypoint and mixin class named by this node's jar metadata"
+    dependsOn(modJarProvider)
+    val jarFileProvider = modJarProvider.flatMap { it.archiveFile }
+    inputs.file(jarFileProvider)
+    doLast {
+        val jarFile = jarFileProvider.get().asFile
+        ZipFile(jarFile).use { zip ->
+            val names = zip.entries().asSequence().map { it.name }.toSet()
+            fun hasClass(fqcn: String) = names.contains(fqcn.replace('.', '/') + ".class")
+            val missing = mutableListOf<String>()
+
+            // Fabric declares its entrypoints by name in fabric.mod.json.
+            if (branch == "fabric") {
+                val metaEntry = zip.getEntry("fabric.mod.json")
+                    ?: error("$jarFile has no fabric.mod.json")
+                val meta = zip.getInputStream(metaEntry).bufferedReader().use { it.readText() }
+                val json = JsonSlurper().parseText(meta) as Map<*, *>
+                val entrypoints = json["entrypoints"] as? Map<*, *> ?: emptyMap<Any, Any>()
+                for ((kind, value) in entrypoints) {
+                    (value as? List<*>)?.forEach { item ->
+                        val cls = when (item) {
+                            is String -> item
+                            is Map<*, *> -> item["value"] as? String
+                            else -> null
+                        }
+                        if (cls != null && !hasClass(cls)) missing += "entrypoint '$kind' -> $cls"
+                    }
+                }
+            }
+            expectedEntrypoints.filterNot(::hasClass).forEach { missing += "entrypoint -> $it" }
+
+            // Every mixin config shipped in the jar must resolve to classes in
+            // that same jar, on every loader.
+            names.filter { it.endsWith(".mixins.json") }.sorted().forEach { configName ->
+                val config = zip.getInputStream(zip.getEntry(configName)).bufferedReader().use { it.readText() }
+                val json = JsonSlurper().parseText(config) as Map<*, *>
+                val pkg = json["package"] as? String ?: ""
+                for (section in listOf("mixins", "client", "server")) {
+                    (json[section] as? List<*>)?.forEach { entry ->
+                        val simple = when (entry) {
+                            is String -> entry
+                            is Map<*, *> -> entry["name"] as? String
+                            else -> null
+                        } ?: return@forEach
+                        val fqcn = if (pkg.isEmpty()) simple else "$pkg.$simple"
+                        if (!hasClass(fqcn)) missing += "mixin '$configName' -> $fqcn"
+                    }
+                }
+            }
+
+            if (missing.isNotEmpty()) {
+                throw GradleException(
+                    "Packaging check failed for ${jarFile.name}:\n" +
+                        missing.joinToString("\n") { "  - missing $it" }
+                )
+            }
+            logger.lifecycle("[dayz] $path: packaging check passed (${names.size} entries)")
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyJar)
 }
 
 // The jar task is resolved here rather than inline above, because `remapJar` does

@@ -1,3 +1,53 @@
+# DayZ Inventory 1.8.1 — the 1.8.0 Fabric files could not load at all
+
+**If you downloaded DayZ Inventory for Fabric from 1.8.0, it will not start. Replace it.** Every
+Fabric file in 1.8.0 — all 23 of them — failed to load, for two independent reasons that both had to
+be fixed. The NeoForge and Forge files are unaffected by both and were fine.
+
+The mod itself is unchanged. This release is about making the files start.
+
+## What was wrong
+
+**1. The version requirements were written in a syntax Fabric cannot read.**
+
+`fabric.mod.json` declared its dependencies as Maven ranges:
+
+```json
+"minecraft": "[1.21.5,1.21.6)",
+"java": "[21,)"
+```
+
+That form is correct for the Forge and NeoForge metadata, which parse Maven ranges. Fabric does not:
+its version parser has no bracket syntax, so it treated the whole string as one literal version name
+and compared for equality. It could therefore only ever match itself. The game's complaint read like
+the loader had lost its mind:
+
+```
+requires version [1.21.5,1.21.6) of 'Minecraft' (minecraft),
+but only the wrong version is present: 1.21.5!
+```
+
+Fabric needs the comparison form — `>=1.21.5 <1.21.6`, and `>=21` for Java. This affected both
+requirements on all 23 Fabric files. It was introduced in **1.7.1**, so the Fabric files in 1.7.1 and
+1.7.2 could not load either.
+
+**2. The client entrypoint was never built into the jar.**
+
+`fabric.mod.json` told Fabric to run `DayZInventoryFabricClient` on startup, but that class was not
+in the jar — on any version. It was kept in a separate `src/client/java` source root, and the build
+only compiles Stonecutter's preprocessed copy of `src/main/java`. The root was added to the build
+after Stonecutter had already been configured, so nothing ever compiled it. Fabric went looking for
+an entrypoint that did not exist, and refused to start.
+
+The class now lives alongside the rest of the Fabric code, where nothing can miss it.
+
+## Also in this release
+
+- A regression check that resolves every loader entrypoint and every mixin config class against the
+  built jar, so a missing class fails the audit rather than shipping.
+
+---
+
 # DayZ Inventory 1.8.0 — twenty-three Minecraft versions from one source tree
 
 DayZ Inventory now ships for **23 Minecraft versions, from 1.20.1 to 26.3**, across Fabric, NeoForge

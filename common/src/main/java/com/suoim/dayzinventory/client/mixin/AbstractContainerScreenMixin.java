@@ -29,22 +29,30 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Makes the virtual Hands panel count as hovering the Hands slot.
  * <p>
- * The hook point has moved three times now. 1.21 removed
- * isHovering(Slot, double, double) and assigned hoveredSlot from render; 1.21.11
- * split the render pipeline so that assignment moved to renderContents; 26.2
- * renamed that method to extractContents as part of the render-state rewrite,
- * which is the current target. The assignment itself still happens there:
- * extractContents opens with {@code this.hoveredSlot = this.getHoveredSlot(mouseX, mouseY)}.
+ * The hook point has moved three times now, and the version that matters is the
+ * one where the <em>assignment</em> moves, not the one where a method appears:
+ * <ul>
+ *   <li><b>1.20.1 - 1.20.5</b>: {@code isHovering(Slot, double, double)} exists,
+ *       so this mixin is not the hook; {@code render} assigns {@code hoveredSlot}.</li>
+ *   <li><b>1.21 - 1.21.5</b>: {@code isHovering} is gone and {@code render} walks
+ *       the slot list, assigning {@code hoveredSlot} directly.</li>
+ *   <li><b>1.21.6 - 26.0</b>: {@code renderContents} is split out of {@code render}
+ *       and takes the assignment with it. Note this is <b>1.21.6</b>, not 1.21.11 -
+ *       {@code renderContents} merely <em>appears</em> at 1.21.6 and
+ *       {@code hoveredSlot} is written there from that version on, so hooking
+ *       {@code render} on 1.21.6-1.21.10 finds no injection point at all. With
+ *       {@code defaultRequire: 1} that is a hard crash at launch.</li>
+ *   <li><b>26.1+</b>: the render-state rewrite renames it to
+ *       {@code extractContents}. The assignment still happens there:
+ *       {@code extractContents} opens with
+ *       {@code this.hoveredSlot = this.getHoveredSlot(mouseX, mouseY)}.</li>
+ * </ul>
  * <p>
- * 1. {@code isHovering(Slot, double, double)} is gone - {@code render} now walks
- * the slot list and assigns {@code hoveredSlot} directly, so that assignment is
- * the hook point.
- * <p>
- * 2. {@code @Shadow} on this target does not resolve at runtime any more
- * (both {@code menu} and {@code hoveredSlot} failed with "was not located").
- * The mixin therefore shadows nothing: it only calls into
- * {@link DayZInventoryScreen}, which inherits those fields from
- * {@link AbstractContainerScreen} and can read and write them directly.
+ * {@code @Shadow} on this target does not resolve at runtime any more (both
+ * {@code menu} and {@code hoveredSlot} failed with "was not located"). The mixin
+ * therefore shadows nothing: it only calls into {@link DayZInventoryScreen},
+ * which inherits those fields from {@link AbstractContainerScreen} and can read
+ * and write them directly.
  */
 @Mixin(AbstractContainerScreen.class)
 public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMenu> {
@@ -52,7 +60,7 @@ public abstract class AbstractContainerScreenMixin<T extends AbstractContainerMe
     @Inject(
 //? if >=26.1 {
         method = "extractContents",
-//?} elif >=1.21.11 {
+//?} elif >=1.21.6 {
         method = "renderContents",
 //?} else {
         method = "render",
