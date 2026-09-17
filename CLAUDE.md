@@ -39,7 +39,7 @@ Why the gaps exist is recorded in [docs/BUILDING.en.md](docs/BUILDING.en.md) §7
 trying to re-enable one. In short: NeoForge 1.20.2 used the old `SimpleChannel` stack, 1.20.3 had no
 NeoForge release at all, and 1.20.4 predates `StreamCodec`, so the whole 1.20.1–1.20.5 stretch is
 Fabric-only; Forge 1.20.1 needs SRG reobfuscation and a Searge refmap no Gradle-9-capable Forge
-plugin provides; Forge skipped 1.21.2; and the 26.x line is NeoForge-only.
+plugin provides; Forge skipped 1.21.2; and the 26.x line has no Forge build.
 
 **Read [docs/BUILDING.en.md](docs/BUILDING.en.md) first.** It covers the project tree, the
 convention plugins, the conditional-compilation conventions and the publishing setup. The rest of

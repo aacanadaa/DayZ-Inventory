@@ -97,7 +97,7 @@ Pick the row for your loader. Optional entries are probed at runtime — the mod
 | Loader | Minecraft | Java | Required | Optional |
 | :--- | :--- | :--- | :--- | :--- |
 | **Fabric** | Every version from 1.20.1 to 26.3 | 17 on 1.20.1 – 1.20.4 · 21 on 1.20.5 – 1.21.11 · 25 on 26.x | Fabric Loader 0.16.14+ (0.19.5+ from 1.21.5) and the Fabric API build for your Minecraft version | JEI / REI / EMI, Trinkets, Curios |
-| **NeoForge** | Every version from 1.20.6 to 26.3 | 21 on 1.21.x · 25 on 26.x | NeoForge for your Minecraft version | JEI, Curios |
+| **NeoForge** | Every version from 1.20.6 to 26.3 | 21 on 1.20.6 – 1.21.11 · 25 on 26.x | NeoForge for your Minecraft version | JEI, Curios |
 | **Forge** | 1.20.6 through 1.21.11 | 21 | Forge for your Minecraft version | JEI, Curios |
 
 Newest builds: Fabric Loader 0.19.5 with Fabric API 0.160.6+26.3 on 26.3; NeoForge 26.3.0.1-beta on 26.3; Forge 61.2.1 on 1.21.11. Older Minecraft versions follow the same pattern — use the loader and API build that matches your Minecraft version.

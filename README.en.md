@@ -187,7 +187,7 @@ GitHub Release and publishes to both platforms.
 ## Versioning
 
 `mod.version` in `gradle.properties` is the single source of truth. It is expanded into
-`fabric.mod.json`, `neoforge.mods.toml` and `pack.mcmeta`. Bump it, then update
+`fabric.mod.json`, `neoforge.mods.toml`, `mods.toml` and `pack.mcmeta`. Bump it, then update
 [CHANGELOG.md](CHANGELOG.md).
 
 ## License
