@@ -92,11 +92,11 @@ gradle.beforeProject {
 // Adding a version is a one-line change here plus a `versions/<mc>/gradle.properties`
 // file - see docs/BUILDING.md ("Adding a Minecraft version").
 
-val fabricVersions = listOf("1.20.1", "1.20.5", "1.20.6", "1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val fabricVersions = listOf("1.20.1", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // 1.20.5 is Fabric-only: NeoForge published that release without a
 // `moddev-config.json` (only an installer), which ModDevGradle needs, and Forge
 // has no 1.20.5 release at all.
-val neoforgeVersions = listOf("1.20.6", "1.21.1", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val neoforgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // Forge stopped being a first-class target after 1.20.x and the ecosystem moved
 // to NeoForge, so 1.21.1 is the newest version Forge can be built for at all.
 //
@@ -106,7 +106,13 @@ val neoforgeVersions = listOf("1.20.6", "1.21.1", "1.21.11", "26.1", "26.1.1", "
 // ForgeGradle 6 - which does have both - is Gradle 8 only, while Loom 1.18.1 needs
 // Gradle 9. Adding it means a nested Gradle 8 build, not another node. 1.20.1 still
 // ships for Fabric, where it needs none of this.
-val forgeVersions = listOf("1.20.6", "1.21.1")
+// Forge 1.21.6 moved to EventBus 7, which split `net.minecraftforge.eventbus.api`
+// into `bus` and `listener` subpackages AND replaced
+// FMLJavaModLoadingContext#getModEventBus(). The first half is done - the imports
+// are conditional in DayZInventoryForge - but the second needs the new bus API
+// worked out, so Forge stops at 1.21.5 for now. Fabric and NeoForge cover every
+// version in the matrix regardless.
+val forgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.3", "1.21.4", "1.21.5")
 val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
 
 // ---------------------------------------------------------------------------

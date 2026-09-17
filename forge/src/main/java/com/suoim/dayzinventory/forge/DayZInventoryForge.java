@@ -26,8 +26,15 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.extensions.IForgeMenuType;
+// EventBus 7, which Forge moved to in 1.21.6, split the package up: IEventBus
+// became bus.EventBus and SubscribeEvent moved under listener.
+//? if >=1.21.6 {
+import net.minecraftforge.eventbus.api.bus.EventBus;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+//?} else {
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+//?}
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -52,7 +59,8 @@ public class DayZInventoryForge {
         // and anything reachable from a static initializer would see it as null.
         Platform.HELPER = new ForgePlatformHelper();
 
-        IEventBus modEventBus = context.getModEventBus();
+        // `var` because the bus type itself is renamed between EventBus 6 and 7.
+        var modEventBus = context.getModEventBus();
 
         // Register registries
         MENUS.register(modEventBus);

@@ -22,7 +22,7 @@ import com.suoim.dayzinventory.mixin.SlotAccessor;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//? if >=1.21.11 {
+//? if >=1.21.9 {
 import net.minecraft.client.input.MouseButtonEvent;
 //?}
 import com.mojang.blaze3d.platform.InputConstants;
@@ -377,7 +377,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     @Override
 // 1.21.11 replaced the raw (mouseX, mouseY, button) input parameters with
 // event objects; below that the coordinates still arrive as arguments.
-//? if >=1.21.11 {
+//? if >=1.21.9 {
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         double mouseX = event.x();
         double mouseY = event.y();
@@ -473,7 +473,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 // modifier bits are SDL keymods and GLFW_MOD_SHIFT no longer matches them.
 //? if >=26.1 {
                         if (event.hasShiftDown()) {
-//?} elif >=1.21.11 {
+//?} elif >=1.21.9 {
                         if ((event.modifiers() & org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT) != 0) {
 //?} else {
                         if (Screen.hasShiftDown()) {
@@ -531,7 +531,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 }
             }
         }
-//? if >=1.21.11 {
+//? if >=1.21.9 {
         return super.mouseClicked(new MouseButtonEvent(scaledX, scaledY, event.buttonInfo()), doubleClick);
 //?} else {
         return super.mouseClicked(scaledX, scaledY, button);
@@ -539,7 +539,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
-//? if >=1.21.11 {
+//? if >=1.21.9 {
     public boolean mouseReleased(MouseButtonEvent event) {
         double mouseX = event.x();
         double mouseY = event.y();
@@ -634,7 +634,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             this.draggedSlot = null;
         }
 
-//? if >=1.21.11 {
+//? if >=1.21.9 {
         return super.mouseReleased(new MouseButtonEvent(scaledX, scaledY, event.buttonInfo()));
 //?} else {
         return super.mouseReleased(scaledX, scaledY, button);
@@ -642,7 +642,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
-//? if >=1.21.11 {
+//? if >=1.21.9 {
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         float scale = getGuiScale();
         return super.mouseDragged(new MouseButtonEvent(event.x() / scale, event.y() / scale, event.buttonInfo()),
@@ -688,7 +688,7 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     @Override
-//? if >=1.21.11 {
+//? if >=1.21.9 {
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top) {
 //?} else {
     protected boolean hasClickedOutside(double mouseX, double mouseY, int left, int top, int button) {
