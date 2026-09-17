@@ -64,6 +64,28 @@ tasks.named<JavaCompile>("compileJava") {
 tasks.named<ProcessResources>("processResources") {
     from(commonGeneratedResources)
     dependsOn("$commonPath:stonecutterGenerate")
+
+    // Fabric below 26.1 runs on intermediary names, so its mixin configs must
+    // name the generated refmap or Mixin leaves every selector in official
+    // names it cannot resolve ("No refMap loaded", a launch crash). NeoForge,
+    // Forge and 26.x run on official names and ship no refmap, so the entry
+    // must NOT be there for them: a declared-but-missing refmap is semantically
+    // wrong and warns in every log.
+    //
+    // The configs live in `common`, whose node cannot tell which loader is
+    // building it, so the entry is added here, per loader, on the processed
+    // copy. `verifyJar` then checks both the file and this reference.
+    if (branch == "fabric" && sc.current.parsed < "26") {
+        filesMatching(listOf("*.mixins.json", "*.client.mixins.json")) {
+            filter { line ->
+                if (line.trimStart().startsWith("\"package\"")) {
+                    line + System.lineSeparator() + "\t\"refmap\": \"dayz-inventory.refmap.json\","
+                } else {
+                    line
+                }
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

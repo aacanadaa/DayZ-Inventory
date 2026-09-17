@@ -205,13 +205,14 @@ the client screen.
      `neoforge.mods.toml`.
    - Mixins resolve by **official Mojang names natively on both loaders**. Above 26.1 there is no
      refmap to name; if you find yourself debugging refmap contents on 26.2, the cause is something
-     else. Below 26.1 the refmap is real and is named `dayz-inventory.refmap.json`, and **each mixin
-     config must name it explicitly** (`"refmap": "dayz-inventory.refmap.json"`). It is generated
-     next to the config but is *not* auto-detected: with the entry missing, Mixin looks for the
-     default `mixin.refmap.json`, finds nothing, and every mixin fails at launch with `No refMap
-     loaded`. That shipped in 1.8.1 and is fixed in 1.8.2. On 26.x / NeoForge / Forge the same entry
-     is harmless — the file is absent and Mixin falls back to its no-op mapper, which matches their
-     official names.
+     else. Below 26.1 the refmap is real and is named `dayz-inventory.refmap.json`, and each mixin
+     config must name it (`"refmap": "dayz-inventory.refmap.json"`). It is generated next to the
+     config but is *not* auto-detected: without the entry Mixin looks for the default
+     `mixin.refmap.json`, finds nothing, and every mixin fails at launch with `No refMap loaded`
+     (shipped in 1.8.1). The entry is **injected by `dayz-loader` for Fabric below 26.1 only**, not
+     written in the shared source configs: NeoForge, Forge and 26.x run on official names and ship
+     no refmap, so the entry is wrong there and makes Mixin log a "could not be read" warning on
+     every launch (1.8.2). Do not add it back to `common/src/main/resources`.
 
    Class and method names in code are still **Mojang names** (`Minecraft`, `LocalPlayer`,
    `AbstractContainerScreen`, `KeyMapping`, ...), not Yarn names (`MinecraftClient`,

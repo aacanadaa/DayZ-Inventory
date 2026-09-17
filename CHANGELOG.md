@@ -1,3 +1,21 @@
+# DayZ Inventory 1.8.3 — the refmap entry only where the refmap exists
+
+1.8.2 named `dayz-inventory.refmap.json` in both mixin configs on **every** loader. Only Fabric below
+26.1 has that file: NeoForge, Forge and 26.x run on official names and ship no refmap, so on those
+the entry pointed at a file that does not exist and Mixin logged a warning on every launch:
+
+```
+Reference map 'dayz-inventory.refmap.json' for dayz-inventory.mixins.json could not be read.
+```
+
+Harmless, but wrong, and it made a normal launch look like a broken install. The entry is now added
+at build time for Fabric below 26.1 only, which is exactly the set of nodes that generate the file,
+and `verifyJar` checks both the file and the reference on those nodes.
+
+No mod behaviour changed.
+
+---
+
 # DayZ Inventory 1.8.2 — three faults the 1.8.1 test pass turned up
 
 1.8.1 fixed the launch failures below. Testing that release found three more faults, all fixed here.
