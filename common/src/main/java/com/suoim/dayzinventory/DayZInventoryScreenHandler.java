@@ -33,7 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
 //?}
 import net.minecraft.world.item.crafting.CraftingRecipe;
-//? if >=1.20.5 {
+//? if >=1.20.2 {
 import net.minecraft.world.item.crafting.RecipeHolder;
 //?}
 import net.minecraft.world.item.crafting.RecipeType;
@@ -199,9 +199,12 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
                 result = recipeHolder.value().assemble(craftingInput);
             }
         }
-//?} elif >=1.20.5 {
-        // 1.20.5 wrapped recipes in a RecipeHolder but still passed the raw
-        // CraftingContainer; CraftingInput only arrives in 1.21.
+//?} elif >=1.20.2 {
+        // 1.20.2 wrapped recipes in a RecipeHolder, but kept the raw
+        // CraftingContainer and the Level-taking setRecipeUsed overload.
+        // CraftingInput only arrives in 1.21, and the HolderLookup-based
+        // assemble/registryAccess pair only in 1.20.5 - both are absorbed by the
+        // build-level replacements, which is why this branch also serves 1.20.5+.
         Optional<RecipeHolder<CraftingRecipe>> optional = serverPlayer.getServer()
             .getRecipeManager()
             .getRecipeFor(RecipeType.CRAFTING, this.craftSlots, serverPlayer.level());

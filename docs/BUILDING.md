@@ -13,6 +13,7 @@
 
 现在是一个分支、一份源码树。版本相关的代码用 `//? if <条件>` 注释内联标注，
 构建则按 **node**（节点）产出产物 —— 一个 node 就是一对（模块, Minecraft 版本），例如 `:fabric:26.2`。
+当前矩阵覆盖 **23 个 Minecraft 版本**（1.20.1 至 26.3），共 **53 个可发布 jar**：Fabric 23 个、NeoForge 18 个、Forge 12 个。
 
 关于实现方式有两条路。[Stonecutter 官方文档](https://stonecutter.kikugie.dev/) 描述了两种布局：
 **扁平式**（一份 `src/`，node 同时承载版本与加载器，加载器差异用构建常量切换）和
@@ -44,7 +45,7 @@ common/                      与加载器无关的代码（界面、菜单、网
   src/main/java              共享源码，内含 `//? if` 标记
 fabric/                      Fabric 入口 + FabricPlatformHelper
 neoforge/                    NeoForge 入口 + NeoForgePlatformHelper
-forge/                       旧版 Forge 模块 —— 存在但未构建（见第 7 节）
+forge/                       Forge 入口 + ForgePlatformHelper（构建 1.20.6–1.21.11，见第 6、7 节）
 ```
 
 Stonecutter 以 Minecraft 版本给每个 node 命名，并把它们放在分支目录下，
@@ -58,14 +59,22 @@ Stonecutter 以 Minecraft 版本给每个 node 命名，并把它们放在分支
 声明树与矩阵：
 
 ```kotlin
-val fabricVersions = listOf("1.21.1", "1.21.11", "26.2")
-val neoforgeVersions = listOf("1.21.1", "1.21.11", "26.2")
+val fabricVersions = listOf("1.20.1", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21",
+    "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9",
+    "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val neoforgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4",
+    "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11",
+    "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val forgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.3", "1.21.4", "1.21.5", "1.21.6",
+    "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11")
+val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
 
 stonecutter {
     create(rootProject) {
         branch("common") { versions(*commonVersions.toTypedArray()) }
         branch("fabric") { versions(*fabricVersions.toTypedArray()) }
         branch("neoforge") { versions(*neoforgeVersions.toTypedArray()) }
+        branch("forge") { versions(*forgeVersions.toTypedArray()) }
     }
 }
 ```
@@ -93,7 +102,7 @@ stonecutter {
 | 插件 | 应用对象 | 职责 |
 | :--- | :--- | :--- |
 | `dayz-common` | 每个 node | 版本字符串、Java 工具链、仓库、manifest 展开、版本重命名、jar 内许可证、生成源码接线 |
-| `dayz-loader` | fabric / neoforge | 共享 `common` node 的源码，并配置 `publishMods` |
+| `dayz-loader` | fabric / neoforge / forge | 共享 `common` node 的源码，并配置 `publishMods` |
 
 `build-logic/src/main/kotlin/Utils.kt` 里是 `prop()` / `mc` / `branch` 等访问器。
 注意：在预编译脚本插件里**不能**直接写 `stonecutter { }`，必须通过 `sc` 访问器取扩展。
@@ -169,11 +178,58 @@ sc.replacements.string(sc.current.parsed < "1.21.11") {
 
 ## 6. 版本矩阵
 
-| Minecraft | Node | Java | Fabric Loom | 说明 |
-| :--- | :--- | :--- | :--- | :--- |
-| 26.2 | `:fabric:26.2`、`:neoforge:26.2` | 25 | `fabric-loom`（不混淆） | 无 mappings、无 refmap、无 remap 步骤 |
-| 1.21.11 | `:fabric:1.21.11`、`:neoforge:1.21.11` | 21 | `fabric-loom-remap` | 最后一个混淆版本；输入事件已对象化 |
-| 1.21.1 | `:fabric:1.21.1`、`:forge:1.21.1`、`:neoforge:1.21.1` | 21 | `fabric-loom-remap` | payload 网络层；鼠标坐标仍是裸参数 |
+| Minecraft | Fabric | NeoForge | Forge | Java |
+| :--- | :---: | :---: | :---: | :---: |
+| **1.20.1** | ✅ | — | — | 17 |
+| **1.20.2** | ✅ | — | — | 17 |
+| **1.20.3** | ✅ | — | — | 17 |
+| **1.20.4** | ✅ | — | — | 17 |
+| **1.20.5** | ✅ | — | — | 21 |
+| **1.20.6** | ✅ | ✅ | ✅ | 21 |
+| **1.21** | ✅ | ✅ | ✅ | 21 |
+| **1.21.1** | ✅ | ✅ | ✅ | 21 |
+| **1.21.2** | ✅ | ✅ | — | 21 |
+| **1.21.3** | ✅ | ✅ | ✅ | 21 |
+| **1.21.4** | ✅ | ✅ | ✅ | 21 |
+| **1.21.5** | ✅ | ✅ | ✅ | 21 |
+| **1.21.6** | ✅ | ✅ | ✅ | 21 |
+| **1.21.7** | ✅ | ✅ | ✅ | 21 |
+| **1.21.8** | ✅ | ✅ | ✅ | 21 |
+| **1.21.9** | ✅ | ✅ | ✅ | 21 |
+| **1.21.10** | ✅ | ✅ | ✅ | 21 |
+| **1.21.11** | ✅ | ✅ | ✅ | 21 |
+| **26.1** | ✅ | ✅ | — | 25 |
+| **26.1.1** | ✅ | ✅ | — | 25 |
+| **26.1.2** | ✅ | ✅ | — | 25 |
+| **26.2** | ✅ | ✅ | — | 25 |
+| **26.3** | ✅ | ✅ | — | 25 |
+
+合计：**23 个 Minecraft 版本、53 个可发布 jar**（Fabric 23、NeoForge 18、Forge 12）。
+
+Fabric 侧的 Loom 变体分界线仍在 `26.1`：`fabric-loom-remap` 用于 26.1 以下（1.21.11 及更早），
+`fabric-loom` 从 26.1 起接管不混淆版本。`loom-back-compat` 依据 `sc.current.parsed < "26"` 选择变体，
+并为不混淆版 Loom 删掉的 `mod*` 配置提供别名，因此一份构建脚本同时覆盖这条分界线两侧。
+
+### 每版本 API 边界
+
+下面这张表记录每个 API **从哪个版本起**发生变化，是这份文档里最值钱的部分：
+下一次移植新版本时照着它就知道要改什么，不必逐个方法去试。
+每一行都是**直接检查对应版本的 jar 与 mappings 得到的，不是从版本号推断出来的**。
+
+| Since | Change |
+| :--- | :--- |
+| 1.20.2 | 引入 `RecipeHolder`：`RecipeManager#getRecipeFor` 现在返回 `Optional<RecipeHolder<CraftingRecipe>>`，`RecipeCraftingHolder#setRecipeUsed` 接收 `RecipeHolder<?>` 而不是裸的 `Recipe<?>`；`mouseScrolled` 增加了横向轴；`renderBackground` 增加了 4 参数形式；`renderEntityInInventoryFollowsMouse` 取代了 `renderEntityInInventory` |
+| 1.20.5 | `CustomPacketPayload` 增加了嵌套的 `Type` 与 `StreamCodec` 体系；出现 `RegistryFriendlyByteBuf`；`ItemStack#getTag` 被移除，改用 `isSameItemSameComponents`；`Block#use` 拆成 `useItemOn`（手持物品）与 `useWithoutItem`（空手），所以开容器的 mixin 从这里起改为针对 `useWithoutItem`，更老的 `use`（多一个 `InteractionHand` 参数）留在下面 |
+| 1.21 | `CraftingInput`；`ResourceLocation.fromNamespaceAndPath`（公开构造器变为私有） |
+| 1.21.2 | 移除 `InteractionResult.sidedSuccess`；`ResultSlot#setRecipeUsed` 去掉了 `Level` 参数 |
+| 1.21.5 | `Inventory#selected` 变为私有，改由 `getSelectedSlot()` 提供 |
+| 1.21.6 | GUI 栈换成 `Matrix3x2f`（`pushPose`→`pushMatrix`，3 参数 `translate`/`scale` 去掉 z）；`setTooltipForNextFrame` 取代 `renderTooltip(Font, ItemStack, …)`；Forge 转向 EventBus 7：`net.minecraftforge.eventbus.api` 拆成 `bus`/`listener`，`FMLJavaModLoadingContext#getModEventBus()` 换成返回 `BusGroup` 的 `getModBusGroup()`。`BusGroup` 不是 `IEventBus`，EventBus 7 里也根本不存在 `IEventBus`，所以取 bus 与 `DeferredRegister#register` 的**语句**同样按版本分支，不只是导入 |
+| 1.21.7 | NeoForge 把客户端包分发器移到 `ClientPacketDistributor` |
+| 1.21.9 | `Level#isClientSide` 变为私有；移除 `ServerPlayer#getServer`；`Window#getWindow` 更名为 `handle`；输入改用 `MouseButtonEvent` 对象 |
+| 1.21.11 | `ResourceLocation` 更名为 `Identifier`；`renderContents` 从 `render` 中拆出 |
+| 26.1 | Minecraft 不再混淆：没有 mappings、没有 refmap、没有 remap 步骤；`GuiGraphics` → `GuiGraphicsExtractor`，所有 `render*` → `extract*`；`Minecraft#setScreen` 仍然存在；Fabric 的 `screenhandler` API 更名为 `menu`；`ExtendedScreenHandlerFactory` → `ExtendedMenuProvider` |
+| 26.2 | 删除 `Minecraft#setScreen`（背包重定向 hook 移到 `Gui#setScreen`）；`Recipe#assemble` 去掉 `RegistryAccess` |
+| 26.3 | Minecraft 从 GLFW 转向 SDL3（`org.lwjgl.glfw` 离开 classpath；改用 `org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow`）；裸修饰键位变成 SDL keymods，所以要用 `InputWithModifiers#hasShiftDown`；`InputConstants.Type.KEYSYM` → `KEYBOARD`；`Player#drop` 增加 `Prediction` 参数 |
 
 ### Forge 用的工具链
 
@@ -190,45 +246,66 @@ ForgeGradle 7 是**无状态**的：不写 `minecraft.dependency(...)` 它什么
 Mojang 的 libraries 仓库。少了这两步，Forge 依赖会解析成一个空模块，
 所有 `net.minecraft.*` 导入全部报错 —— 看起来像源码问题，其实不是。
 
-`loom-back-compat` 依据 `sc.current.parsed < "26"` 选择 Loom 变体，
-并为不混淆版 Loom 删掉的 `mod*` 配置提供别名，因此一份构建脚本同时覆盖这条分界线两侧。
+## 7. 已支持的目标与仍然存在的空缺
 
-## 7. 尚未启用的目标
+矩阵里的 23 个版本并非每个加载器在每个版本上都有节点。剩下的缺口不多，每一条都有具体原因。
+本节原先列出的两类缺口现在已经补上，这里也一并说明，免得当初的原因被忘掉。
 
-`1.20.1` 目前仍由自己的分支发布，**没有**因为本次重构而回退。
-它的 `versions/1.20.1/gradle.properties` 已就位，在 `settings.gradle.kts` 的版本列表里加上 `"1.20.1"` 即可接上构建。
+### 1.20.1：Fabric 已支持，Forge 未支持
 
-### 1.20.1（Fabric、Forge）
+**1.20.1 在 Fabric 上是支持的** —— 它就在 `fabricVersions` 里，走的是 1.20.5 之前的网络实现
+（`DayZInventoryPayload` / `DayZInventoryOpenData` 上的 `//? if >=1.20.5` 守卫就是这条分界）。
 
-这个版本缺的是整个 1.20.5 网络层重写：
+缺的是 **Forge 1.20.1**，原因很具体：Forge 1.20.1 跑在 SRG 名字上，所以既需要 reobfuscation，
+又需要一份 Searge mixin refmap。ForgeGradle 7 两样都没有 —— 它的 reobf 要额外的 "Renamer Gradle"
+配套插件，mixin 支持则完全没有；ForgeGradle 6 虽然两样都有，却只支持 Gradle 8，而 Loom 1.18.1
+需要 Gradle 9。要接上它意味着嵌一套 Gradle 8 构建，而不是再开一个 node。
 
-- 没有 `CustomPacketPayload` / `StreamCodec`。`DayZInventoryPayload` 与 `DayZInventoryOpenData`
-  都不存在，通道就是一个 `ResourceLocation` 加一个 `FriendlyByteBuf`。
-- `ExtendedScreenHandlerType` 不接受 opening-data codec；工厂实现的是
-  `writeScreenOpeningData(ServerPlayer, FriendlyByteBuf)` 而不是 `getScreenOpeningData`。
-- Fabric 侧是按通道逐个注册：`ServerPlayNetworking.registerGlobalReceiver(ResourceLocation, ...)`。
-- `ResourceLocation` 的构造器还是公开的，所以没有 `ResourceLocation.fromNamespaceAndPath`。
+### Forge 1.21.6–1.21.11：已不再是缺口
 
-`GuiGraphics` 时代也有差异：`render` 的签名是 `(GuiGraphics, int, int, float)`，没有 `renderContents`；
-背包重定向 mixin 的目标是 `Minecraft#setScreen` 而不是 `Gui#setScreen`。
+这几个版本的 Forge **已经完成**。Forge 在 1.21.6 转向 EventBus 7：它把
+`net.minecraftforge.eventbus.api` 拆成 `bus` / `listener` 两个子包，并把
+`FMLJavaModLoadingContext#getModEventBus()` 换成了返回 `BusGroup` 的 `getModBusGroup()`。
+`DayZInventoryForge` 现在在 `//? if >=1.21.6` 上同时切换导入块**和**取 bus / 注册的语句，
+因为 `BusGroup` 不是 `IEventBus`，而 EventBus 7 里根本不存在 `IEventBus`。因此 Forge
+现在覆盖 1.20.6 到 1.21.11。
 
-### Forge
+### 1.20.2–1.20.4 的 Fabric：已完成，已进矩阵
 
-**Forge 1.21.1 已经完成。** `forge/` 已从 1.20.1 时代的 `SimpleChannel` / `NetworkRegistry` /
-`registerMessage` 迁到 `net.minecraftforge` 下的 payload API，`:forge:1.21.1` 与其它 node 一样
-可以构建、打包和发布。它的 mixin 配置走的是 jar 清单里的 `MixinConfigs` 属性 ——
-因为 Forge 不认识 NeoForge 在 `mods.toml` 里用的 `[[mixins]]` 块。
+这三个版本已经以 Fabric 节点进入矩阵。它们走的是 1.20.5 之前的网络实现
+（`CustomPacketPayload` 已经存在，但没有 `Type`、也没有 `StreamCodec`，所以 1.20.1 用的那套
+裸 `ResourceLocation` + `FriendlyByteBuf` channel 依然适用）。额外需要满足两个条件：
+`RecipeHolder` 这条分界是 1.20.2 而不是 1.20.5，而 `Block#use` → `useWithoutItem` 的拆分是 1.20.5。
 
-1.20.1 的 Forge 卡在上面那个 1.20.1 移植本身，而不是卡在 Forge 相关内容上。
-Forge 在 1.20.x 之后就没有新版本了，所以 1.21.1 是它能支持的最高版本。
+### NeoForge 1.20.2–1.20.4
+
+1.20.1 早于 NeoForge。NeoForge 20.2.x 仍然使用旧的 `NetworkRegistry` / `SimpleChannel` 体系，
+而这棵树里没有带这套实现。1.20.3 **根本没有 NeoForge 发布**（NeoForge 从 20.2.x 直接跳到
+20.4.x）。NeoForge 20.4.x 有注册器 API（`RegisterPayloadHandlerEvent` → `IPayloadRegistrar`），
+但早于 `StreamCodec`，所以共享 payload 还得再写一个形态。这三个版本的 Fabric 都已经覆盖。
+
+### Forge 1.21.2
+
+Forge 从未发布 1.21.2 版本。
+
+### 26.x 的 Forge
+
+这不在本模组的构建目标里；26.x 这一线走 NeoForge。
+
+### 1.20.5：只有 Fabric
+
+NeoForge 为那个版本发布的产物里没有 ModDevGradle 需要的 `moddev-config.json`，
+而 Forge 根本没有 1.20.5 版本，所以这一版只有 Fabric 节点。
+
+Fabric 与 NeoForge 合起来覆盖 1.20.6 及以上的所有版本，1.20.1–1.20.5 则只有 Fabric。
 
 ## 8. 新增一个 Minecraft 版本
 
 1. 加 `versions/<mc>/gradle.properties`，照抄最接近的版本，改掉 `deps.minecraft`、`deps.java`、
    `deps.mixin-compat`、`deps.pack-format`、各加载器版本以及 `meta.minecraft-range`。
 2. 把版本号加进 `settings.gradle.kts` 里对应的列表。
-3. 跑 `./gradlew :common:<mc>:compileJava`，然后照着报错移植。如果目标版本是 1.20.1 或 1.21.1，
-   记得也加进 `forgeVersions` —— Forge 没有更晚的版本。
+3. 跑 `./gradlew :common:<mc>:compileJava`，然后照着报错移植。只有当目标版本落在 Forge 当前可构建的
+   区间（1.20.6–1.21.11，见第 7 节；1.21.2 跳过，Forge 从未发布该版本）内时，才把它加进 `forgeVersions`。
 4. 把版本号补进 `README.md` / `README.en.md` 以及 `docs/store-descriptions/`。
 5. `./gradlew chiseledBuild` 确认整个矩阵仍然能构建。
 

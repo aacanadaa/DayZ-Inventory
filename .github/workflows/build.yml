@@ -70,6 +70,7 @@ jobs:
           path: |
             fabric/versions/*/build/libs/*.jar
             neoforge/versions/*/build/libs/*.jar
+            forge/versions/*/build/libs/*.jar
             !**/*-sources.jar
           if-no-files-found: error
 

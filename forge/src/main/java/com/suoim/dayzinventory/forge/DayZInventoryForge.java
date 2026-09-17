@@ -26,10 +26,13 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.extensions.IForgeMenuType;
-// EventBus 7, which Forge moved to in 1.21.6, split the package up: IEventBus
-// became bus.EventBus and SubscribeEvent moved under listener.
+// EventBus 7, which Forge moved to in 1.21.6, split the package up and replaced
+// the single IEventBus with a BusGroup that owns one bus per event type. The
+// BusGroup is not a subtype of IEventBus, so the *statement* that fetches the
+// bus has to be version-specific too - swapping the import alone does not
+// compile.
 //? if >=1.21.6 {
-import net.minecraftforge.eventbus.api.bus.EventBus;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 //?} else {
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -59,11 +62,16 @@ public class DayZInventoryForge {
         // and anything reachable from a static initializer would see it as null.
         Platform.HELPER = new ForgePlatformHelper();
 
-        // `var` because the bus type itself is renamed between EventBus 6 and 7.
-        var modEventBus = context.getModEventBus();
-
-        // Register registries
+        // Register registries. `DeferredRegister#register` takes the BusGroup on
+        // 1.21.6+ and an IEventBus below it, and the two types are unrelated -
+        // IEventBus does not exist at all in EventBus 7.
+        //? if >=1.21.6 {
+        BusGroup modBusGroup = context.getModBusGroup();
+        MENUS.register(modBusGroup);
+        //?} else {
+        IEventBus modEventBus = context.getModEventBus();
         MENUS.register(modEventBus);
+        //?}
 
         // Register setup events
         ModNetwork.register();

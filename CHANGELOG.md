@@ -1,3 +1,73 @@
+# DayZ Inventory 1.8.0 — twenty-three Minecraft versions from one source tree
+
+DayZ Inventory now ships for **23 Minecraft versions, from 1.20.1 to 26.3**, across Fabric, NeoForge
+and Forge. That is 53 files, all built from one branch and one set of sources.
+
+| Minecraft | Fabric | NeoForge | Forge |
+| :--- | :---: | :---: | :---: |
+| 1.20.1 – 1.20.4 | ✅ | — | — |
+| 1.20.5 | ✅ | — | — |
+| 1.20.6 | ✅ | ✅ | ✅ |
+| 1.21 | ✅ | ✅ | ✅ |
+| 1.21.1 | ✅ | ✅ | ✅ |
+| 1.21.2 | ✅ | ✅ | — |
+| 1.21.3 – 1.21.11 | ✅ | ✅ | ✅ |
+| 26.1 – 26.3 | ✅ | ✅ | — |
+
+Each download is labelled with its Minecraft version and its loader, so pick the file that matches
+both. The mod itself is unchanged — this release is about reaching more versions.
+
+## Fixed: opening a chest or barrel did not open the DayZ container view
+
+The chest and barrel hooks were aimed at a method that only exists from **1.20.5** onward, on every
+version. On 1.20.1–1.20.4 that method does not exist, so the hook silently missed and chests and
+barrels fell back to their vanilla screens instead of opening in the DayZ UI. Both hooks now target
+the right method for the version they are built for.
+
+## Fixed: JEI and Curios never actually opened
+
+The "open recipe viewer" and "open Curios" buttons could be drawn without doing anything. Three
+separate causes, all fixed:
+
+- The recipe-viewer button hardcoded `O`. JEI, REI and EMI each ship their own toggle keybind and
+  players rebind it, so the button now reads the installed viewer's *own* binding and falls back to
+  `O` only when it cannot find one.
+- The simulated keypress flattened the key to a bare integer, which lost whether it was a keyboard
+  or mouse binding. It now keeps the key type.
+- Reading a `KeyMapping`'s bound key looked at the wrong field when the class layout differed. It now
+  prefers the field that holds the live binding.
+- Curios is a NeoForge/Forge mod, so on Fabric there is nothing to open. The button now opens the
+  vanilla inventory instead of doing nothing.
+
+## The versions that are not in the table
+
+- **1.20.1 through 1.20.4 are Fabric only.** 1.20.1 predates NeoForge; NeoForge's 1.20.2 release
+  still used an older networking API this mod does not carry; 1.20.3 never had a NeoForge release;
+  and 1.20.4's networking API predates the payload system the mod uses. Forge 1.20.1 runs on names
+  that would need a reobfuscation step the current toolchain does not have.
+- **1.20.5 is Fabric only.** NeoForge's release for it is missing metadata the build needs, and
+  Forge never published 1.20.5 at all.
+- **1.21.2 has no Forge file** because Forge skipped that release.
+- **The 26.x line has no Forge file.** NeoForge is the supported route there.
+
+Otherwise Forge covers 1.20.6 through 1.21.11, and Fabric plus NeoForge cover every version from
+1.20.6 up to 26.3.
+
+## Under the hood
+
+The repository is no longer one branch per Minecraft version. It is a single **Stonecutter** tree
+where each version difference is marked inline, so a fix lands on every version at once instead of
+being cherry-picked across branches. Publishing, the GitHub Actions matrix and the documentation were
+rewritten around it.
+
+Two things were also repaired along the way. Forge moved to a new event bus in 1.21.6, which needed
+both new import paths and a differently-typed way of getting the mod's event bus — that is what
+unlocked the 1.21.6–1.21.11 Forge files. And the Forge jars were missing from past GitHub releases:
+they were published to Modrinth and CurseForge but never attached to the release page. That is fixed
+here.
+
+---
+
 # DayZ Inventory 1.7.2 — the Fabric files were development jars; this fixes that
 
 **If you downloaded DayZ Inventory for 1.21.1 or 1.21.11 on Fabric from the 1.7.1 release, replace

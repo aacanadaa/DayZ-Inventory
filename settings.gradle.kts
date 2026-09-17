@@ -86,19 +86,23 @@ gradle.beforeProject {
 // why the lists differ:
 //
 //   * Fabric    - every version.
-//   * NeoForge  - 1.21.1 and newer (NeoForge did not exist for 1.20.1).
+//   * NeoForge  - 1.20.6 and newer. 1.20.1 predates NeoForge entirely, 1.20.2
+//                 still uses the SimpleChannel stack, 1.20.3 has no NeoForge
+//                 release at all, and 1.20.4's registrar API predates
+//                 `StreamCodec` so it would need a payload type of its own.
 //   * Forge     - see "Not enabled yet" below.
 //
 // Adding a version is a one-line change here plus a `versions/<mc>/gradle.properties`
 // file - see docs/BUILDING.md ("Adding a Minecraft version").
 
-val fabricVersions = listOf("1.20.1", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
+val fabricVersions = listOf("1.20.1", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // 1.20.5 is Fabric-only: NeoForge published that release without a
 // `moddev-config.json` (only an installer), which ModDevGradle needs, and Forge
 // has no 1.20.5 release at all.
 val neoforgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
 // Forge stopped being a first-class target after 1.20.x and the ecosystem moved
-// to NeoForge, so 1.21.1 is the newest version Forge can be built for at all.
+// to NeoForge. The list below is every version Forge published that this module
+// builds for; 1.21.2 is absent because Forge skipped that release.
 //
 // 1.20.1 is deliberately absent. Forge 1.20.1 runs on SRG names, so it needs both
 // reobfuscation and a Searge mixin refmap; ForgeGradle 7 has neither (it asks for a
@@ -106,35 +110,41 @@ val neoforgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1
 // ForgeGradle 6 - which does have both - is Gradle 8 only, while Loom 1.18.1 needs
 // Gradle 9. Adding it means a nested Gradle 8 build, not another node. 1.20.1 still
 // ships for Fabric, where it needs none of this.
-// Forge 1.21.6 moved to EventBus 7, which split `net.minecraftforge.eventbus.api`
-// into `bus` and `listener` subpackages AND replaced
-// FMLJavaModLoadingContext#getModEventBus(). The first half is done - the imports
-// are conditional in DayZInventoryForge - but the second needs the new bus API
-// worked out, so Forge stops at 1.21.5 for now. Fabric and NeoForge cover every
-// version in the matrix regardless.
-val forgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.3", "1.21.4", "1.21.5")
+//
+// 1.21.6 moved to EventBus 7, which split `net.minecraftforge.eventbus.api` into
+// `bus` and `listener` subpackages and replaced
+// FMLJavaModLoadingContext#getModEventBus() with getModBusGroup(), which returns a
+// BusGroup. Both halves are handled in DayZInventoryForge. Note that the BusGroup is
+// not an IEventBus and IEventBus does not exist in EventBus 7 at all, so the
+// bus/register *statement* is conditional as well as the import block.
+val forgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11")
 val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
 
 // ---------------------------------------------------------------------------
 // Not enabled yet
 // ---------------------------------------------------------------------------
-// These targets are still shipped from their own branches and are *not*
-// regressed by this tree - they simply have not been folded in yet. Every one of
-// them already has a `versions/<mc>/gradle.properties` and a branch build script;
-// what is missing is source-level port work. See docs/BUILDING.md for the exact
-// API breakpoints that remain.
+// These are the only target combinations the matrix above does not cover. Each
+// one is missing source-level port work, not build wiring - except Forge 1.20.1,
+// which is a toolchain problem. See docs/BUILDING.md section 7 for the detail.
 //
-//   * 1.20.1 (Fabric, Forge) - pre-1.20.5 networking: no custom payload records,
-//     so `DayZInventoryPayload`/`DayZInventoryOpenData` do not exist and the
-//     `ExtendedScreenHandlerType` opening-data codec has to be replaced by
-//     `writeScreenOpeningData`. Still built from the `main` branch.
+//   * 1.20.2 - 1.20.4 (Fabric, NeoForge) - these have `CustomPacketPayload` but
+//     not `StreamCodec`, so they sit between the two networking implementations
+//     and need a third one. Everything else on those versions is already
+//     expressed by the existing conditions.
 //
-//   * Forge 1.20.1 - the one remaining Forge target. `versions/1.20.1/gradle.properties`
-//     already carries its coordinates; what is missing is the 1.20.1 source
-//     port itself (see the entry above). Adding `"1.20.1"` to `forgeVersions`
-//     is all the build wiring that is left.
+//   * Forge 1.20.1 - Forge runs on SRG names there, so it needs reobfuscation
+//     plus a Searge mixin refmap. ForgeGradle 7 has neither, and ForgeGradle 6 -
+//     which has both - is Gradle 8 only while Loom 1.18.1 needs Gradle 9.
+//     `versions/1.20.1/gradle.properties` already carries the coordinates, so
+//     adding "1.20.1" to `forgeVersions` is the build wiring; the toolchain is
+//     the blocker.
 //
-// val forgeVersions = listOf("1.20.1", "1.21.1")
+//   * 1.21.2 (Forge) - Forge never published a 1.21.2 release.
+//
+//   * 26.x (Forge) - Forge's own 26.x line has no EventBus-compatible release
+//     this module can target; NeoForge is the supported route there.
+//
+// Fabric and NeoForge between them cover every version from 1.20.6 upward.
 
 stonecutter {
     create(rootProject) {

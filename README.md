@@ -19,24 +19,43 @@ HUD 和背包界面共享同一套视觉语言。
 
 ## 支持的版本与加载器
 
-| Minecraft | Fabric | NeoForge | Forge |
-| :--- | :---: | :---: | :---: |
-| **26.2** | ✅ | ✅ | — |
-| **1.21.11** | ✅ | ✅ | — |
-| **1.21.1** | ✅ | ✅ | ✅ |
-| **1.20.1** | 见下方说明 | — | 见下方说明 |
+| Minecraft | Fabric | NeoForge | Forge | Java |
+| :--- | :---: | :---: | :---: | :---: |
+| **1.20.1** | ✅ | — | — | 17 |
+| **1.20.2** | ✅ | — | — | 17 |
+| **1.20.3** | ✅ | — | — | 17 |
+| **1.20.4** | ✅ | — | — | 17 |
+| **1.20.5** | ✅ | — | — | 21 |
+| **1.20.6** | ✅ | ✅ | ✅ | 21 |
+| **1.21** | ✅ | ✅ | ✅ | 21 |
+| **1.21.1** | ✅ | ✅ | ✅ | 21 |
+| **1.21.2** | ✅ | ✅ | — | 21 |
+| **1.21.3** | ✅ | ✅ | ✅ | 21 |
+| **1.21.4** | ✅ | ✅ | ✅ | 21 |
+| **1.21.5** | ✅ | ✅ | ✅ | 21 |
+| **1.21.6** | ✅ | ✅ | ✅ | 21 |
+| **1.21.7** | ✅ | ✅ | ✅ | 21 |
+| **1.21.8** | ✅ | ✅ | ✅ | 21 |
+| **1.21.9** | ✅ | ✅ | ✅ | 21 |
+| **1.21.10** | ✅ | ✅ | ✅ | 21 |
+| **1.21.11** | ✅ | ✅ | ✅ | 21 |
+| **26.1** | ✅ | ✅ | — | 25 |
+| **26.1.1** | ✅ | ✅ | — | 25 |
+| **26.1.2** | ✅ | ✅ | — | 25 |
+| **26.2** | ✅ | ✅ | — | 25 |
+| **26.3** | ✅ | ✅ | — | 25 |
 
-Forge 只做到 1.20.x 为止，之后生态整体转到了 NeoForge，所以 1.21.1 是 Forge 能支持的最后一个版本。
+一共 **23 个 Minecraft 版本、53 个可发布 jar**：Fabric 23 个、NeoForge 18 个、Forge 12 个。
+Fabric 和 NeoForge 覆盖 1.20.6 及以后的每一个版本。矩阵里的空缺只有下面这几种情况：
+
+- **1.20.1–1.20.4** 只有 Fabric。1.20.1 早于 NeoForge 出现；NeoForge 的 1.20.2 发布仍在使用旧的 `SimpleChannel` 网络栈；1.20.3 完全没有 NeoForge 发布；1.20.4 的 payload API 早于 `StreamCodec`，需要自带一个 payload 类型。Forge 1.20.1 还需要 SRG reobfuscation 和 Searge mixin refmap，当前 Forge 工具链做不到。
+- **1.20.5** 只有 Fabric：NeoForge 的那次发布缺少构建所需的元数据，Forge 则没有 1.20.5 发布。
+- **1.21.2** 没有 Forge 构建，因为 Forge 跳过了那个版本。
+- **26.x 没有 Forge 构建**：Forge 的 26.x 线不是本模组构建的目标，那里 NeoForge 才是受支持的路线。
 
 整份代码来自 **同一个源码树**：用 [Stonecutter](https://stonecutter.kikugie.dev/) 做多版本预处理，
 用 `common/` + 各加载器模块做加载器抽象。目标矩阵在 `settings.gradle.kts` 里声明，
 新增一个版本只需要加一行加一个 `versions/<mc>/gradle.properties`。
-
-> **1.20.1 的现状**
-> 1.20.1 目前仍由 `1.20.1` 分支发布，尚未合并进统一源码树。它早于 1.20.5 的网络层重写，
-> 没有自定义 payload 记录，`ExtendedScreenHandlerType` 也还不接受 opening-data codec，
-> 因此需要真正的移植而不是重新构建。构建骨架（`versions/1.20.1/gradle.properties`）已就位，
-> 具体断点见 [docs/BUILDING.md](docs/BUILDING.md)。
 
 ![DayZ Inventory 界面：VICINITY 网格、展开的 CHEST 抽屉、带装备的 SURVIVOR 面板、header 里的 CURIOS 与 JEI 按钮、2.0x 的 HANDS 槽以及 2x2 CRAFTING 合成格](docs/screenshots/ui-example.png)
 
@@ -70,28 +89,45 @@ Forge 只做到 1.20.x 为止，之后生态整体转到了 NeoForge，所以 1.
 
 ## 安装
 
-1. 准备好对应版本：**26.2** / **1.21.11**（Fabric 或 NeoForge），或 **1.21.1**（Fabric、NeoForge 或 Forge）。
+1. 只要你的 Minecraft 版本在上面矩阵里就能用：**Fabric** 覆盖全部 23 个版本，**NeoForge** 从
+   1.20.6 起，**Forge** 覆盖 1.20.6 – 1.21.11。
 2. 从 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 或
    [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files) 下载文件名里
-   **版本号和加载器都对得上**的那个 jar。
+   **Minecraft 版本和加载器都对得上**的那个 jar。
 3. 丢进 `mods/` 文件夹。
 
-> **别下错。** Fabric 的构建在 Forge / NeoForge 上不会加载，1.21.1 的构建在 1.21.11 或 26.2 上也一样。
-> 每个文件名都标了 Minecraft 版本与加载器。
+> **别下错。** Fabric 的构建在 Forge / NeoForge 上不会加载，NeoForge 的构建也不会在 Forge 上加载，
+> 不同 Minecraft 版本之间同样不能混用。每个文件名都标了 Minecraft 版本与加载器。
 
 ## 依赖
 
-| Minecraft | 加载器 | Java | 必需 | 可选 |
-| :--- | :--- | :--- | :--- | :--- |
-| **26.2** | Fabric | 25 | Fabric Loader `>=0.19.5`，Fabric API `0.160.0+26.2` | JEI / REI / EMI、Trinkets、Curios |
-| **26.2** | NeoForge | 25 | NeoForge `>=26.2.0.88` | JEI、Curios |
-| **1.21.11** | Fabric | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.141.6+1.21.11` | JEI / REI / EMI、Trinkets、Curios |
-| **1.21.11** | NeoForge | 21 | NeoForge `>=21.11.45` | JEI、Curios |
-| **1.21.1** | Fabric | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.116.17+1.21.1` | JEI / REI / EMI、Trinkets、Curios |
-| **1.21.1** | NeoForge | 21 | NeoForge `>=21.1.250` | JEI、Curios |
-| **1.21.1** | Forge | 21 | Forge `>=52.1.12` | JEI、Curios |
+| Minecraft | 加载器 | Java | 必需版本 | 可选 |
+| :--- | :--- | :---: | :--- | :--- |
+| **1.20.1** | Fabric | 17 | Fabric Loader `>=0.16.14`，Fabric API `0.92.12+1.20.1` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.20.2** | Fabric | 17 | Fabric Loader `>=0.16.14`，Fabric API `0.91.6+1.20.2` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.20.3** | Fabric | 17 | Fabric Loader `>=0.16.14`，Fabric API `0.91.1+1.20.3` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.20.4** | Fabric | 17 | Fabric Loader `>=0.16.14`，Fabric API `0.97.3+1.20.4` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.20.5** | Fabric | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.97.8+1.20.5` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.20.6** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.100.8+1.20.6`；NeoForge `20.6.141`；Forge `50.2.10` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.102.0+1.21`；NeoForge `21.0.167`；Forge `51.0.33` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.1** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.116.17+1.21.1`；NeoForge `21.1.250`；Forge `52.1.12` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.2** | Fabric / NeoForge | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.106.1+1.21.2`；NeoForge `21.2.1-beta` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.3** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.114.1+1.21.3`；NeoForge `21.3.97`；Forge `53.1.12` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.4** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`，Fabric API `0.119.4+1.21.4`；NeoForge `21.4.157`；Forge `54.1.18` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.5** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.128.2+1.21.5`；NeoForge `21.5.98`；Forge `55.1.13` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.6** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.128.2+1.21.6`；NeoForge `21.6.20-beta`；Forge `56.0.9` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.7** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.129.0+1.21.7`；NeoForge `21.7.25-beta`；Forge `57.0.3` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.8** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.136.1+1.21.8`；NeoForge `21.8.54`；Forge `58.1.22` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.9** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.134.1+1.21.9`；NeoForge `21.9.16-beta`；Forge `59.0.5` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.10** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.138.4+1.21.10`；NeoForge `21.10.64`；Forge `60.1.15` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **1.21.11** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`，Fabric API `0.141.6+1.21.11`；NeoForge `21.11.45`；Forge `61.2.1` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **26.1** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`，Fabric API `0.145.1+26.1`；NeoForge `26.1.0.19-beta` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **26.1.1** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`，Fabric API `0.145.4+26.1.1`；NeoForge `26.1.1.15-beta` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **26.1.2** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`，Fabric API `0.155.3+26.1.2`；NeoForge `26.1.2.109` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **26.2** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`，Fabric API `0.160.0+26.2`；NeoForge `26.2.0.88` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
+| **26.3** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`，Fabric API `0.160.6+26.3`；NeoForge `26.3.0.1-beta` | JEI / REI / EMI、Trinkets（Fabric）、Curios |
 
-可选依赖全部在运行时探测，缺少时不会崩溃。
+可选依赖全部在运行时探测，缺少时不会崩溃；Trinkets 只做 Fabric，NeoForge / Forge 上装的是 Curios。
 
 ---
 
@@ -107,14 +143,14 @@ resolver 自动下载，不需要手动安装。
 # 只构建某一个目标（产物在 <加载器>/versions/<mc>/build/libs/ 下）
 ./gradlew :fabric:26.2:build
 ./gradlew :neoforge:1.21.11:build
-./gradlew :forge:1.21.1:build
+./gradlew :forge:1.21.11:build
 
 # 看看当前矩阵里有哪些节点
 ./gradlew matrix
 ```
 
 产物命名规则是 `dayz-inventory-<加载器>-<minecraft 版本>-<模组版本>.jar`，例如
-`dayz-inventory-fabric-26.2-1.5.0+mc26.2.jar`。Minecraft 版本写进文件名是有意的：
+`dayz-inventory-fabric-26.2-1.8.0+mc26.2.jar`。Minecraft 版本写进文件名是有意的：
 同一个模组版本会为多个游戏版本发布，而 CurseForge 会拒绝同一项目下**显示名重复**的文件。
 
 架构说明、条件编译约定，以及"怎么加一个新版本"，见 **[docs/BUILDING.md](docs/BUILDING.md)**。
