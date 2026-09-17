@@ -10,27 +10,45 @@ integrated 2x2 crafting grid, and drag-to-equip onto the Survivor panel.
 
 It ships for **three loaders from one codebase**: **Fabric**, **NeoForge** and **Forge**.
 
-- **Mod version**: `1.7.2`
+- **Mod version**: `1.8.0`
 - **Group / package root**: `com.suoim.dayzinventory`
 - **Mod ID**: `dayz_inventory`
 - **License**: Apache License 2.0 (see `LICENSE`)
 - **Modrinth slug**: `dayz-inventory` (project id `8asZxzdc`), CurseForge project `1596267`
 
-### One source tree, three Minecraft versions
+### One source tree, twenty-three Minecraft versions
 
 This is a **Stonecutter** project. There is no longer a branch per Minecraft version. The enabled
-matrix is **26.2, 1.21.11 and 1.21.1** — Fabric and NeoForge for all three, plus Forge on 1.21.1,
-which is seven artifacts from one tree — and the version differences are marked inline with
-`//? if` comments.
+matrix is **23 Minecraft versions from 1.20.1 to 26.3**, producing **53 artifacts** — 23 Fabric,
+18 NeoForge and 12 Forge — and the version differences are marked inline with `//? if` comments.
+
+| Minecraft | Fabric | NeoForge | Forge | Java |
+| :--- | :---: | :---: | :---: | :---: |
+| 1.20.1 – 1.20.4 | ✅ | — | — | 17 |
+| 1.20.5 | ✅ | — | — | 21 |
+| 1.20.6 – 1.21.1 | ✅ | ✅ | ✅ | 21 |
+| 1.21.2 | ✅ | ✅ | — | 21 |
+| 1.21.3 – 1.21.11 | ✅ | ✅ | ✅ | 21 |
+| 26.1 – 26.3 | ✅ | ✅ | — | 25 |
+
+`./gradlew matrix` prints the authoritative node list; `versions/<mc>/gradle.properties` is the only
+place a version's coordinates live. Do not go below **1.20.1**: the older lines predate the screen
+handler rewrite this mod is built around.
+
+Why the gaps exist is recorded in [docs/BUILDING.en.md](docs/BUILDING.en.md) §7 — read it before
+trying to re-enable one. In short: NeoForge 1.20.2 used the old `SimpleChannel` stack, 1.20.3 had no
+NeoForge release at all, and 1.20.4 predates `StreamCodec`, so the whole 1.20.1–1.20.5 stretch is
+Fabric-only; Forge 1.20.1 needs SRG reobfuscation and a Searge refmap no Gradle-9-capable Forge
+plugin provides; Forge skipped 1.21.2; and the 26.x line is NeoForge-only.
 
 **Read [docs/BUILDING.en.md](docs/BUILDING.en.md) first.** It covers the project tree, the
 convention plugins, the conditional-compilation conventions and the publishing setup. The rest of
 this file is the accumulated "things that have actually broken here" list.
 
-26.2 is the newest target and the one that differs most: it is the first line built on an
-**unobfuscated** Minecraft and the first with the rewritten GUI render model. Both changes are
-structural, not cosmetic — read *Critical Gotchas* before touching build config or anything under
-`client/`.
+26.2 is the reference target for the modern line and the one that differs most: it is the first line
+built on an **unobfuscated** Minecraft and the first with the rewritten GUI render model. Both
+changes are structural, not cosmetic — read *Critical Gotchas* before touching build config or
+anything under `client/`. 26.3 adds a second structural break on top (GLFW → SDL3).
 
 ## Repository Layout
 
@@ -46,7 +64,7 @@ versions/<mc>/gradle.properties   one file per Minecraft version - its only coor
 common/     Loader-agnostic code: screen, menu, packets, mixins, platform interface
 fabric/     Fabric entrypoints + FabricPlatformHelper
 neoforge/   NeoForge entrypoints + NeoForgePlatformHelper
-forge/      Forge entrypoints - built for 1.21.1 only (Forge has no later releases)
+forge/      Forge entrypoints - built for 1.20.6-1.21.11 (see docs/BUILDING.en.md section 7)
 ```
 
 `<branch>/versions/<mc>/` are build directories; they are gitignored and regenerated.
@@ -63,7 +81,8 @@ forge/      Forge entrypoints - built for 1.21.1 only (Forge has no later releas
 ### Forge is built with ForgeGradle 7, not ModDevGradle or ForgeGradle 6
 
 `forge/` was ported off the 1.20.1-era `SimpleChannel` / `NetworkRegistry` stack onto the payload API
-under `net.minecraftforge`, and `:forge:1.21.1` builds and publishes like any other node.
+under `net.minecraftforge`, and every Forge node (**1.20.6 through 1.21.11**) builds and publishes
+like any other node.
 
 The plugin choice is not free. ForgeGradle 6 is Gradle 8 only, and Loom 1.18.1 needs Gradle 9, so
 the two cannot share an invocation. ModDevGradle's `legacyforge` cannot build 1.21.1 either: it asks
@@ -79,6 +98,23 @@ Two smaller Forge-specific facts: mixin configs come from the `MixinConfigs` **j
 attribute** (Forge does not understand the `[[mixins]]` blocks in `mods.toml` that NeoForge uses),
 and since 1.20.2 there is no reobfuscation and no Searge refmap because Forge runs on official Mojang
 names.
+
+**1.21.6 moved Forge to EventBus 7**, which is a two-part break and neither part is solved by an
+import alone:
+- `net.minecraftforge.eventbus.api` split into `bus` and `listener`, so `@SubscribeEvent` is now
+  `net.minecraftforge.eventbus.api.listener.SubscribeEvent`.
+- `IEventBus` is **gone** — it does not exist in EventBus 7 at all. `FMLJavaModLoadingContext`
+  replaced `getModEventBus()` with **`getModBusGroup()`, which returns a `BusGroup`**, and
+  `DeferredRegister#register` takes that `BusGroup`.
+
+So `DayZInventoryForge` switches on `//? if >=1.21.6` around the import block **and** around the
+bus-fetch/register statement, because there is no common supertype to fall back on. Do not try to
+"clean that up" into a single `var` — `BusGroup` and `IEventBus` are unrelated types.
+
+Forge's mod constructor is only ever invoked with a `FMLJavaModLoadingContext` or no argument at
+all; the bus is **not** injectable as a constructor parameter. `@Mod.EventBusSubscriber(bus = ...Bus.MOD)`
+still works on both sides (its default did change from `FORGE` to `BOTH` in 1.21.6, so always name
+the bus explicitly).
 
 Do not "restore" the old `SimpleChannel` code to fix a build that references it.
 
@@ -103,11 +139,15 @@ has none.
 ```bash
 JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew chiseledBuild   # whole matrix
 JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :fabric:26.2:build
-JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :neoforge:26.2:build
-JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :forge:1.21.1:build
+JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :neoforge:1.21.11:build
+JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64 ./gradlew :forge:1.21.11:build
 ./gradlew matrix                    # list the nodes
 ./gradlew :fabric:26.2:runClient    # dev client for one node
 ```
+
+`chiseledBuild` is 686 tasks deep and takes a long time; when driving it from an agent, run it as a
+background job rather than in the foreground, and pass `--max-workers=4` so the per-version
+toolchain and mapping caches do not thrash.
 
 Output JARs live under the node, not the module:
 
@@ -115,7 +155,7 @@ Output JARs live under the node, not the module:
 | :------- | :--- |
 | Fabric   | `fabric/versions/<mc>/build/libs/dayz-inventory-fabric-<mc>-<version>.jar` |
 | NeoForge | `neoforge/versions/<mc>/build/libs/dayz-inventory-neoforge-<mc>-<version>.jar` |
-| Forge    | `forge/versions/1.21.1/build/libs/dayz-inventory-forge-1.21.1-<version>.jar` |
+| Forge    | `forge/versions/<mc>/build/libs/dayz-inventory-forge-<mc>-<version>.jar` (`<mc>` 1.20.6–1.21.11) |
 
 `archivesName` is `dayz-inventory-<loader>-${minecraft_version}` — the Minecraft version is part of
 the filename on purpose, so bumping the target version renames the artifact automatically.
@@ -159,8 +199,10 @@ the client screen.
    - The `mod*` configurations are gone: use plain **`implementation` / `compileOnly`**, not
      `modImplementation` / `modCompileOnly`.
    - `common/build.gradle.kts` and `fabric/build.gradle.kts` only configure `loom { mixin { ... } }`
-     for nodes **below 26** — those are the ones that still need a refmap. No module declares a
-     `MixinConfigs` manifest attribute.
+     for nodes **below 26** — those are the ones that still need a refmap. Only Forge declares a
+     `MixinConfigs` manifest attribute, because Forge needs it on *every* version; see the Forge
+     section above. Loom and ModDevGradle find the configs through `fabric.mod.json` /
+     `neoforge.mods.toml`.
    - Mixins resolve by **official Mojang names natively on both loaders**. Above 26.1 there is no
      refmap to name; if you find yourself debugging refmap contents on 26.2, the cause is something
      else. Below 26.1 the refmap is real and is named `dayz-inventory.refmap.json`.
@@ -243,9 +285,9 @@ the client screen.
    `null` rather than throw when the field layout differs.
 
 9. **The Java level is per version, not global.** `deps.java` in `versions/<mc>/gradle.properties`
-   drives the toolchain and `options.release` (17 on 1.20.1, 21 on 1.21.x, **25** on 26.x), and
-   `deps.mixin-compat` is expanded into the mixin configs as `compatibilityLevel`. A hardcoded
-   `JAVA_25` on a Java 21 node fails Mixin's own validation.
+   drives the toolchain and `options.release` (17 on 1.20.1–1.20.4, 21 on 1.20.5–1.21.11, **25** on
+   26.x), and `deps.mixin-compat` is expanded into the mixin configs as `compatibilityLevel`. A
+   hardcoded `JAVA_25` on a Java 21 node fails Mixin's own validation.
 
 10. **Every manifest placeholder must stay a placeholder.** `fabric.mod.json`, both `mods.toml`s,
     `pack.mcmeta` and the mixin configs are expanded by `processResources` from the per-version
@@ -253,14 +295,52 @@ the client screen.
     1.4.0 in crash reports, and a hardcoded Minecraft range would ship a 1.21.11 jar claiming to be
     for 26.2. Expanding an unknown token fails the build, which is the intended behaviour.
 
-11. **Fabric dev runs apply mixins normally on this branch.** `:fabric:runClient` starts the game
-    with mixins applied and shows the real DayZ screen, so it *is* valid for judging GUI work.
+11. **Dev runs and refmaps differ above and below 26.1.** `:fabric:runClient` starts the game with
+    mixins applied, so it *is* valid for judging GUI work — but the mechanism is not the same on
+    both sides of the obfuscation boundary.
 
-    This was **not** true on the 1.20.1 / 1.21.x branches: there, `loom.officialMojangMappings()`
-    wrote a refmap in the production namespace while dev ran on official names, so the mixin was
-    remapped to a class that did not exist and was skipped. With no mappings and no refmap on 26.2,
-    that failure mode is gone. If you are debugging a skipped mixin here, the cause is a wrong
-    target, not a refmap.
+    Above 26.1 there are no mappings and no refmap at all, so mixins resolve by official Mojang
+    names directly and there is nothing to go stale. Below 26.1 `useLegacyMixinAp` produces a real
+    refmap from the annotated sources, and `dayz-loader` compiles `common`'s **generated** sources
+    precisely so that refmap can be built — which is also why `implementation project(':common')`
+    breaks things rather than simplifying them.
+
+    If a mixin is silently skipped, the cause is a wrong target far more often than a refmap. Check
+    the target's real name in the version's jar before suspecting the mapping pipeline.
+
+12. **The version boundaries are not guessable — they were read off the real jars.** Each `//? if`
+    boundary in `dayz-common.gradle.kts` corresponds to a concrete API change, and the full table
+    lives in [docs/BUILDING.en.md](docs/BUILDING.en.md) §6. The ones that most often surprise you:
+
+    - **26.1** dropped obfuscation entirely, so the build has no mappings, no refmaps and no
+      `remapJar`. It also renamed `GuiGraphics` → `GuiGraphicsExtractor`, every GUI `render*` →
+      `extract*`, `ClickType` → `ContainerInput`, and Fabric's `screenhandler` API → `menu`.
+    - **26.2** deleted `Minecraft#setScreen` (hence `ScreenRedirectMixin` targeting `Gui#setScreen`)
+      and removed the `RegistryAccess` argument from `Recipe#assemble`.
+    - **26.3** moved Minecraft from GLFW to SDL3, so `org.lwjgl.glfw` is **gone from the
+      classpath** and raw modifier bits became SDL keymods. Use the event's
+      `hasShiftDown()`-style helpers instead of testing modifier flags by hand.
+    - **1.20.2** is the quiet one. `RecipeHolder` arrives here, so `RecipeManager#getRecipeFor`
+      returns `Optional<RecipeHolder<CraftingRecipe>>` and `RecipeCraftingHolder#setRecipeUsed`
+      takes a `RecipeHolder<?>` rather than a bare `Recipe<?>`. The recipe branch in
+      `DayZInventoryScreenHandler` therefore switches at **1.20.2**, not at 1.20.5. `mouseScrolled`
+      also gains a horizontal axis here, and `renderEntityInInventoryFollowsMouse` replaces
+      `renderEntityInInventory`.
+    - **1.20.5** split `Block#use` into `useItemOn` (held item) and **`useWithoutItem`** (empty
+      hand), and the older `use` carries an extra `InteractionHand` parameter. `ChestBlockMixin`
+      and `BarrelBlockMixin` switch on that boundary for **both** the target name and the method
+      signature. Below 1.20.5 the `useWithoutItem` target does not exist and the mixin is declared
+      `required`, so getting this wrong is a launch crash, not a no-op — check the target with
+      `javap` on the real version jar rather than trusting the comment.
+    - **1.21.6** swapped the GUI stack to `Matrix3x2f` and moved Forge to EventBus 7.
+    - **1.21.11** renamed `ResourceLocation` → `Identifier` and split `renderContents` out of
+      `render`.
+    - **1.21.9** is where `Level#isClientSide` and `ServerPlayer#getServer` stopped being public.
+
+    Two mechanical rules come out of this. First, **Stonecutter conditions cannot nest** — write a
+    flat `if / elif / else` chain instead of putting one inside another. Second, keep `//` comments
+    *before* a `//? if` line rather than between it and the code it guards; a comment adjacent to a
+    conditional boundary can be swallowed by the wrong branch.
 
 ## Optional Dependencies
 
@@ -283,7 +363,13 @@ When refactoring, do not regress these:
 - **Hands slot 2.0x render** — the held item is drawn at 2.0x scale in the middle column, bound to
   the currently selected hotbar slot.
 - **Drag-to-equip** — dragging armor onto the Survivor panel equips/swaps it.
-- **Recipe viewer toggle** — simulates an `O` keypress (GLFW 79) to toggle the overlay.
+- **Recipe viewer toggle** — looks up the installed viewer's *own* toggle keybind (JEI's
+  `toggleOverlay`-style mapping, falling back to `O` / GLFW 79) and simulates a tap on it. JEI, REI
+  and EMI each bind this differently and users rebind it, so never hardcode the key. `getBoundKey`
+  reads `KeyMapping` reflectively and must prefer the field named `key` over `defaultKey`, and
+  `simulateKeyTap(InputConstants.Key)` must keep the key **type** rather than reducing it to an int.
+- **Curios on Fabric** — Curios is NeoForge/Forge-centric, so on Fabric the mod falls back to
+  opening the vanilla inventory instead of pretending the Curios UI exists.
 
 ## GitHub Actions
 
