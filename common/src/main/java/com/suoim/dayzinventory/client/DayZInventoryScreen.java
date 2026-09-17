@@ -705,7 +705,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     /**
      * Deliberately empty.
      * <p>
-     * 26.2 calls this from {@code Screen#extractRenderStateWithTooltipAndSubtitles},
+     * From 1.21.6 on the game calls this from {@code Screen#renderWithTooltip}
+     * (26.x renamed that to {@code extractRenderStateWithTooltipAndSubtitles}),
      * which runs <b>before</b> {@link #extractRenderState} and outside this screen's
      * GUI scale. Vanilla puts two things here - the full-screen dim and the container
      * background (this screen's DayZ panels) - and they need opposite treatment: the
@@ -716,10 +717,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
      * So neither is done here. {@link #extractRenderState} draws the dim at identity
      * and then calls {@link #drawDayZPanels} once the scale is applied.
      */
+    // The boundary is 1.21.6, not 1.21.11: that is where vanilla moved
+    // `renderBackground` out of `Screen#render` into `Screen#renderWithTooltip`,
+    // which runs *before* this screen's `render`. Drawing the panels from there
+    // puts them outside our GUI-scale push - laid out for the virtual
+    // `width/scale` space but drawn at 1x - so they come out too large, and the
+    // full-screen dim drawn later in `render` covers them. From 1.21.6 on they
+    // are drawn in `extractRenderState` instead, under the scale, exactly as
+    // 26.x does it. On 1.20.2-1.21.5 `Screen#render` still calls
+    // `renderBackground`, so the panels stay inside the scale push and the
+    // override below is correct.
+    //
     // 1.20.1 has no renderBackground(GuiGraphics, int, int, float) to override - it
     // has only the one-argument form, and it draws the panels from renderBg via
     // vanilla's render path - so on that node this method does not exist.
-//? if >=1.21.11 {
+//? if >=1.21.6 {
     @Override
     public void extractBackground(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         return;
@@ -772,8 +784,10 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
 
         this.updateSlotPositions();
         // The DayZ panels are laid out in the scaled coordinate space, so they
-        // have to be drawn here rather than from extractBackground.
-//? if >=1.21.11 {
+        // have to be drawn here rather than from extractBackground - which on
+        // 1.21.6+ runs before this method and outside the scale. See the comment
+        // on extractBackground above.
+//? if >=1.21.6 {
         this.drawDayZPanels(guiGraphics, partialTick, scaledMouseX, scaledMouseY);
 //?}
         super.extractRenderState(guiGraphics, scaledMouseX, scaledMouseY, partialTick);
@@ -998,6 +1012,20 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             float modelHeightPx = this.minecraft.player.getBbHeight() * (float) renderScale;
             int boxCentreY = renderY - Math.round(modelHeightPx / 2.0f);
 
+            // Submit the preview at the identity pose.
+            //
+            // The box below is in real screen coordinates, but
+            // `renderEntityInInventoryFollowsMouse` scissors it by transforming it
+            // through the CURRENT pose (GuiGraphics#enableScissor calls
+            // transformAxisAligned). The panels are drawn under our virtual GUI
+            // scale, so leaving that scale on scissors the box a second time
+            // (`scale * box`) while the model itself is submitted from the raw box:
+            // it lands in the right place and is then clipped by a smaller, offset
+            // rectangle. Cancelling the scale for the call makes the model and its
+            // scissor agree.
+            guiGraphics.pose().pushMatrix();
+            guiGraphics.pose().scale(1.0F / guiScale, 1.0F / guiScale);
+
             InventoryScreen.extractEntityInInventoryFollowsMouse(
                 guiGraphics,
                 Math.round((renderX - halfWidth) * guiScale), Math.round((boxCentreY - halfHeight) * guiScale),
@@ -1007,6 +1035,8 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
                 (float) mouseX * guiScale, (float) mouseY * guiScale,
                 this.minecraft.player
             );
+
+            guiGraphics.pose().popMatrix();
 //?} else {
             int renderX = middleColumnX + 81;
             int renderY = topPos + 135;

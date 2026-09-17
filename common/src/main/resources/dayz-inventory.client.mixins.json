@@ -3,6 +3,7 @@
 	"minVersion": "0.8",
 	"package": "com.suoim.dayzinventory.client.mixin",
 	"compatibilityLevel": "${mixin_compat}",
+	"refmap": "dayz-inventory.refmap.json",
 	"client": [
 		"ScreenRedirectMixin",
 		"AbstractContainerScreenMixin"

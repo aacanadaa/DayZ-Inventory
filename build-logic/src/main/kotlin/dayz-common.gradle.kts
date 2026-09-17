@@ -89,6 +89,9 @@ sc.replacements.string(sc.current.parsed < "1.21.6") {
     replace("pose().popMatrix()", "pose().popPose()")
     replace("pose().scale(scale, scale)", "pose().scale(scale, scale, 1.0f)")
     replace("pose().scale(2.0F, 2.0F)", "pose().scale(2.0F, 2.0F, 1.0F)")
+    // The player preview is submitted at the identity pose; below 1.21.6 the
+    // stack is still the 3D PoseStack, whose scale takes a z.
+    replace("pose().scale(1.0F / guiScale, 1.0F / guiScale)", "pose().scale(1.0F / guiScale, 1.0F / guiScale, 1.0F)")
     replace("pose().translate(middleColumnX + 65, bodyY + 5)", "pose().translate(middleColumnX + 65, bodyY + 5, 100)")
     replace("pose().translate(0, 0)", "pose().translate(0, 0, 200.0F)")
     replace("guiGraphics.setTooltipForNextFrame(", "guiGraphics.renderTooltip(")
