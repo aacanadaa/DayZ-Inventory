@@ -205,7 +205,13 @@ the client screen.
      `neoforge.mods.toml`.
    - Mixins resolve by **official Mojang names natively on both loaders**. Above 26.1 there is no
      refmap to name; if you find yourself debugging refmap contents on 26.2, the cause is something
-     else. Below 26.1 the refmap is real and is named `dayz-inventory.refmap.json`.
+     else. Below 26.1 the refmap is real and is named `dayz-inventory.refmap.json`, and **each mixin
+     config must name it explicitly** (`"refmap": "dayz-inventory.refmap.json"`). It is generated
+     next to the config but is *not* auto-detected: with the entry missing, Mixin looks for the
+     default `mixin.refmap.json`, finds nothing, and every mixin fails at launch with `No refMap
+     loaded`. That shipped in 1.8.1 and is fixed in 1.8.2. On 26.x / NeoForge / Forge the same entry
+     is harmless — the file is absent and Mixin falls back to its no-op mapper, which matches their
+     official names.
 
    Class and method names in code are still **Mojang names** (`Minecraft`, `LocalPlayer`,
    `AbstractContainerScreen`, `KeyMapping`, ...), not Yarn names (`MinecraftClient`,
@@ -254,6 +260,13 @@ the client screen.
    - `blitSprite` now takes a `RenderPipeline` as its first argument.
    - `InventoryScreen.renderEntityInInventoryFollowsMouse` →
      `extractEntityInInventoryFollowsMouse` (same parameter list).
+   - **A preview's box is scissored through the *current pose*, but the model is submitted from the
+     box itself.** Below 26.1 `renderEntityInInventoryFollowsMouse` calls `GuiGraphics#enableScissor`,
+     which transforms the rectangle through `transformAxisAligned(current pose)`. Vanilla can pass
+     the same box to both because its pose is identity; the DayZ screen draws under a virtual GUI
+     scale, so it cancels that scale around the preview call (`DayZInventoryScreen`). Without the
+     cancel the model lands in the right place and is then clipped by a smaller, offset rectangle —
+     the 1.8.2 "player cut in half".
    - **`Gui` no longer renders the HUD.** `Gui` has `extractRenderState(DeltaTracker, boolean,
      boolean)`; the HUD moved to a new `net.minecraft.client.gui.Hud` class, and render state flows
      through `net.minecraft.client.renderer.state.gui.GuiRenderState`.
@@ -338,6 +351,13 @@ the client screen.
       `AbstractContainerScreenMixin` targets `render` below 1.21.6 and `renderContents` from 1.21.6
       to 26.0. Targeting `render` on 1.21.6–1.21.10 finds no injection point at all, and with
       `defaultRequire: 1` that is a launch crash on five versions. This was wrong in 1.8.0.
+    - **1.21.6** also moved **`renderBackground` out of `render` into `renderWithTooltip`**, which
+      runs *before* `render`. Any panel drawing that relies on the screen's own scale push has to
+      move with it: `DayZInventoryScreen` draws under a virtual GUI scale, so `extractBackground`
+      (→ `renderBackground`) is deliberately empty from 1.21.6 and the panels are drawn from
+      `extractRenderState` (→ `render`) instead. On 1.20.2–1.21.5 vanilla still calls
+      `renderBackground` from inside `render`, so the older branch is correct there. Getting this
+      boundary wrong draws the panels at 1x over a dimmed overlay on 1.21.6–1.21.11 — the 1.8.2 bug.
     - **1.21.11** renamed `ResourceLocation` → `Identifier`.
     - **1.21.9** is where `Level#isClientSide` and `ServerPlayer#getServer` stopped being public.
 

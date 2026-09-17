@@ -1,8 +1,61 @@
-# DayZ Inventory 1.8.1 — the 1.8.0 Fabric files could not load at all
+# DayZ Inventory 1.8.2 — three faults the 1.8.1 test pass turned up
+
+1.8.1 fixed the launch failures below. Testing that release found three more faults, all fixed here.
+
+**If you play on Fabric below 26.1 (1.20.1–1.21.11), take this file: 1.8.1 crashes at launch there.**
+Every one of those Fabric files stopped with `No refMap loaded` — the mixin configuration lost its
+refmap reference. If you play on **1.21.6 through 1.21.11** (any loader), also take it: the inventory
+was drawn at the wrong scale and the player preview was clipped.
+
+## What was wrong
+
+**1. Fabric below 26.1 crashed at launch: `No refMap loaded`.**
+
+Below 26.1 Fabric runs on intermediary names, so the mixins are rewritten from official names at
+build time through a refmap, and the mixin configs have to point at it. The `refmap` entry had been
+removed in the 1.21.11 port on the belief that Loom remapped the annotations directly; it does not,
+in this build's configuration, so every Fabric file from 1.20.1 to 1.21.11 failed at launch with:
+
+```
+@Inject annotation on onSetScreen could not find any targets matching 'setScreen'
+in net/minecraft/class_310. No refMap loaded.
+```
+
+`dayz-inventory.refmap.json` was being generated and shipped the whole time — it was simply never
+referenced. Both configs now name it. On NeoForge, Forge and 26.x, which run on official names and
+ship no refmap, the name resolves to no file and Mixin falls back to its default (no-op) mapper,
+which is what those loaders were already doing.
+
+**2. 1.21.6–1.21.11 drew the panels at the wrong scale, behind the dim.**
+
+1.21.6 moved `Screen#renderBackground` out of `Screen#render` and into `Screen#renderWithTooltip`,
+which runs *before* the screen's `render`. This screen draws its panels with a virtual GUI scale: it
+lays them out in a `width / scale` space and then scales the pose down to fit. Drawing them from
+`renderBackground` put them *outside* that scale — laid out for the larger space but rendered at 1x,
+which made them bigger than the screen — and the full-screen dim drawn later in `render` covered
+them, which is the gray overlay.
+
+The panels are now drawn from `render`, under the scale, on **1.21.6 and newer**, exactly as 26.x
+already did. 1.20.2–1.21.5 and 1.20.1 are unaffected: on those, vanilla still calls
+`renderBackground` inside `render`, so the panels stay inside the scale push.
+
+**3. The Survivor player preview was cut in half on every version.**
+
+The same virtual scale caused it. `renderEntityInInventoryFollowsMouse` scissors the preview box by
+transforming it through the *current* pose, but submits the model from the box itself. Drawn under
+the panel scale, the box was scissored a second time while the model was not, so the model landed in
+the right place and was then clipped by a smaller, offset rectangle. The preview is now submitted at
+the identity pose, which makes the two agree on every version.
+
+No mod features changed.
+
+---
+
+# DayZ Inventory 1.8.1 — the 1.8.0 files could not load
 
 **If you downloaded DayZ Inventory for Fabric from 1.8.0, it will not start. Replace it.** Every
-Fabric file in 1.8.0 — all 23 of them — failed to load, for two independent reasons that both had to
-be fixed. The NeoForge and Forge files are unaffected by both and were fine.
+Fabric file in 1.8.0 — all 23 of them — failed to load. A third fault, in the shared client code,
+crashed 1.21.6–1.21.10 on **all three loaders**. This release fixes all three.
 
 The mod itself is unchanged. This release is about making the files start.
 
@@ -40,6 +93,15 @@ after Stonecutter had already been configured, so nothing ever compiled it. Fabr
 an entrypoint that did not exist, and refused to start.
 
 The class now lives alongside the rest of the Fabric code, where nothing can miss it.
+
+**3. The virtual-Hands hover mixin crashed 1.21.6–1.21.10 — on all three loaders.**
+
+The mixin that makes the Hands panel count as a hovered slot hooks the point where vanilla assigns
+`hoveredSlot`. 1.21.6 split `renderContents` out of `render` and moved that assignment into it, but
+the mixin kept targeting `render`. On 1.21.6 through 1.21.10 there was no matching injection point,
+and because the mixin config sets `defaultRequire: 1`, that is a crash at launch rather than a
+silent no-op. It affected Fabric, NeoForge **and** Forge — six Minecraft versions each, 18 files in
+total. The target now switches at 1.21.6, verified against each version's real jar.
 
 ## Also in this release
 
