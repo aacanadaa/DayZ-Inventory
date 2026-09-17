@@ -223,10 +223,10 @@ Fabric 侧的 Loom 变体分界线仍在 `26.1`：`fabric-loom-remap` 用于 26.
 | 1.21 | `CraftingInput`；`ResourceLocation.fromNamespaceAndPath`（公开构造器变为私有） |
 | 1.21.2 | 移除 `InteractionResult.sidedSuccess`；`ResultSlot#setRecipeUsed` 去掉了 `Level` 参数 |
 | 1.21.5 | `Inventory#selected` 变为私有，改由 `getSelectedSlot()` 提供 |
-| 1.21.6 | GUI 栈换成 `Matrix3x2f`（`pushPose`→`pushMatrix`，3 参数 `translate`/`scale` 去掉 z）；`setTooltipForNextFrame` 取代 `renderTooltip(Font, ItemStack, …)`；Forge 转向 EventBus 7：`net.minecraftforge.eventbus.api` 拆成 `bus`/`listener`，`FMLJavaModLoadingContext#getModEventBus()` 换成返回 `BusGroup` 的 `getModBusGroup()`。`BusGroup` 不是 `IEventBus`，EventBus 7 里也根本不存在 `IEventBus`，所以取 bus 与 `DeferredRegister#register` 的**语句**同样按版本分支，不只是导入 |
+| 1.21.6 | GUI 栈换成 `Matrix3x2f`（`pushPose`→`pushMatrix`，3 参数 `translate`/`scale` 去掉 z）；`setTooltipForNextFrame` 取代 `renderTooltip(Font, ItemStack, …)`；**`renderContents` 从 `render` 中拆出，`hoveredSlot` 的赋值也随之移动**，所以虚拟 Hands 悬停 mixin 从这里起针对 `renderContents`；Forge 转向 EventBus 7：`net.minecraftforge.eventbus.api` 拆成 `bus`/`listener`，`FMLJavaModLoadingContext#getModEventBus()` 换成返回 `BusGroup` 的 `getModBusGroup()`。`BusGroup` 不是 `IEventBus`，EventBus 7 里也根本不存在 `IEventBus`，所以取 bus 与 `DeferredRegister#register` 的**语句**同样按版本分支，不只是导入 |
 | 1.21.7 | NeoForge 把客户端包分发器移到 `ClientPacketDistributor` |
 | 1.21.9 | `Level#isClientSide` 变为私有；移除 `ServerPlayer#getServer`；`Window#getWindow` 更名为 `handle`；输入改用 `MouseButtonEvent` 对象 |
-| 1.21.11 | `ResourceLocation` 更名为 `Identifier`；`renderContents` 从 `render` 中拆出 |
+| 1.21.11 | `ResourceLocation` 更名为 `Identifier` |
 | 26.1 | Minecraft 不再混淆：没有 mappings、没有 refmap、没有 remap 步骤；`GuiGraphics` → `GuiGraphicsExtractor`，所有 `render*` → `extract*`；`Minecraft#setScreen` 仍然存在；Fabric 的 `screenhandler` API 更名为 `menu`；`ExtendedScreenHandlerFactory` → `ExtendedMenuProvider` |
 | 26.2 | 删除 `Minecraft#setScreen`（背包重定向 hook 移到 `Gui#setScreen`）；`Recipe#assemble` 去掉 `RegistryAccess` |
 | 26.3 | Minecraft 从 GLFW 转向 SDL3（`org.lwjgl.glfw` 离开 classpath；改用 `org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow`）；裸修饰键位变成 SDL keymods，所以要用 `InputWithModifiers#hasShiftDown`；`InputConstants.Type.KEYSYM` → `KEYBOARD`；`Player#drop` 增加 `Prediction` 参数 |

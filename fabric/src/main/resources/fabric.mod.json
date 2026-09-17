@@ -37,8 +37,8 @@
 	],
 	"depends": {
 		"fabricloader": "${fabric_loader_range}",
-		"minecraft": "${minecraft_range}",
-		"java": "${java_range}",
+		"minecraft": "${minecraft_range_fabric}",
+		"java": "${java_range_fabric}",
 		"fabric-api": "${fabric_api_range}"
 	},
 	"suggests": {

@@ -332,15 +332,70 @@ the client screen.
       signature. Below 1.20.5 the `useWithoutItem` target does not exist and the mixin is declared
       `required`, so getting this wrong is a launch crash, not a no-op — check the target with
       `javap` on the real version jar rather than trusting the comment.
-    - **1.21.6** swapped the GUI stack to `Matrix3x2f` and moved Forge to EventBus 7.
-    - **1.21.11** renamed `ResourceLocation` → `Identifier` and split `renderContents` out of
-      `render`.
+    - **1.21.6** swapped the GUI stack to `Matrix3x2f`, moved Forge to EventBus 7, and split
+      **`renderContents` out of `render`** — taking the `hoveredSlot` assignment with it. The
+      boundary that matters is where the *assignment* moves, not where the method first appears:
+      `AbstractContainerScreenMixin` targets `render` below 1.21.6 and `renderContents` from 1.21.6
+      to 26.0. Targeting `render` on 1.21.6–1.21.10 finds no injection point at all, and with
+      `defaultRequire: 1` that is a launch crash on five versions. This was wrong in 1.8.0.
+    - **1.21.11** renamed `ResourceLocation` → `Identifier`.
     - **1.21.9** is where `Level#isClientSide` and `ServerPlayer#getServer` stopped being public.
 
     Two mechanical rules come out of this. First, **Stonecutter conditions cannot nest** — write a
     flat `if / elif / else` chain instead of putting one inside another. Second, keep `//` comments
     *before* a `//? if` line rather than between it and the code it guards; a comment adjacent to a
     conditional boundary can be swallowed by the wrong branch.
+
+13. **`fabric.mod.json` does not accept Maven version ranges.** This shipped a completely unloadable
+    Fabric jar on 1.7.1, 1.7.2 *and* 1.8.0, so it is worth stating precisely.
+
+    The version properties store one range per Minecraft version in Maven form, e.g.
+    `meta.minecraft-range=[1.21.5,1.21.6)`. That form is correct for the **NeoForge and Forge**
+    `mods.toml` files, which parse Maven ranges. It is **wrong for Fabric**: `fabric-loader`'s
+    `VersionPredicateParser` has no bracket-range syntax, so it falls back to an *equality* test
+    against the whole bracket string as an opaque literal. It can therefore match only itself, never
+    a real Minecraft or Java version.
+
+    The symptom is a self-contradictory error that reads like a bug in the loader:
+
+    ```
+    requires version [1.21.5,1.21.6) of 'Minecraft' (minecraft),
+    but only the wrong version is present: 1.21.5!
+    ```
+
+    Fabric needs the **space-separated comparison form** instead — `>=1.21.5 <1.21.6`, and `>=21`
+    for Java. (`java` is matched against the bare major taken from `java.specification.version`, so
+    `>=21` covers both `21` and `21.0.7`.)
+
+    This is why `expandProps` exposes **two** pairs: `minecraft_range` / `java_range` stay Maven for
+    the loader TOMLs, while `minecraft_range_fabric` / `java_range_fabric` are converted by
+    `mavenRangeToFabricPredicate`. Use the `_fabric` pair in `fabric.mod.json` and never the bare
+    one. `fabric_loader_range` and `fabric_api_range` are already in the right form.
+
+    Do not "simplify" this back to a single placeholder. If you add a dependency to
+    `fabric.mod.json`, give it the comparison form. Verify any change by running the loader's own
+    parser over the built jar — reasoning from the version number is what caused this.
+
+    Note the one non-obvious row: `1.21.1`'s declared range is `[1.21,1.21.2)`, so its Fabric
+    predicate is `>=1.21 <1.21.2` — deliberately admitting `1.21` as well, matching what the Forge
+    and NeoForge jars already advertise.
+
+14. **A loader's metadata is not proof its classes are in the jar.** 1.8.0 shipped *every* Fabric
+    jar with `fabric.mod.json` naming a client entrypoint class that was never compiled in: it sat
+    in `fabric/src/client/java`, a source root added to the build after Stonecutter had already
+    claimed the main source set, so nothing ever preprocessed or compiled it. Fabric refused to
+    start with an "entrypoint not found" error naming a class that was plainly present in the
+    source tree.
+
+    The rule is **keep every loader source under `src/main/java`**. `dayz-loader` compiles the
+    generated copy of `src/main/java` and nothing else, so a `src/client/java` root is invisible to
+    that pipeline wherever it is declared. Client-only safety comes from the `"environment":
+    "client"` marker on the Fabric entrypoint, not from the source root.
+
+    `verifyJar` (wired into `check`, so `chiseledBuild` runs it) opens the built jar and resolves
+    every class its own metadata names — Fabric entrypoints from `fabric.mod.json`, every class in
+    every mixin config, and the hardcoded NeoForge/Forge `@Mod` classes. A missing class fails the
+    build instead of reaching a user.
 
 ## Optional Dependencies
 

@@ -193,6 +193,35 @@ repositories {
 // new Minecraft target can never leave a stale hardcoded value behind. A stale
 // `version` already shipped once: a 1.4.1 jar reported itself as 1.4.0 in crash
 // reports because the toml hardcoded it.
+
+/**
+ * Convert a Maven range of the single half-open shape the version properties
+ * use (`[lower,upper)`, or `[lower,)` for no upper bound) into the
+ * space-separated comparison form that Fabric understands.
+ *
+ * This exists because **fabric-loader's version predicate parser does not
+ * accept Maven bracket ranges at all**. `VersionPredicateParser.parse("[1.0.0,2.0.0]")`
+ * yields a predicate whose `toString()` is the literal string `[1.0.0,2.0.0]`,
+ * and which fails to match even `2.0.0` - the brackets are not syntax to it.
+ * Shipping a bracket range therefore produces a mod that cannot load, with a
+ * self-contradictory message ("requires [1.21.5,1.21.6) ... but only the wrong
+ * version is present: 1.21.5").
+ *
+ * NeoForge and Forge *do* use Maven ranges, so their `mods.toml` files keep
+ * using the unconverted `minecraft_range` / `forge_range` values.
+ */
+fun mavenRangeToFabricPredicate(range: String): String {
+    val trimmed = range.trim()
+    require(trimmed.startsWith("[") && trimmed.endsWith(")")) {
+        "meta.minecraft-range must look like [lower,upper) - got '$range'"
+    }
+    val parts = trimmed.substring(1, trimmed.length - 1).split(",").map { it.trim() }
+    require(parts.size == 2 && parts[0].isNotEmpty()) {
+        "meta.minecraft-range must have a lower bound - got '$range'"
+    }
+    return if (parts[1].isEmpty()) ">=${parts[0]}" else ">=${parts[0]} <${parts[1]}"
+}
+
 val expandProps: Map<String, String> = buildMap {
     fun putIfPresent(key: String, value: String?) {
         if (!value.isNullOrBlank()) put(key, value)
@@ -210,9 +239,13 @@ val expandProps: Map<String, String> = buildMap {
     put("mod_sources", prop("mod.sources"))
     put("mod_issues", prop("mod.issues"))
     put("minecraft_version", minecraftVersion)
+    // Maven range - correct for the NeoForge and Forge `mods.toml` files.
     put("minecraft_range", prop("meta.minecraft-range"))
+    // Fabric needs the comparison form; a Maven range makes the mod unloadable.
+    put("minecraft_range_fabric", mavenRangeToFabricPredicate(prop("meta.minecraft-range")))
     put("java_version", javaVersion.toString())
     put("java_range", "[$javaVersion,)")
+    put("java_range_fabric", ">=$javaVersion")
     put("mixin_compat", prop("deps.mixin-compat"))
     put("pack_format", prop("deps.pack-format"))
 
