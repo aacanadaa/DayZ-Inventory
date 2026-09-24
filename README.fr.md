@@ -10,85 +10,67 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/suoim)
 
-Refonte complète de l'interface d'inventaire de Minecraft, qui transplante l'aspect, la sensation
-et les mécaniques du système d'inventaire de DayZ dans Minecraft : une grille **Vicinity**
-(environnement) des objets au sol et des conteneurs proches, un emplacement d'attachment **Hands**
-(mains) dynamique lié au slot de la barre d'accès actif, une **grille de crafting 2x2** intégrée,
-et l'équipement par glisser-déposer sur le panneau **Survivor** (survivant).
+Refonte complète de l'inventaire Minecraft, qui fait passer l'aspect, la sensation et les
+mécaniques du système d'inventaire DayZ dans Minecraft : une grille **Vicinity** (alentours)
+des objets proches au sol et des conteneurs, un emplacement d'attachement **Hands** (mains)
+dynamique lié à l'emplacement actif de la hotbar, une **grille de craft 2x2** intégrée, et
+l'équipement par glisser-déposer sur le panneau **Survivor** (survivant).
 
-**Fortement recommandé avec [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — intégration
-transparente. Les deux sont conçus comme un duo, donc le HUD et l'écran d'inventaire partagent un
-même style.
+**Vraiment recommandé avec [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — intégration
+transparente. Les deux forment une paire : le HUD et l'écran d'inventaire partagent un même style.
 
 ## Versions prises en charge
 
-| Loader | Minecraft |
+| Chargeur | Minecraft |
 | :--- | :--- |
 | **Fabric** | 1.20.1 – 26.3 |
 | **NeoForge** | 1.20.6 – 26.3 |
 | **Forge** | 1.20.6 – 1.21.11 |
 
-**23 versions de Minecraft, 53 téléchargements**, tous issus d'une seule arborescence source. Chaque
-fichier est étiqueté avec sa version de Minecraft et son loader. La [matrice complète des
-versions](#matrice-complète-des-versions) ci-dessous liste chaque version, et
-[Dépendances](#dépendances) donne les versions de loader requises.
+**23 versions de Minecraft, 53 téléchargements**, tous issus d'une seule arborescence de code.
+Chaque fichier est étiqueté avec sa version de Minecraft et son chargeur. La
+[matrice complète des versions](#matrice-complète-des-versions) ci-dessous répertorie chaque
+version, et [Dépendances](#dépendances) donne les versions de chargeur requises.
 
-![L'écran DayZ Inventory : une grille VICINITY des objets proches, un tiroir CHEST ouvert avec des
-chambres, le panneau SURVIVOR avec le joueur en équipement, les boutons CURIOS et JEI dans
-l'en-tête, un M1014 Battle Shotgun dans l'emplacement HANDS à 2.0x, et la grille de CRAFTING
-2x2](docs/screenshots/ui-example.png)
+![L'écran DayZ Inventory : une grille VICINITY d'objets proches, un tiroir CHEST ouvert avec des douilles, le panneau SURVIVOR avec le joueur équipé, les boutons CURIOS et JEI dans l'en-tête, un M1014 Battle Shotgun dans l'emplacement HANDS 2.0x, et la grille CRAFTING 2x2](docs/screenshots/ui-example.png)
 
 ---
 
 ## Fonctionnalités
 
 ### Grille Vicinity unifiée et tiroirs dépliables
-- **Scanner de proximité** : rescanne toutes les 10 ticks les objets au sol et les blocs conteneurs
-  (coffres, tonneaux, boîtes de Shulker) dans un rayon de 3 blocs.
-- **Colonne unifiée** : les objets au sol et les blocs de stockage proches partagent une seule
-  grille défilable sous l'en-tête VICINITY.
-- **Sélecteurs de conteneur** : les conteneurs sont dessinés en icônes d'emplacement avec info-bulles
-  de coordonnées et de distance.
-- **Tiroirs en ligne** : cliquer sur un sélecteur de conteneur déplie ses emplacements en ligne, sous
-  la grille.
+- **Scanner de proximité** : rescanne toutes les 10 ticks les objets au sol et les blocs conteneurs (coffres, tonneaux, boîtes de shulker) dans un rayon de 3 blocs.
+- **Colonne unifiée** : les objets au sol voisins et les blocs de stockage partagent une seule grille défileable sous l'en-tête VICINITY.
+- **Sélecteurs de conteneur** : les conteneurs sont dessinés en icônes d'emplacement avec des info-bulles de coordonnées et de distance.
+- **Tiroirs en ligne** : cliquer sur un sélecteur de conteneur déplie ses emplacements en ligne, sous la grille.
 
-### Emplacement d'attachment Hands dynamique
-- **Liaison à la barre d'accès active** : reflette le slot de la hotbar actuellement sélectionné.
-- **Grand emplacement d'attachment** : un corps de panneau entièrement translucide remplace
-  l'emplacement par défaut.
-- **Rendu à double échelle** : l'objet tenu est dessiné à **2.0x** (32x32 px) centré dans le panneau.
-- **Bannière en majuscules** : affiche le nom de l'objet (ex. `HUNTING KNIFE`) sous l'en-tête.
+### Emplacement d'attachement Hands dynamique
+- **Liaison à la hotbar active** : reflète l'emplacement de la hotbar actuellement sélectionné.
+- **Grand emplacement d'attachement** : un corps de panneau entièrement translucide remplace l'emplacement par défaut.
+- **Rendu à double échelle** : l'objet tenu est dessiné à **2.0x** (32x32 px), centré dans le panneau.
+- **Bannière du nom en majuscules** : affiche le nom de l'objet (p. ex. `HUNTING KNIFE`) sous l'en-tête.
 
-### Crafting et changement d'équipement
-- **Grille vanilla 2x2** : la grille de crafting et l'emplacement de résultat vivent dans l'écran
-  personnalisé ; le résultat est recalculé côté serveur.
-- **Équipement par glisser-déposer** : glissez une armure ou des vêtements sur le panneau Survivor
-  central pour l'équiper ou le remplacer.
+### Craft et échange d'équipement
+- **Grille 2x2 vanilla** : la grille de craft et l'emplacement de résultat vivent dans l'écran personnalisé ; le résultat est recalculé côté serveur.
+- **Équiper par glisser-déposer** : faites glisser une armure ou des vêtements sur le panneau Survivor du milieu pour l'équiper ou l'échanger.
 
 ### Intégrations de mods optionnelles
-- **Visionneuses de recettes (JEI / REI / EMI)** : un bouton d'activation assorti au thème dans
-  l'en-tête, dessiné uniquement quand une visionneuse prise en charge est installée.
-- **Curios API** : ajoute un bouton CURIOS à l'en-tête du Survivor.
-- **Trinkets** : ajoute un bouton TRINKETS à l'en-tête du Survivor.
+- **Visionneuses de recettes (JEI / REI / EMI)** : un bouton d'activation assorti au thème dans l'en-tête, dessiné uniquement quand une visionneuse prise en charge est installée.
+- **Curios API** : ajoute un bouton CURIOS à l'en-tête Survivor.
+- **Trinkets** : ajoute un bouton TRINKETS à l'en-tête Survivor.
 
-Chaque intégration est détectée à l'exécution avec `isModLoaded`. Le mod démarre, ouvre son écran et
-fonctionne pleinement avec **aucune** d'elles installée.
+Chaque intégration est détectée à l'exécution avec `isModLoaded`. Le mod démarre, ouvre son
+écran et fonctionne pleinement même si **aucune** d'entre elles n'est installée.
 
 ---
 
 ## Installation
 
-1. Tant que votre version de Minecraft figure dans le tableau ci-dessus, vous êtes couvert :
-   **Fabric** couvre les 23 versions, **NeoForge** à partir de 1.20.6, et **Forge** de 1.20.6 à
-   1.21.11.
-2. Téléchargez le fichier dont le nom correspond à votre version de Minecraft *et* à votre loader
-   depuis [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) ou
-   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
+1. Tant que votre version de Minecraft figure dans le tableau ci-dessus, vous êtes couvert : **Fabric** couvre les 23 versions, **NeoForge** à partir de 1.20.6, et **Forge** de 1.20.6 à 1.21.11.
+2. Téléchargez le fichier dont le nom correspond à votre version de Minecraft *et* à votre chargeur depuis [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) ou [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
 3. Déposez-le dans `mods/`.
 
-> **Choisissez attentivement.** Un build Fabric ne se chargera pas sur Forge ni sur NeoForge, un
-> build NeoForge ne se chargera pas sur Forge, et les builds pour différentes versions de Minecraft
-> ne sont pas interchangeables. Chaque nom de fichier porte sa version de Minecraft et son loader.
+> **Choisissez avec soin.** Un build Fabric ne se chargera pas sur Forge ou NeoForge, un build NeoForge ne se chargera pas sur Forge, et les builds pour différentes versions de Minecraft ne sont pas interchangeables. Chaque nom de fichier porte sa version de Minecraft et son chargeur.
 
 ---
 
@@ -120,32 +102,20 @@ fonctionne pleinement avec **aucune** d'elles installée.
 | **26.2** | ✅ | ✅ | — | 25 |
 | **26.3** | ✅ | ✅ | — | 25 |
 
-Soit **23 versions de Minecraft et 53 jars publiables** : 23 Fabric, 18 NeoForge et 12 Forge. Fabric
-et NeoForge couvrent chaque version à partir de 1.20.6. Les seuls trous de la matrice sont ceux-ci :
+Soit **23 versions de Minecraft et 53 jars diffusables** : 23 Fabric, 18 NeoForge et 12 Forge. Fabric et NeoForge couvrent chaque version à partir de 1.20.6. Les seules lacunes de la matrice sont les suivantes :
 
-- **1.20.1–1.20.4** ne sont disponibles que sur Fabric. 1.20.1 précède entièrement NeoForge ; la
-  version NeoForge de 1.20.2 utilise encore l'ancienne pile réseau `SimpleChannel` ; 1.20.3 n'avait
-  aucune release NeoForge ; et l'API payload de 1.20.4 est arrivée avant l'existence de
-  `StreamCodec`, elle aurait donc nécessité son propre type de payload. Forge 1.20.1 requiert en
-  outre la réobfuscation SRG et un refmap de mixin Searge, que la chaîne d'outils Forge actuelle ne
-  peut pas produire.
-- **1.20.5** n'est disponible que sur Fabric : NeoForge a publié cette version sans les métadonnées
-  nécessaires à la compilation, et Forge n'a pas de release 1.20.5.
-- **1.21.2** n'a pas de build Forge parce que Forge a sauté cette release.
-- **26.x n'a pas de build Forge** : la ligne 26.x de Forge n'est pas une cible pour laquelle ce mod
-  se compile ; NeoForge est la voie prise en charge sur cette ligne.
+- **1.20.1–1.20.4** ne sont disponibles qu'en Fabric. 1.20.1 précède entièrement NeoForge ; la version 1.20.2 de NeoForge utilise encore l'ancienne pile réseau `SimpleChannel` ; 1.20.3 n'avait aucune version NeoForge ; et l'API payload de 1.20.4 est arrivée avant l'existence de `StreamCodec`, elle aurait donc besoin de son propre type de payload. Forge 1.20.1 nécessite en outre une reobfuscation SRG et un refmap de mixin Searge, que la chaîne d'outils Forge actuelle ne peut pas produire.
+- **1.20.5** n'est disponible qu'en Fabric : NeoForge a publié cette version sans les métadonnées nécessaires à la construction, et Forge n'a pas de version 1.20.5.
+- **1.21.2** n'a pas de build Forge, car Forge a sauté cette version.
+- **26.x n'a pas de build Forge** : la lignée 26.x de Forge n'est pas une cible pour laquelle ce mod se construit ; NeoForge est la voie prise en charge.
 
-Chaque artefact est construit à partir d'**une seule arborescence source** :
-[Stonecutter](https://stonecutter.kikugie.dev/) gère le prétraitement multi-versions et les modules
-`common/` + par loader gèrent l'abstraction des loaders. La matrice est déclarée dans
-`settings.gradle.kts` ; ajouter une version consiste à ajouter une ligne là-bas plus un fichier
-`versions/<mc>/gradle.properties`.
+Chaque artefact est construit à partir d'**une seule arborescence** : [Stonecutter](https://stonecutter.kikugie.dev/) gère le prétraitement multi-versions et les modules `common/` + par chargeur gèrent l'abstraction des chargeurs. La matrice est déclarée dans `settings.gradle.kts` ; ajouter une version consiste à y ajouter une ligne plus un fichier `versions/<mc>/gradle.properties`.
 
 ---
 
 ## Dépendances
 
-| Minecraft | Loader | Java | Requis | Optionnel |
+| Minecraft | Chargeur | Java | Requis | Facultatif |
 | :--- | :--- | :---: | :--- | :--- |
 | **1.20.1** | Fabric | 17 | Fabric Loader `>=0.16.14`, Fabric API `0.92.12+1.20.1` | JEI / REI / EMI, Trinkets (Fabric), Curios |
 | **1.20.2** | Fabric | 17 | Fabric Loader `>=0.16.14`, Fabric API `0.91.6+1.20.2` | JEI / REI / EMI, Trinkets (Fabric), Curios |
@@ -171,17 +141,13 @@ Chaque artefact est construit à partir d'**une seule arborescence source** :
 | **26.2** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.160.0+26.2`; NeoForge `26.2.0.88` | JEI / REI / EMI, Trinkets (Fabric), Curios |
 | **26.3** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.160.6+26.3`; NeoForge `26.3.0.1-beta` | JEI / REI / EMI, Trinkets (Fabric), Curios |
 
-Les entrées optionnelles sont détectées à l'exécution — le mod ne les requiert jamais et ne plantera
-pas sans elles. Trinkets n'existe que pour Fabric ; sur NeoForge et Forge, c'est Curios qui joue ce
-rôle.
+Les entrées facultatives sont détectées à l'exécution — le mod ne les exige jamais et ne plantera pas sans elles. Trinkets n'existe que pour Fabric ; sur NeoForge et Forge, c'est Curios qui remplit ce rôle.
 
 ---
 
 ## Compilation depuis les sources
 
-Le lanceur Gradle a besoin d'un **JDK 25**. Les toolchains Java 17 / 21 dont le reste de la matrice
-a besoin sont téléchargés automatiquement par le résolveur foojay, rien n'a donc besoin d'être
-installé à la main.
+Le lanceur Gradle nécessite **JDK 25**. Les chaînes d'outils Java 17 / 21 nécessaires au reste de la matrice sont téléchargées automatiquement par le résolveur foojay ; rien n'a donc à être installé manuellement.
 
 ```bash
 # Builds every Minecraft version x every mod loader in the matrix.
@@ -196,13 +162,9 @@ installé à la main.
 ./gradlew matrix
 ```
 
-Les artefacts sont nommés `dayz-inventory-<loader>-<minecraft>-<mod version>.jar`, par exemple
-`dayz-inventory-fabric-26.2-1.8.0+mc26.2.jar`. La version de Minecraft fait volontairement partie du
-nom de fichier : la même version du mod est publiée pour plusieurs versions du jeu, et CurseForge
-rejette un second fichier dont le nom d'affichage entre en collision dans un projet.
+Les artefacts sont nommés `dayz-inventory-<loader>-<minecraft>-<mod version>.jar`, par exemple `dayz-inventory-fabric-26.2-1.8.0+mc26.2.jar`. La version de Minecraft figure volontairement dans le nom de fichier : la même version du mod est publiée pour plusieurs versions du jeu, et CurseForge rejette un second fichier dont le nom d'affichage entre en collision dans un projet.
 
-L'architecture, les conventions de compilation conditionnelle et la procédure pour ajouter une
-version sont documentées dans **[docs/BUILDING.en.md](docs/BUILDING.en.md)**.
+L'architecture, les conventions de compilation conditionnelle et la procédure d'ajout d'une version sont documentées dans **[docs/BUILDING.en.md](docs/BUILDING.en.md)**.
 
 ### Publication sur CurseForge et Modrinth
 
@@ -211,24 +173,17 @@ MODRINTH_TOKEN=... CURSEFORGE_API_KEY=... \
   ./gradlew publishAll -Ppublish.dry_run=false
 ```
 
-- Chaque nœud est étiqueté avec **sa propre** version de jeu et son loader, issus de
-  `versions/<mc>/gradle.properties`, si bien qu'un jar ne peut pas être téléversé sous la mauvaise
-  version de Minecraft.
-- `publish.dry_run` vaut `true` par défaut ; sans le désactiver, `publishMods` se contente de
-  journaliser.
-- **Les publications CurseForge sont sans retour.** Chaque fichier passe en revue humaine et l'API
-  l'accepte sans renvoyer d'URL : une tâche CurseForge verte signifie « soumis », pas « en ligne ».
+- Chaque nœud est étiqueté avec **sa propre** version du jeu et son chargeur, provenant de `versions/<mc>/gradle.properties`, afin qu'un jar ne puisse pas être téléversé sous la mauvaise version de Minecraft.
+- `publish.dry_run` vaut `true` par défaut ; sans le désactiver, `publishMods` se contente de journaliser.
+- **Les publications CurseForge sont sans retour.** Chaque fichier passe par une revue humaine et l'API l'accepte sans renvoyer d'URL ; une tâche CurseForge verte signifie « soumis », pas « en ligne ».
 - Une plateforme à la fois : `:fabric:26.2:publishModrinth` / `:fabric:26.2:publishCurseforge`.
 
-La CI (`.github/workflows/build.yml`) compile toute la matrice sur une étiquette `v*`, joint chaque
-jar à la GitHub Release et publie sur les deux plateformes.
+Le CI (`.github/workflows/build.yml`) construit toute la matrice sur une balise `v*`, joint chaque jar à la GitHub Release et publie sur les deux plateformes.
 
 ## Numérotation des versions
 
-`mod.version` dans `gradle.properties` est la source unique de vérité. Il est développé dans
-`fabric.mod.json`, `neoforge.mods.toml`, `mods.toml` et `pack.mcmeta`. Incrémentez-le, puis mettez à
-jour [CHANGELOG.md](CHANGELOG.md).
+`mod.version` dans `gradle.properties` est la source unique de vérité. Elle est développée dans `fabric.mod.json`, `neoforge.mods.toml`, `mods.toml` et `pack.mcmeta`. Incrémentez-la, puis mettez à jour [CHANGELOG.md](CHANGELOG.md).
 
 ## Licence
 
-Apache License 2.0 — voir [LICENSE](LICENSE).
+Licence Apache 2.0 — voir [LICENSE](LICENSE).
