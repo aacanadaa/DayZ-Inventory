@@ -96,10 +96,13 @@ jobs:
       # done - and retried - on its own before anything is compiled.
       - name: Configure ${{ matrix.minecraft }}
         run: |
-          for attempt in 1 2 3; do
-            ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} --stacktrace && exit 0
+          # Gradle remembers a failed download, so a retry has to ask again.
+          for attempt in 1 2 3 4; do
+            refresh=""
+            [ "$attempt" -gt 1 ] && refresh="--refresh-dependencies"
+            ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} $refresh --stacktrace && exit 0
             echo "::warning::Configuration attempt $attempt failed; retrying"
-            sleep 30
+            sleep $((attempt * 30))
           done
           exit 1
 
@@ -254,10 +257,13 @@ jobs:
 
       - name: Configure ${{ matrix.minecraft }}
         run: |
-          for attempt in 1 2 3; do
-            ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} --stacktrace && exit 0
+          # Gradle remembers a failed download, so a retry has to ask again.
+          for attempt in 1 2 3 4; do
+            refresh=""
+            [ "$attempt" -gt 1 ] && refresh="--refresh-dependencies"
+            ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} $refresh --stacktrace && exit 0
             echo "::warning::Configuration attempt $attempt failed; retrying"
-            sleep 30
+            sleep $((attempt * 30))
           done
           exit 1
 

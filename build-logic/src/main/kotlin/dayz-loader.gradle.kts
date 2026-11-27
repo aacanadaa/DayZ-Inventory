@@ -226,7 +226,7 @@ val expectedEntrypoints = when (branch) {
 // loader.
 val modJarProvider: Provider<Jar> = provider { tasks.named<Jar>(modJarTaskName).get() }
 
-val verifyJar by tasks.registering {
+val verifyJar = tasks.register("verifyJar") {
     group = "verification"
     description = "Resolves every entrypoint and mixin class named by this node's jar metadata"
     dependsOn(modJarProvider)
@@ -261,6 +261,18 @@ val verifyJar by tasks.registering {
 
             // Compile-only stand-ins for other mods' APIs must never ship.
             names.filter { it.startsWith("yalter/") }.forEach { missing += "compile-only stub '$it' is in the jar" }
+
+            // Forge only loads mixins named by the MixinConfigs manifest attribute.
+            // Checked on the shipped jar, so a remapping step that rebuilt the
+            // manifest cannot silently switch every mixin off.
+            if (branch == "forge") {
+                val manifest = zip.getEntry("META-INF/MANIFEST.MF")
+                    ?.let { entry -> zip.getInputStream(entry).use { java.util.jar.Manifest(it) } }
+                val declared = manifest?.mainAttributes?.getValue("MixinConfigs")
+                    ?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                val shipped = names.filter { it.endsWith(".mixins.json") && !it.contains('/') }
+                shipped.filterNot { it in declared }.forEach { missing += "mixin config '$it' is not in the MixinConfigs manifest attribute" }
+            }
 
             // Every mixin config shipped in the jar must resolve to classes in
             // that same jar, on every loader.
