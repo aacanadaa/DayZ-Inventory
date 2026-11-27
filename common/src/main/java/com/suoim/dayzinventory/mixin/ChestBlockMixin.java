@@ -16,6 +16,8 @@
  */
 package com.suoim.dayzinventory.mixin;
 
+import com.suoim.dayzinventory.DayZMenus;
+import com.suoim.dayzinventory.config.DayZConfig;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -48,14 +50,18 @@ public class ChestBlockMixin {
     @Inject(method = "use", at = @At("HEAD"), cancellable = true)
     private void onUse(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult, CallbackInfoReturnable<InteractionResult> cir) {
     //?}
-        // If the loader has not installed its platform helper yet, fall through to
-        // vanilla chest behaviour rather than dereferencing a null helper.
-        if (!Platform.isReady()) {
+        // Fall through to vanilla behaviour if the loader has not installed its
+        // platform helper yet, or if the config hands containers back to the
+        // vanilla screen.
+        if (!Platform.isReady() || !DayZConfig.get().openContainersInDayZScreen) {
             return;
         }
 
+        // A locked or blocked container simply does not open, exactly as in
+        // vanilla - DayZMenus applies those checks itself, including the
+        // "is locked" message.
         if (!level.isClientSide() && player instanceof ServerPlayer serverPlayer) {
-            Platform.HELPER.openContainerInventory(serverPlayer, pos);
+            DayZMenus.openContainer(serverPlayer, pos);
         }
 //? if >=1.21.2 {
         // sidedSuccess(bool) was removed in 1.21.2; pick the constant for the side

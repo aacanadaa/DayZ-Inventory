@@ -28,11 +28,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.file.Path;
 
 public class NeoForgePlatformHelper implements IPlatformHelper {
     @Override
@@ -41,48 +42,39 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
+    public Path getConfigDirectory() {
+        return FMLPaths.CONFIGDIR.get();
+    }
+
+    @Override
     public void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf) {
-        // NeoForge 1.21 uses the vanilla typed-payload system, same shape as
-        // Fabric's - wrap the raw bytes and hand them to the distributor.
+        // NeoForge uses the vanilla typed-payload system, same shape as Fabric's -
+        // wrap the raw bytes and hand them to the distributor.
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(buf.readerIndex(), bytes);
         ClientPacketDistributor.sendToServer(new DayZInventoryPayload(packetId, bytes));
     }
 
     @Override
-    public void openPlayerInventory(ServerPlayer player) {
-        player.openMenu(new SimpleMenuProvider(
-            (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, null, null),
-            Component.translatable("container.inventory")
-        ), buf -> {
-            buf.writeBoolean(false); // No container
-            buf.writeBoolean(false); // No container pos
-        });
+    public boolean isServerModPresent() {
+        // The payload is registered as required, so NeoForge refuses to join a
+        // server that does not have this mod: when connected, it is there.
+        return true;
     }
 
     @Override
-    public void openContainerInventory(ServerPlayer player, BlockPos pos) {
-        Level level = player.level();
-        BlockState state = level.getBlockState(pos);
-        Container container = null;
-        if (state.getBlock() instanceof ChestBlock chestBlock) {
-            container = ChestBlock.getContainer(chestBlock, state, level, pos, true);
-        } else if (level.getBlockEntity(pos) instanceof Container c) {
-            container = c;
-        }
-
-        if (container != null) {
-            final Container finalContainer = container;
-            player.openMenu(new SimpleMenuProvider(
-                (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos),
-                state.getBlock().getName()
-            ), buf -> {
-                buf.writeBoolean(true); // Has container
-                buf.writeInt(finalContainer.getContainerSize());
-                buf.writeBoolean(true); // Has container pos
-                buf.writeBlockPos(pos);
-            });
-        }
+    public void openMenu(ServerPlayer player, @Nullable Container container, @Nullable BlockPos pos, Component title) {
+        boolean hasContainer = container != null && pos != null;
+        int containerSize = hasContainer ? container.getContainerSize() : 0;
+        player.openMenu(new SimpleMenuProvider(
+            (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, container, pos),
+            title
+        ), buf -> {
+            buf.writeBoolean(hasContainer);
+            if (hasContainer) buf.writeInt(containerSize);
+            buf.writeBoolean(hasContainer);
+            if (hasContainer) buf.writeBlockPos(pos);
+        });
     }
 
     @Override

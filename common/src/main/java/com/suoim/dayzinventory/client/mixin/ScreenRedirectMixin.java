@@ -17,6 +17,7 @@
 package com.suoim.dayzinventory.client.mixin;
 
 import com.suoim.dayzinventory.DayZInventoryPackets;
+import com.suoim.dayzinventory.config.DayZConfig;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.client.Minecraft;
 //? if >=26.2 {
@@ -68,7 +69,13 @@ public class ScreenRedirectMixin {
 
         // Never block the vanilla UI if the loader has not installed its helper
         // yet - better to show the vanilla screen than to crash or show nothing.
-        if (!Platform.isReady()) {
+        if (!Platform.isReady() || !DayZConfig.get().replaceInventoryScreen) {
+            return;
+        }
+
+        // On a server without this mod nobody would answer the open request, and
+        // the inventory key would do nothing at all. Leave the vanilla screen be.
+        if (!Platform.HELPER.isServerModPresent()) {
             return;
         }
 

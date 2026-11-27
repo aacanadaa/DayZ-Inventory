@@ -16,7 +16,6 @@
  */
 package com.suoim.dayzinventory.forge.platform;
 
-import com.suoim.dayzinventory.DayZInventoryPayload;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.forge.DayZInventoryForge;
 import com.suoim.dayzinventory.forge.network.ModNetwork;
@@ -29,10 +28,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLPaths;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.file.Path;
 
 public class ForgePlatformHelper implements IPlatformHelper {
     @Override
@@ -43,51 +43,45 @@ public class ForgePlatformHelper implements IPlatformHelper {
     }
 
     @Override
+    public Path getConfigDirectory() {
+        return FMLPaths.CONFIGDIR.get();
+    }
+
+    @Override
     public void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf) {
-        // Forge 1.21 uses the vanilla typed-payload system, so wrap the raw bytes
-        // into the payload shared with the Fabric and NeoForge modules.
         byte[] bytes = new byte[buf.readableBytes()];
         buf.getBytes(buf.readerIndex(), bytes);
-        ModNetwork.sendToServer(new DayZInventoryPayload(packetId, bytes));
+        ModNetwork.sendToServer(packetId, bytes);
     }
 
     @Override
-    public void openPlayerInventory(ServerPlayer player) {
-        // Forge's IForgeServerPlayer adds this overload, which forwards the
-        // written buffer to the menu type's IContainerFactory on the client.
-        // Vanilla's openMenu(MenuProvider) sends no extra data at all.
-        player.openMenu(new SimpleMenuProvider(
-            (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, null, null),
-            Component.translatable("container.inventory")
-        ), buf -> {
-            buf.writeBoolean(false); // No container
-            buf.writeBoolean(false); // No container pos
+    public boolean isServerModPresent() {
+        // Forge refuses to join a server whose channel version does not match,
+        // so a connected server always has this mod.
+        return true;
+    }
+
+    @Override
+    public void openMenu(ServerPlayer player, @Nullable Container container, @Nullable BlockPos pos, Component title) {
+        boolean hasContainer = container != null && pos != null;
+        int containerSize = hasContainer ? container.getContainerSize() : 0;
+        SimpleMenuProvider provider = new SimpleMenuProvider(
+            (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, container, pos),
+            title
+        );
+        // The written buffer is handed to the menu type's IContainerFactory on
+        // the client. Forge 1.20.1 sends it through NetworkHooks; from 1.20.6
+        // IForgeServerPlayer adds the same overload to openMenu directly.
+//? if >=1.20.6 {
+        player.openMenu(provider, buf -> {
+//?} else {
+        net.minecraftforge.network.NetworkHooks.openScreen(player, provider, buf -> {
+//?}
+            buf.writeBoolean(hasContainer);
+            if (hasContainer) buf.writeInt(containerSize);
+            buf.writeBoolean(hasContainer);
+            if (hasContainer) buf.writeBlockPos(pos);
         });
-    }
-
-    @Override
-    public void openContainerInventory(ServerPlayer player, BlockPos pos) {
-        Level level = player.level();
-        BlockState state = level.getBlockState(pos);
-        Container container = null;
-        if (state.getBlock() instanceof ChestBlock chestBlock) {
-            container = ChestBlock.getContainer(chestBlock, state, level, pos, true);
-        } else if (level.getBlockEntity(pos) instanceof Container c) {
-            container = c;
-        }
-
-        if (container != null) {
-            final Container finalContainer = container;
-            player.openMenu(new SimpleMenuProvider(
-                (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos),
-                state.getBlock().getName()
-            ), buf -> {
-                buf.writeBoolean(true); // Has container
-                buf.writeInt(finalContainer.getContainerSize());
-                buf.writeBoolean(true); // Has container pos
-                buf.writeBlockPos(pos);
-            });
-        }
     }
 
     @Override

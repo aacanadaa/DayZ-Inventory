@@ -43,6 +43,13 @@ versionRange="*"
 ordering="AFTER"
 side="BOTH"
 
+[[dependencies.${mod_id}]]
+modId="accessories"
+type="optional"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"
+
 # NeoForge has no MixinGradle step and no refmap: it has run on official Mojang
 # names since 1.20.2, so the selectors in the shared configs resolve as written.
 [[mixins]]
@@ -50,3 +57,8 @@ config="dayz-inventory.mixins.json"
 
 [[mixins]]
 config="dayz-inventory.client.mixins.json"
+
+# Optional integrations (Mouse Tweaks, key-mapping access); applied only when the
+# other mod is present, and never fatal.
+[[mixins]]
+config="dayz-inventory.compat.mixins.json"

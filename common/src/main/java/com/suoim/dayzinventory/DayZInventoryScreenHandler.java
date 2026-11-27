@@ -17,13 +17,13 @@
 package com.suoim.dayzinventory;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -37,17 +37,44 @@ import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 //?}
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
+/**
+ * The DayZ menu: an optional container, the player's inventory, armour,
+ * offhand and a 2x2 crafting grid.
+ * <p>
+ * Slot layout, with {@code c} the container size (0 when none is open):
+ * <pre>
+ *   [0, c)              container
+ *   [c, c+27)           main inventory
+ *   [c+27, c+36)        hotbar
+ *   [c+36, c+40)        armour: head, chest, legs, feet
+ *   c+40                offhand
+ *   c+41                crafting result
+ *   [c+42, c+46)        crafting grid
+ * </pre>
+ * The client screen positions these slots itself; their menu coordinates are
+ * placeholders.
+ */
 public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     private final Container containerInventory;
     private final BlockPos containerPos;
     private final Inventory playerInventory;
+    private final int containerSize;
 
-    // NeoForge client-side constructor. IMenuTypeExtension still hands over a
-    // FriendlyByteBuf, whereas Fabric's ExtendedScreenHandlerType passes typed
-    // opening data - so both shapes exist and each loader binds to its own.
+    private final net.minecraft.world.inventory.CraftingContainer craftSlots = new net.minecraft.world.inventory.TransientCraftingContainer(this, 2, 2);
+    private final net.minecraft.world.inventory.ResultContainer resultSlots = new net.minecraft.world.inventory.ResultContainer();
+
+    // NeoForge and Forge client-side constructor. IMenuTypeExtension and
+    // IForgeMenuType still hand over a FriendlyByteBuf, whereas Fabric's
+    // extended menu type passes typed opening data - so both shapes exist and
+    // each loader binds to its own.
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, FriendlyByteBuf buf) {
         this(syncId, playerInventory,
              buf.readBoolean() ? new SimpleContainer(buf.readInt()) : null,
@@ -70,85 +97,40 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         this.playerInventory = playerInventory;
         this.containerInventory = containerInventory;
         this.containerPos = containerPos;
+        this.containerSize = containerInventory != null ? containerInventory.getContainerSize() : 0;
 
-        int containerSize = containerInventory != null ? containerInventory.getContainerSize() : 0;
-
-        // 1. Add Container Slots (first index)
+        // 1. Container slots
         if (containerInventory != null) {
             if (!playerInventory.player.level().isClientSide()) {
                 containerInventory.startOpen(playerInventory.player);
             }
-            for (int i = 0; i < containerSize; i++) {
-                // Coordinates set to 0 initially, will be placed dynamically during client rendering
-                this.addSlot(new Slot(containerInventory, i, 0, 0));
+            for (int i = 0; i < this.containerSize; i++) {
+                this.addSlot(new ContainerSlot(containerInventory, i));
             }
         }
 
-        // 2. Add Player Inventory Slots (27 slots, index containerSize to containerSize + 26)
+        // 2. Main inventory (27 slots)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                int slotIndex = col + row * 9 + 9;
-                this.addSlot(new Slot(playerInventory, slotIndex, 0, 0));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 0, 0));
             }
         }
 
-        // 3. Add Player Hotbar Slots (9 slots, index containerSize + 27 to containerSize + 35)
+        // 3. Hotbar (9 slots)
         for (int col = 0; col < 9; col++) {
             this.addSlot(new Slot(playerInventory, col, 0, 0));
         }
 
-        // 4. Add Player Armor Slots (4 slots: Helmet, Chestplate, Leggings, Boots, index containerSize + 36 to containerSize + 39)
-        // Note: Helmet is slot 39, Chestplate 38, Leggings 37, Boots 36 in player inventory
-        this.addSlot(new Slot(playerInventory, 39, 0, 0) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.HEAD;
-            }
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-        });
-        this.addSlot(new Slot(playerInventory, 38, 0, 0) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.CHEST;
-            }
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-        });
-        this.addSlot(new Slot(playerInventory, 37, 0, 0) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.LEGS;
-            }
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-        });
-        this.addSlot(new Slot(playerInventory, 36, 0, 0) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return playerInventory.player.getEquipmentSlotForItem(stack) == EquipmentSlot.FEET;
-            }
-            @Override
-            public int getMaxStackSize() {
-                return 1;
-            }
-        });
+        // 4. Armour: the Inventory indexes are 39 head, 38 chest, 37 legs, 36 feet.
+        this.addSlot(new ArmorSlot(playerInventory, 39, EquipmentSlot.HEAD));
+        this.addSlot(new ArmorSlot(playerInventory, 38, EquipmentSlot.CHEST));
+        this.addSlot(new ArmorSlot(playerInventory, 37, EquipmentSlot.LEGS));
+        this.addSlot(new ArmorSlot(playerInventory, 36, EquipmentSlot.FEET));
 
-        // 5. Add Offhand Slot (index containerSize + 40)
-        this.addSlot(new Slot(playerInventory, 40, 0, 0) {
-            @Override
-            public boolean mayPlace(ItemStack stack) {
-                return true;
-            }
-        });
+        // 5. Offhand
+        this.addSlot(new Slot(playerInventory, 40, 0, 0));
 
-        // 6. Add Crafting Slots (index containerSize + 41 is Result, containerSize + 42 to + 45 are inputs)
+        // 6. Crafting result, then the 2x2 grid
         this.addSlot(new net.minecraft.world.inventory.ResultSlot(playerInventory.player, this.craftSlots, this.resultSlots, 0, 0, 0));
         for (int r = 0; r < 2; r++) {
             for (int c = 0; c < 2; c++) {
@@ -157,8 +139,34 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         }
     }
 
-    private final net.minecraft.world.inventory.CraftingContainer craftSlots = new net.minecraft.world.inventory.TransientCraftingContainer(this, 2, 2);
-    private final net.minecraft.world.inventory.ResultContainer resultSlots = new net.minecraft.world.inventory.ResultContainer();
+    // ------------------------------------------------------------------
+    // Slot layout
+    // ------------------------------------------------------------------
+
+    public int getContainerSize() { return this.containerSize; }
+    public int inventoryStart() { return this.containerSize; }
+    public int hotbarStart() { return this.containerSize + 27; }
+    public int hotbarEnd() { return this.containerSize + 36; }
+    public int armorStart() { return this.containerSize + 36; }
+    public int offhandIndex() { return this.containerSize + 40; }
+    public int resultIndex() { return this.containerSize + 41; }
+    public int craftStart() { return this.containerSize + 42; }
+    public int craftEnd() { return this.containerSize + 46; }
+
+    /** The menu slot an item equips into, or -1. */
+    public int equipmentSlotIndex(Player player, ItemStack stack) {
+        EquipmentSlot slot = player.getEquipmentSlotForItem(stack);
+        if (slot == EquipmentSlot.HEAD) return armorStart();
+        if (slot == EquipmentSlot.CHEST) return armorStart() + 1;
+        if (slot == EquipmentSlot.LEGS) return armorStart() + 2;
+        if (slot == EquipmentSlot.FEET) return armorStart() + 3;
+        if (slot == EquipmentSlot.OFFHAND) return offhandIndex();
+        return -1;
+    }
+
+    // ------------------------------------------------------------------
+    // Crafting
+    // ------------------------------------------------------------------
 
     @Override
     public void slotsChanged(Container container) {
@@ -229,12 +237,20 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 //?}
 
         this.resultSlots.setItem(0, result);
-        // setRemoteSlot is protected in AbstractContainerMenu but accessible here since we extend it
-        this.setRemoteSlot(0, result);
+        // The result slot sits after the container and the player's slots, not
+        // at 0 as it does in vanilla's InventoryMenu. Sending it to slot 0 put a
+        // ghost of the result into the first container or inventory slot until
+        // the next sync.
+        int resultIndex = resultIndex();
+        this.setRemoteSlot(resultIndex, result);
         serverPlayer.connection.send(new ClientboundContainerSetSlotPacket(
-            this.containerId, this.incrementStateId(), 0, result
+            this.containerId, this.incrementStateId(), resultIndex, result
         ));
     }
+
+    // ------------------------------------------------------------------
+    // Container
+    // ------------------------------------------------------------------
 
     public @Nullable Container getContainerInventory() {
         return this.containerInventory;
@@ -261,73 +277,218 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         this.clearContainer(player, this.craftSlots);
     }
 
+    // ------------------------------------------------------------------
+    // Shift-click
+    // ------------------------------------------------------------------
+
+    /**
+     * Shift-click routing:
+     * <ul>
+     *   <li>container -> inventory (hotbar first, from the end, as vanilla does);</li>
+     *   <li>inventory or hotbar -> the open container;</li>
+     *   <li>with no container open: an equippable item goes to its empty armour
+     *       or offhand slot, otherwise main inventory and hotbar swap - which is
+     *       what was missing before, so shift-clicking simply did nothing;</li>
+     *   <li>armour, offhand and crafting -> inventory.</li>
+     * </ul>
+     */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        ItemStack itemStack = ItemStack.EMPTY;
+        if (index < 0 || index >= this.slots.size()) {
+            return ItemStack.EMPTY;
+        }
         Slot slot = this.slots.get(index);
-        if (slot != null && slot.hasItem()) {
-            ItemStack itemStack2 = slot.getItem();
-            itemStack = itemStack2.copy();
-            int containerSize = this.containerInventory != null ? this.containerInventory.getContainerSize() : 0;
-            
-            if (index < containerSize) {
-                // From container to player inventory/hotbar
-                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, true)) {
+        if (slot == null || !slot.hasItem()) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack moving = slot.getItem();
+        ItemStack original = moving.copy();
+        int inventoryStart = inventoryStart();
+        int hotbarStart = hotbarStart();
+        int hotbarEnd = hotbarEnd();
+
+        if (index == resultIndex()) {
+            if (!this.moveItemStackTo(moving, inventoryStart, hotbarEnd, true)) {
+                return ItemStack.EMPTY;
+            }
+            slot.onQuickCraft(moving, original);
+        } else if (index < this.containerSize) {
+            if (!this.moveItemStackTo(moving, inventoryStart, hotbarEnd, true)) {
+                return ItemStack.EMPTY;
+            }
+        } else if (index < hotbarEnd) {
+            if (this.containerSize > 0) {
+                if (!this.moveItemStackTo(moving, 0, this.containerSize, false)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (index >= containerSize && index < containerSize + 36) {
-                // From player inventory/hotbar
-                // 1. Try to move to armor/offhand if applicable
-                boolean movedToArmor = false;
-                EquipmentSlot equipmentSlot = player.getEquipmentSlotForItem(itemStack);
-                int targetIdx = -1;
-                
-                if (equipmentSlot == EquipmentSlot.HEAD) targetIdx = containerSize + 36;
-                else if (equipmentSlot == EquipmentSlot.CHEST) targetIdx = containerSize + 37;
-                else if (equipmentSlot == EquipmentSlot.LEGS) targetIdx = containerSize + 38;
-                else if (equipmentSlot == EquipmentSlot.FEET) targetIdx = containerSize + 39;
-                else if (equipmentSlot == EquipmentSlot.OFFHAND) targetIdx = containerSize + 40;
-                
-                if (targetIdx != -1) {
-                    Slot targetSlot = this.slots.get(targetIdx);
-                    if (!targetSlot.hasItem() && targetSlot.mayPlace(itemStack2)) {
-                        if (!this.moveItemStackTo(itemStack2, targetIdx, targetIdx + 1, false)) {
-                            return ItemStack.EMPTY;
-                        }
-                        movedToArmor = true;
-                    }
-                }
-                
-                // 2. Try to move to container (if open)
-                if (!movedToArmor && containerSize > 0) {
-                    if (!this.moveItemStackTo(itemStack2, 0, containerSize, false)) {
+            } else {
+                int equipIndex = equipmentSlotIndex(player, moving);
+                boolean equipped = equipIndex >= 0
+                    && !this.slots.get(equipIndex).hasItem()
+                    && this.slots.get(equipIndex).mayPlace(moving)
+                    && this.moveItemStackTo(moving, equipIndex, equipIndex + 1, false);
+                if (!equipped) {
+                    boolean moved = index < hotbarStart
+                        ? this.moveItemStackTo(moving, hotbarStart, hotbarEnd, false)
+                        : this.moveItemStackTo(moving, inventoryStart, hotbarStart, false);
+                    if (!moved) {
                         return ItemStack.EMPTY;
                     }
                 }
-            } else if (index >= containerSize + 41) {
-                // From crafting slots to player inventory/hotbar
-                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, true)) {
-                    return ItemStack.EMPTY;
-                }
-            } else {
-                // From armor/offhand to player inventory/hotbar
-                if (!this.moveItemStackTo(itemStack2, containerSize, containerSize + 36, false)) {
-                    return ItemStack.EMPTY;
-                }
             }
-
-            if (itemStack2.isEmpty()) {
-                slot.set(ItemStack.EMPTY);
-            } else {
-                slot.setChanged();
-            }
-
-            if (itemStack2.getCount() == itemStack.getCount()) {
+        } else {
+            if (!this.moveItemStackTo(moving, inventoryStart, hotbarEnd, false)) {
                 return ItemStack.EMPTY;
             }
-
-            slot.onTake(player, itemStack2);
         }
-        return itemStack;
+
+        if (moving.isEmpty()) {
+            slot.set(ItemStack.EMPTY);
+        } else {
+            slot.setChanged();
+        }
+
+        if (moving.getCount() == original.getCount()) {
+            return ItemStack.EMPTY;
+        }
+
+        slot.onTake(player, moving);
+        return original;
+    }
+
+    // ------------------------------------------------------------------
+    // Sorting
+    // ------------------------------------------------------------------
+
+    /** Sorts the main inventory (not the hotbar), merging partial stacks. */
+    public void sortPlayerInventory() {
+        sortSlots(inventoryStart(), hotbarStart());
+    }
+
+    /** Sorts the open container, if it is plain storage. */
+    public void sortContainer() {
+        if (this.containerSize > 0 && DayZMenus.isSortable(this.containerInventory)) {
+            sortSlots(0, this.containerSize);
+        }
+    }
+
+    /**
+     * Merges and sorts the items in {@code [from, to)} by item id, then name.
+     * Nothing is changed unless every resulting stack fits the slot it lands in.
+     */
+    private void sortSlots(int from, int to) {
+        List<ItemStack> merged = new ArrayList<>();
+        for (int i = from; i < to; i++) {
+            ItemStack stack = this.slots.get(i).getItem();
+            if (stack.isEmpty()) continue;
+            ItemStack remaining = stack.copy();
+            for (ItemStack existing : merged) {
+                if (remaining.isEmpty()) break;
+                if (!sameItem(existing, remaining)) continue;
+                int room = existing.getMaxStackSize() - existing.getCount();
+                if (room <= 0) continue;
+                int moved = Math.min(room, remaining.getCount());
+                existing.grow(moved);
+                remaining.shrink(moved);
+            }
+            if (!remaining.isEmpty()) {
+                merged.add(remaining);
+            }
+        }
+
+        merged.sort(Comparator
+            .comparing((ItemStack stack) -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())
+            .thenComparing(stack -> stack.getHoverName().getString())
+            .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed()));
+
+        if (merged.size() > to - from) {
+            return;
+        }
+        for (int i = 0; i < merged.size(); i++) {
+            Slot target = this.slots.get(from + i);
+            ItemStack stack = merged.get(i);
+            if (!target.mayPlace(stack) || stack.getCount() > target.getMaxStackSize(stack)) {
+                return;
+            }
+        }
+        for (int i = from; i < to; i++) {
+            int offset = i - from;
+            this.slots.get(i).set(offset < merged.size() ? merged.get(offset) : ItemStack.EMPTY);
+        }
+        this.broadcastChanges();
+    }
+
+    /** Same item with the same data: the stacks may merge. */
+    public static boolean sameItem(ItemStack a, ItemStack b) {
+//? if >=1.20.5 {
+        return ItemStack.isSameItemSameComponents(a, b);
+//?} else {
+        return ItemStack.isSameItemSameTags(a, b);
+//?}
+    }
+
+    // ------------------------------------------------------------------
+    // Slots
+    // ------------------------------------------------------------------
+
+    /**
+     * A container slot that honours the container's own rules. A plain
+     * {@link Slot} accepts anything, which let any item into a furnace's fuel or
+     * a brewing stand's bottle slots, and a shulker box into a shulker box.
+     */
+    private static final class ContainerSlot extends Slot {
+        ContainerSlot(Container container, int index) {
+            super(container, index, 0, 0);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            if (!this.container.canPlaceItem(this.getContainerSlot(), stack)) {
+                return false;
+            }
+            return !(this.container instanceof ShulkerBoxBlockEntity) || stack.getItem().canFitInsideContainerItems();
+        }
+    }
+
+    /**
+     * An armour slot: only items for this body slot, one at a time, and an item
+     * with Curse of Binding cannot be taken off outside creative mode - the rule
+     * vanilla's own armour slots enforce.
+     */
+    private final class ArmorSlot extends Slot {
+        private final EquipmentSlot equipmentSlot;
+
+        ArmorSlot(Inventory inventory, int index, EquipmentSlot equipmentSlot) {
+            super(inventory, index, 0, 0);
+            this.equipmentSlot = equipmentSlot;
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return playerInventory.player.getEquipmentSlotForItem(stack) == this.equipmentSlot;
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 1;
+        }
+
+        @Override
+        public boolean mayPickup(Player player) {
+            ItemStack stack = this.getItem();
+            if (!stack.isEmpty() && !player.isCreative() && hasBindingCurse(stack)) {
+                return false;
+            }
+            return super.mayPickup(player);
+        }
+    }
+
+    private static boolean hasBindingCurse(ItemStack stack) {
+//? if >=1.21 {
+        return net.minecraft.world.item.enchantment.EnchantmentHelper.has(stack, net.minecraft.world.item.enchantment.EnchantmentEffectComponents.PREVENT_ARMOR_CHANGE);
+//?} else {
+        return net.minecraft.world.item.enchantment.EnchantmentHelper.hasBindingCurse(stack);
+//?}
     }
 }

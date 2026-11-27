@@ -33,18 +33,25 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 //? if >=1.20.5 {
 import com.suoim.dayzinventory.DayZInventoryOpenData;
 import com.suoim.dayzinventory.DayZInventoryPayload;
+//?} else {
+import com.suoim.dayzinventory.DayZInventoryPackets;
 //?}
+
+import java.nio.file.Path;
 
 public class FabricPlatformHelper implements IPlatformHelper {
     @Override
     public boolean isModLoaded(String modId) {
         return FabricLoader.getInstance().isModLoaded(modId);
+    }
+
+    @Override
+    public Path getConfigDirectory() {
+        return FabricLoader.getInstance().getConfigDir();
     }
 
     @Override
@@ -60,22 +67,36 @@ public class FabricPlatformHelper implements IPlatformHelper {
     }
 
     @Override
-    public void openPlayerInventory(ServerPlayer player) {
+    public boolean isServerModPresent() {
+        // Fabric negotiates channels with the server, and a vanilla server
+        // registers none of ours, so this is false there.
+//? if >=1.20.5 {
+        return ClientPlayNetworking.canSend(DayZInventoryPayload.TYPE.id());
+//?} else {
+        return ClientPlayNetworking.canSend(DayZInventoryPackets.OPEN_INVENTORY_PACKET);
+//?}
+    }
+
+    @Override
+    public void openMenu(ServerPlayer player, @Nullable Container container, @Nullable BlockPos pos, Component title) {
+        int containerSize = container != null ? container.getContainerSize() : 0;
 //? if >=1.20.5 {
         player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
             @Override
             public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
-                return DayZInventoryOpenData.none();
+                return container != null && pos != null
+                    ? DayZInventoryOpenData.forContainer(containerSize, pos)
+                    : DayZInventoryOpenData.none();
             }
 
             @Override
             public Component getDisplayName() {
-                return Component.translatable("container.inventory");
+                return title;
             }
 
             @Override
             public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
-                return new DayZInventoryScreenHandler(syncId, playerInventory, null, null);
+                return new DayZInventoryScreenHandler(syncId, playerInventory, container, pos);
             }
         });
 //?} else {
@@ -83,75 +104,24 @@ public class FabricPlatformHelper implements IPlatformHelper {
         player.openMenu(new ExtendedScreenHandlerFactory() {
             @Override
             public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
-                buf.writeBoolean(false); // No container
-                buf.writeBoolean(false); // No container pos
+                boolean hasContainer = container != null && pos != null;
+                buf.writeBoolean(hasContainer);
+                if (hasContainer) buf.writeInt(containerSize);
+                buf.writeBoolean(hasContainer);
+                if (hasContainer) buf.writeBlockPos(pos);
             }
 
             @Override
             public Component getDisplayName() {
-                return Component.translatable("container.inventory");
+                return title;
             }
 
             @Override
             public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
-                return new DayZInventoryScreenHandler(syncId, playerInventory, null, null);
+                return new DayZInventoryScreenHandler(syncId, playerInventory, container, pos);
             }
         });
 //?}
-    }
-
-    @Override
-    public void openContainerInventory(ServerPlayer player, BlockPos pos) {
-        Level level = player.level();
-        BlockState state = level.getBlockState(pos);
-        Container container = null;
-        if (state.getBlock() instanceof ChestBlock chestBlock) {
-            container = ChestBlock.getContainer(chestBlock, state, level, pos, true);
-        } else if (level.getBlockEntity(pos) instanceof Container c) {
-            container = c;
-        }
-
-        if (container != null) {
-            final Container finalContainer = container;
-//? if >=1.20.5 {
-            player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
-                @Override
-                public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
-                    return DayZInventoryOpenData.forContainer(finalContainer.getContainerSize(), pos);
-                }
-
-                @Override
-                public Component getDisplayName() {
-                    return state.getBlock().getName();
-                }
-
-                @Override
-                public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
-                    return new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos);
-                }
-            });
-//?} else {
-            player.openMenu(new ExtendedScreenHandlerFactory() {
-                @Override
-                public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
-                    buf.writeBoolean(true); // Has container
-                    buf.writeInt(finalContainer.getContainerSize());
-                    buf.writeBoolean(true); // Has container pos
-                    buf.writeBlockPos(pos);
-                }
-
-                @Override
-                public Component getDisplayName() {
-                    return state.getBlock().getName();
-                }
-
-                @Override
-                public AbstractContainerMenu createMenu(int syncId, Inventory playerInventory, Player player) {
-                    return new DayZInventoryScreenHandler(syncId, playerInventory, finalContainer, pos);
-                }
-            });
-//?}
-        }
     }
 
     @Override
