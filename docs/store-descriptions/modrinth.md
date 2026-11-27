@@ -10,46 +10,46 @@ A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and 
 | :--- | :--- |
 | **Fabric** | 1.20.1 – 26.3 |
 | **NeoForge** | 1.20.6 – 26.3 |
-| **Forge** | 1.20.6 – 1.21.11 |
+| **Forge** | 1.20.1, 1.20.6 – 1.21.11 |
 
-53 downloads in total. Each file is labelled with its Minecraft version and its loader.
+54 files in total. Each file is labelled with its Minecraft version and its loader.
 
-![DayZ Inventory UI — Vicinity grid with an open Jukebox drawer, the Survivor panel, the 2.0x Hands slot showing a Decorated Pot, and the 2x2 crafting grid](https://raw.githubusercontent.com/aacanadaa/DayZ-Inventory/main/docs/screenshots/ui-example.png)
+![DayZ Inventory UI — Vicinity grid with an open chest drawer, the Survivor panel, the 2.0x Hands slot, and the 2x2 crafting grid](https://raw.githubusercontent.com/aacanadaa/DayZ-Inventory/main/docs/screenshots/ui-example.png)
 
 ---
 
 ## Features
 
-### Unified Vicinity Grid and Expandable Drawers
+### Vicinity
 
-- **Proximity Scanner** — Scans for ground items and container blocks (chests, barrels, shulker boxes) within a 3-block radius.
-- **Unified Column** — Combines nearby ground items and storage blocks into a single scrollable grid under the VICINITY header.
-- **Nearby Storage Selectors** — Displays blocks as slot icons with coordinate hover tooltips and distance measurements.
-- **Inline Drawer Grids** — Click container selectors to toggle slide-out slot drawers directly inline below the vicinity items.
+- **Ground items and containers in one grid** — dropped items, chests, barrels, shulker boxes and any other block with an inventory within 3 blocks (configurable), nearest container first.
+- **Pick up by hand** — walk-over pickup is off. Drag an item into a slot, drop it on the Survivor panel to equip it, or shift-click it to take it.
+- **Inline drawers** — click a container to open its slots below the grid, sort it, and close it again. Locks, blocked chests and loot tables work as when you right-click the block.
 
-### Dynamic Hands Attachment Slot
+### Survivor
 
-- **Active Hotbar Binding** — Dynamically mirrors whichever hotbar slot is currently active on the player's HUD.
-- **Large Attachment Slot** — Replaces the default slot layout with a fully translucent panel body.
-- **Double-Scaled Render** — Items held in your hands are rendered at 2.0x scale (32x32 pixels) centered inside the panel.
-- **Item Name Banner** — Displays a sliding banner showing the item name (e.g. HUNTING KNIFE) underneath the header.
+- **Gear** — armour and offhand slots, with drag-to-equip onto the panel.
+- **Status effects** — icons with name, level and time left on hover.
+- **Vitals** — health, food and thirst bars. Thirst shows with **Tough As Nails**, **Thirst Was Taken** or **Dehydration**.
+- **Hands** — the held item at 2x, bound to the selected hotbar slot.
 
-### Integrated Crafting Menu and Equipment Swapping
+### Inventory
 
-- **Vanilla 2x2 Grid** — Standard 2x2 crafting container and result slot integrated directly into the UI.
-- **Drag-to-Equip** — Drag clothing or armor onto the middle Survivor panel to automatically equip or swap it.
+- **Sort** — merges partial stacks and sorts the main inventory; the hotbar stays put.
+- **Shift-click** between the main inventory and the hotbar, into an open container, or onto your body.
+- **2x2 crafting**, computed on the server like vanilla's.
 
-### Manual Pickup
+### Works with
 
-Items are no longer picked up by walking over them. Loot is collected deliberately from the Vicinity grid.
+- **JEI / REI / EMI** — a button that shows or hides the item list.
+- **Curios / Accessories / Trinkets** — a button for each one installed.
+- **Mouse Tweaks** — its drags and scroll-wheel moves work in the DayZ screen.
 
-### Optional Mod Integration
+All optional: the mod works fully without any of them.
 
-- **Recipe Viewers (JEI / REI / EMI)** — Adds a theme-aligned toggle button to the header when one is installed.
-- **Curios API** — Adds a CURIOS button to the Survivor header when Curios is present.
-- **Trinkets** — Adds a TRINKETS button to the Survivor header when Trinkets is present (Fabric).
+### Configuration
 
-Every optional integration is probed at runtime. The mod never requires them and will not crash on launch or when opening the inventory if they are absent.
+`config/dayz_inventory.properties` lets you turn walk-over pickup back on, keep the vanilla screen for chests or the inventory key, change the Vicinity radius, and hide the effects or vitals.
 
 ---
 
@@ -57,28 +57,21 @@ Every optional integration is probed at runtime. The mod never requires them and
 
 1. Install **Fabric**, **NeoForge** or **Forge** for the Minecraft version you play.
 2. Download the file matching that Minecraft version and loader from the **Versions** tab.
-3. Drop it into your `mods/` folder.
+3. Drop it into your `mods/` folder — on the server and on every client.
 
-**Pick carefully.** A Fabric build will not load on NeoForge or Forge, and a build for one Minecraft version will not load on another. Each download is labelled with its version and loader.
+**Pick carefully.** A Fabric build will not load on NeoForge or Forge, and a build for one Minecraft version will not load on another.
 
 ---
 
-## Dependencies
+## Requirements
 
 | Loader | Required |
 | :--- | :--- |
-| **Fabric** | Fabric Loader 0.16.14+ (0.19.5+ from 1.21.5) and the Fabric API build for your Minecraft version |
+| **Fabric** | Fabric Loader 0.15+ and the Fabric API build for your Minecraft version |
 | **NeoForge** | NeoForge for your Minecraft version |
-| **Forge** | Forge for your Minecraft version |
+| **Forge** | Forge for your Minecraft version (1.20.1: any 47.x) |
 
 Java 17 on 1.20.1 – 1.20.4, Java 21 on 1.20.5 – 1.21.11, Java 25 on 26.x.
-
-Optional: **JEI**, **REI** or **EMI** adds a recipe-viewer button, and **Curios** (NeoForge/Forge) or
-**Trinkets** (Fabric) adds an accessories button. All of them are probed at runtime — the mod runs
-fine without any of them.
-
-1.20.1 – 1.20.5 are Fabric-only, and Forge ends at 1.21.11: those combinations either never had a
-usable loader release or predate the networking API this mod uses.
 
 ---
 

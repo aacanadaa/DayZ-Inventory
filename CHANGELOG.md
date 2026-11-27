@@ -72,15 +72,15 @@ loader.
 
 ## Under the hood
 
-- Every Minecraft version builds in its own CI job. The single job that built all 53 files had run
-  out of disk space, so the last few builds of `main` failed.
+- Every Minecraft version builds in its own CI job, in parallel. The single job that built all 53
+  files had started running out of disk space, which is why the last build of `main` failed.
 - The version list lives in one place: `versions/<mc>/gradle.properties` says which loaders each
   version is built for, and the build and CI both read it.
 - Toolchain updated (Gradle 9.9.2, Loom 1.19.4, ModDevGradle 2.0.149, ForgeGradle 7.0.41), and each
   version now builds against the newest Fabric API, NeoForge and Forge for it. The minimum loader
   versions you need have not changed, except that Forge 1.20.1 accepts any 47.x and Fabric Loader
   0.15 or newer is enough everywhere.
-- Each file is about 130 KB instead of 950 KB: the mod icon was a 922×922 image.
+- Each file is about 150 KB instead of 950 KB: the mod icon was a 922×922 image.
 - Modrinth and CurseForge now show only this release's notes on the version page, not the whole
   changelog.
 
