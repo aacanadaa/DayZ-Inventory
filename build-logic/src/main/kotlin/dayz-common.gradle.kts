@@ -104,6 +104,12 @@ sc.replacements.string(sc.current.parsed < "1.21.5") {
     replace("getInventory().getSelectedSlot()", "getInventory().selected")
 }
 
+// 1.20.5 moved mob effects behind registry holders: MobEffectInstance#getEffect
+// returns a Holder<MobEffect> from then on, and the MobEffect itself before.
+sc.replacements.string(sc.current.parsed < "1.20.5") {
+    replace("getEffect().value()", "getEffect()")
+}
+
 // 26.1 rewrote the GUI as a render-state pipeline: GuiGraphics became
 // GuiGraphicsExtractor, every render* method became extract*, and a handful of
 // ItemStack drawing helpers lost their prefixes. These are pure renames, so they

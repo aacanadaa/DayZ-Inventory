@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main, "refactor/**"]
+    branches: [main]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
@@ -21,17 +21,51 @@ on:
         type: string
         default: ""
 
+# A newer push to the same branch or pull request supersedes the running build.
+# Tag builds are releases and always run to the end.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 permissions:
   contents: read
 
-jobs:
-  build:
-    # Deliberately version- and loader-agnostic: this string is a required status
-    # check on main's branch protection, so renaming it per Minecraft version (or
-    # per loader) would silently block PRs.
-    name: Build
-    runs-on: ubuntu-24.04
+env:
+  # Gradle's own daemon is pointless on a single-use runner.
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
 
+jobs:
+  # The Minecraft versions come from the `versions/` directory, the same place
+  # settings.gradle.kts reads them from, so adding a version needs no CI edit.
+  matrix:
+    name: Version matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      versions: ${{ steps.list.outputs.versions }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: List Minecraft versions
+        id: list
+        run: |
+          versions=$(find versions -mindepth 2 -maxdepth 2 -name gradle.properties -printf '%h\n' \
+            | xargs -n1 basename | sort -V | jq -R . | jq -cs .)
+          echo "versions=$versions" >> "$GITHUB_OUTPUT"
+          echo "Building: $versions"
+
+  # One job per Minecraft version. Configuring a node downloads and prepares
+  # that Minecraft release, so building the whole matrix in one job ran the
+  # runner out of disk; one version per job also builds them in parallel.
+  build:
+    name: Build ${{ matrix.minecraft }}
+    needs: matrix
+    if: github.event_name != 'workflow_dispatch' || inputs.delete_modrinth_versions == ''
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        minecraft: ${{ fromJson(needs.matrix.outputs.versions) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -39,40 +73,53 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v6
 
-      # Minecraft 26.2 requires Java 25 (Mojang ship it as java-runtime-epsilon).
-      # The build matrix also targets Java 21 (1.21.x) and Java 17 (1.20.1); the
-      # foojay toolchain resolver in settings.gradle.kts downloads those on
-      # demand, so this job only has to provide the launcher JDK.
+      # The Gradle launcher needs Java 25 (Loom and Minecraft 26.x require it).
+      # The Java 17 and 21 toolchains the older nodes compile with are
+      # downloaded on demand by the foojay resolver in settings.gradle.kts.
       - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
           java-version: "25"
           distribution: "temurin"
 
+      # Caches are not kept: two dozen jobs each holding a prepared Minecraft
+      # install would evict one another from the repository's cache budget
+      # anyway, and a cold build of one version is quick.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-disabled: true
 
-      - name: Make gradle wrapper executable
-        run: chmod +x ./gradlew
-
-      # Builds every loader for every Minecraft version in the matrix.
-      - name: Build every version and loader
-        run: ./gradlew chiseledBuild --stacktrace
+      - name: Build ${{ matrix.minecraft }}
+        run: ./gradlew chiseledBuild -Pdayz.versions=${{ matrix.minecraft }} --continue --stacktrace
 
       - name: Upload mod jars
         uses: actions/upload-artifact@v7
         with:
-          name: dayz-inventory
+          name: jars-${{ matrix.minecraft }}
           # Only the loader branches ship. The `common` branch is a compile-time
-          # intermediate - `chiseledBuild` builds it to catch errors early, but its
-          # jar carries no loader metadata and must never reach a release page.
-          # `-sources.jar` files are build output too.
+          # intermediate, and `-sources.jar` files are build output too.
           path: |
-            fabric/versions/*/build/libs/*.jar
-            neoforge/versions/*/build/libs/*.jar
-            forge/versions/*/build/libs/*.jar
+            fabric/versions/${{ matrix.minecraft }}/build/libs/*.jar
+            neoforge/versions/${{ matrix.minecraft }}/build/libs/*.jar
+            forge/versions/${{ matrix.minecraft }}/build/libs/*.jar
             !**/*-sources.jar
           if-no-files-found: error
+
+  # A single, stable check name for branch protection: it passes only when
+  # every version built.
+  build-result:
+    name: Build
+    needs: build
+    if: always() && (github.event_name != 'workflow_dispatch' || inputs.delete_modrinth_versions == '')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every version built
+        run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "::error::At least one Minecraft version failed to build (result: ${{ needs.build.result }})."
+            exit 1
+          fi
 
   # Maintenance hatch. A published Modrinth version cannot be replaced, so a bad
   # upload has to be deleted before the corrected one goes up. Version IDs come
@@ -81,17 +128,17 @@ jobs:
     name: Delete Modrinth versions
     if: github.event_name == 'workflow_dispatch' && inputs.delete_modrinth_versions != ''
     runs-on: ubuntu-24.04
-
     steps:
       - name: Delete versions
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN || vars.MODRINTH_TOKEN }}
+          VERSION_IDS: ${{ inputs.delete_modrinth_versions }}
         run: |
           if [ -z "$MODRINTH_TOKEN" ]; then
             echo "::error::No Modrinth token."
             exit 1
           fi
-          for id in $(echo "${{ inputs.delete_modrinth_versions }}" | tr ',' ' '); do
+          for id in $(echo "$VERSION_IDS" | tr ',' ' '); do
             [ -z "$id" ] && continue
             echo -n "deleting $id -> "
             curl -sS -o /dev/null -w "%{http_code}\n" -X DELETE \
@@ -101,38 +148,58 @@ jobs:
 
   release:
     name: Publish GitHub Release
-    needs: build
+    needs: build-result
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
       - name: Download mod jars
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
-          name: dayz-inventory
+          pattern: jars-*
           path: dist
+          merge-multiple: true
+
+      # The release notes are this version's CHANGELOG.md section - the same
+      # text the Modrinth and CurseForge version pages get.
+      - name: Release notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            /^# / { if (found) exit; if (index($0, v)) found = 1 }
+            found && /^---[[:space:]]*$/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::CHANGELOG.md has no section for $version"
+            exit 1
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          # Every matrix artifact is attached to the release; each filename
-          # already carries its Minecraft version and loader.
-          files: dist/**/*.jar
-          generate_release_notes: true
+          name: DayZ Inventory ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: dist/*.jar
 
   publish:
-    name: Publish to Modrinth and CurseForge
-    needs: build
+    name: Publish ${{ matrix.minecraft }}
+    needs: [matrix, build-result]
     # Tags publish; a manual run can too, which is how a partial upload gets
     # finished without re-uploading the platform that already succeeded.
     if: startsWith(github.ref, 'refs/tags/v') || inputs.publish
     runs-on: ubuntu-24.04
-
+    strategy:
+      fail-fast: false
+      # CurseForge answers a burst of uploads with rate-limit errors rather
+      # than queueing them, so only a few versions upload at once.
+      max-parallel: 3
+      matrix:
+        minecraft: ${{ fromJson(needs.matrix.outputs.versions) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -145,26 +212,15 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-disabled: true
 
-      - name: Make gradle wrapper executable
-        run: chmod +x ./gradlew
-
-      # Each node is published with its own game-version and loader tags, taken
-      # from versions/<mc>/gradle.properties, so no artifact can be uploaded
-      # under the wrong Minecraft version.
+      # Fails before Gradle starts, with a message that names the variable.
+      # Without this the only symptom is an auth error from inside the publish
+      # plugin that does not say what is missing.
       #
-      # CurseForge routes every upload through human review: the API accepts the
-      # file and never returns a URL, so a successful run here means "submitted",
-      # not "live". Modrinth returns immediately.
-      # Fails before Gradle starts, with a message that names the variable, and
-      # reports which of the accepted names is populated. Without this the only
-      # symptom is an auth error from inside the publish plugin that does not say
-      # what is missing.
-      #
-      # Every name is read from `secrets` first and then from `vars`. The
-      # Secrets and Variables tabs sit side by side and look alike, and a token
-      # parked in Variables would otherwise be invisible here with no clue why.
-      # Secrets is still the right place for them.
+      # Every name is read from `secrets` first and then from `vars`. Secrets is
+      # the right place for them: Variables are stored and shown in plain text.
       - name: Check publishing tokens
         env:
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN || vars.MODRINTH_TOKEN }}
@@ -172,37 +228,32 @@ jobs:
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY || vars.CURSEFORGE_API_KEY }}
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN || vars.CURSEFORGE_TOKEN }}
         run: |
-          for name in MODRINTH_TOKEN MODRINTH_PAT CURSEFORGE_API_KEY CURSEFORGE_TOKEN; do
-            if [ -n "${!name}" ]; then echo "$name: set"; else echo "$name: (empty)"; fi
-          done
-
           missing=0
           if [ -z "$MODRINTH_TOKEN" ] && [ -z "$MODRINTH_PAT" ]; then
-            echo "::error::No Modrinth token. Add a repository SECRET named MODRINTH_TOKEN (Settings -> Secrets and variables -> Actions -> Secrets tab, not Variables)."
+            echo "::error::No Modrinth token. Add a repository SECRET named MODRINTH_TOKEN (Settings -> Secrets and variables -> Actions -> Secrets)."
             missing=1
           fi
           if [ -z "$CURSEFORGE_API_KEY" ] && [ -z "$CURSEFORGE_TOKEN" ]; then
-            echo "::error::No CurseForge token. Add a repository SECRET named CURSEFORGE_API_KEY (Settings -> Secrets and variables -> Actions -> Secrets tab, not Variables)."
+            echo "::error::No CurseForge token. Add a repository SECRET named CURSEFORGE_API_KEY (Settings -> Secrets and variables -> Actions -> Secrets)."
             missing=1
           fi
           exit $missing
 
-      - name: Publish every node
+      - name: Publish ${{ matrix.minecraft }}
         env:
-          # All the accepted names are forwarded; the build falls back from the
-          # documented one to the legacy one, so whichever already exists is used.
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN || vars.MODRINTH_TOKEN }}
           MODRINTH_PAT: ${{ secrets.MODRINTH_PAT || vars.MODRINTH_PAT }}
           CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY || vars.CURSEFORGE_API_KEY }}
           CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN || vars.CURSEFORGE_TOKEN }}
+          PLATFORM: ${{ inputs.platform || 'all' }}
         run: |
-          # `publishAll` re-uploads both platforms, and Modrinth rejects a second
+          # `publishAll` uploads to both platforms, and Modrinth rejects a second
           # file whose name it already has, so a re-run after a one-platform
           # failure has to be able to target a single platform.
-          case "${{ inputs.platform || 'all' }}" in
+          case "$PLATFORM" in
             modrinth)   task=publishModrinthAll ;;
             curseforge) task=publishCurseforgeAll ;;
             *)          task=publishAll ;;
           esac
-          echo "publishing via :$task"
-          ./gradlew "$task" -Ppublish.dry_run=false --stacktrace
+          echo "publishing ${{ matrix.minecraft }} via :$task"
+          ./gradlew "$task" -Pdayz.versions=${{ matrix.minecraft }} -Ppublish.dry_run=false --stacktrace
