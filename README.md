@@ -5,20 +5,21 @@
 [![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
-[![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory?color=red)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/suoim)
 
-A complete overhaul of the Minecraft inventory UI, bringing the look, feel, and mechanics of the
-DayZ inventory system into Minecraft: a **Vicinity** grid of nearby ground items and containers, a
-dynamic **Hands** slot bound to the active hotbar slot, the **Survivor** panel with your gear, status
-effects and vitals, and an integrated **2x2 crafting grid**.
+Replaces Minecraft's inventory screen with a DayZ-style layout: a **Vicinity** grid for nearby ground items and containers, a **Survivor** panel with your gear, status effects, and vitals, a **2x Hands** slot, and a **2x2 crafting grid**.
 
-**Really recommended with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** — seamless
-integration. The two are built as a pair, so the HUD and the inventory screen share one look.
+Pairs well with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar), which uses the same visual style for the HUD.
 
-## Supported versions
+![DayZ Inventory screen](docs/screenshots/ui-example.png)
+
+---
+
+## Supported Versions
 
 | Loader | Minecraft |
 | :--- | :--- |
@@ -26,82 +27,52 @@ integration. The two are built as a pair, so the HUD and the inventory screen sh
 | **NeoForge** | 1.20.6 – 26.3 |
 | **Forge** | 1.20.1, 1.20.6 – 1.21.11 |
 
-**23 Minecraft versions, 54 downloads**, all from one source tree. Each file is labelled with its
-Minecraft version and its loader; the [full table](#full-version-table) lists every version.
-
-![The DayZ Inventory screen: a VICINITY grid of nearby items, a CHEST drawer open with shells, the SURVIVOR panel with the player in gear, CURIOS and JEI buttons in the header, an M1014 Battle Shotgun in the 2.0x HANDS slot, and the 2x2 CRAFTING grid](docs/screenshots/ui-example.png)
+23 Minecraft versions, 54 builds. Download the jar matching both your game version and mod loader (see [Full version table](#full-version-table)).
 
 ---
 
 ## Features
 
 ### Vicinity
-- **Ground items and containers in one grid**: everything within 3 blocks (configurable) — dropped
-  items, chests, barrels, shulker boxes and any other block with an inventory — with the nearest
-  container first, rescanned every half second.
-- **Pick up by hand**: walk-over pickup is off. Drag an item into a slot, drop it on the Survivor
-  panel to equip it, or shift-click it to take it.
-- **Inline drawers**: click a container to open its slots right below the grid, sort it, and close it
-  with the `x`. Locks, blocked chest lids and loot tables work exactly as when you right-click the
-  block.
+- **Ground items & containers:** Shows dropped items and nearby chests, barrels, shulker boxes, and other containers within 3 blocks (configurable), nearest container first.
+- **Manual pickup:** Walk-over pickup is disabled in Survival. Drag items into slots, drop gear onto the Survivor panel, or shift-click to loot.
+- **Inline drawers:** Click a container to open its slots right under the Vicinity grid, sort it, and close it with `x`. Container locks, blocked lids, and loot tables work just like right-clicking in-world.
 
-### Survivor
-- **Gear**: armour and offhand slots, with drag-to-equip onto the panel.
-- **Status effects**: icons with name, level and time left on hover; they blink in their last ten
-  seconds.
-- **Vitals**: health, food and thirst bars. Thirst shows when **Tough As Nails**, **Thirst Was
-  Taken** or **Dehydration** is installed.
-- **Hands**: the held item at 2x, with its name, bound to the selected hotbar slot.
+### Survivor & Inventory
+- **Gear, effects & vitals:** Armor and offhand slots, status effect icons with hover tooltips (blinking in the last 10 seconds), plus health, food, and thirst bars (when **Tough As Nails**, **Thirst Was Taken**, or **Dehydration** is installed).
+- **Hands & crafting:** 2x held-item preview bound to your active hotbar slot, plus a 2x2 crafting grid.
+- **Sorting & shift-click:** Sort button merges partial stacks and sorts the main inventory (leaving the hotbar alone) or open containers.
 
-### Inventory
-- **Sort**: merges partial stacks and sorts the main inventory; the hotbar stays as it is.
-- **Shift-click** moves items between the main inventory and the hotbar, into an open container, or
-  onto your body.
-- **2x2 crafting**, computed on the server like vanilla's.
-
-### Works with
-- **JEI, REI, EMI**: a button that shows or hides the recipe viewer's item list.
-- **Curios, Accessories, Trinkets**: a button for each one installed, on the Survivor panel.
-- **Mouse Tweaks**: drags and scroll-wheel moves work in the DayZ screen too.
-
-None of these are required: every integration is detected at runtime, and the mod works fully
-without any of them.
-
-### Languages
-English, 中文, Français, 日本語, 한국어.
+### Mod Compatibility (all optional)
+- **JEI / REI / EMI:** Toggle button in the header to show or hide the recipe list.
+- **Curios / Accessories / Trinkets:** Quick-open button on the Survivor panel when installed.
+- **Mouse Tweaks:** Dragging and scroll-wheel item moves work inside the DayZ screen.
 
 ---
 
 ## Installation
 
-1. Find your Minecraft version and loader in the [table below](#full-version-table).
-2. Download the file whose name matches **both** from
-   [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or
-   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
-3. Drop it into `mods/`. On Fabric, also install [Fabric API](https://modrinth.com/mod/fabric-api).
+1. Download the jar matching your Minecraft version and loader from [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) or [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
+2. Put it in `mods/` on **both the client and server**.
+3. On **Fabric**, also install [Fabric API](https://modrinth.com/mod/fabric-api) (Fabric Loader 0.15+).
 
-Install it on **both the server and every client**: the inventory screen, item pickup and container
-opening all run partly on the server.
-
-> **Pick carefully.** A Fabric build will not load on Forge or NeoForge, a NeoForge build will not
-> load on Forge, and builds for different Minecraft versions are not interchangeable.
+---
 
 ## Configuration
 
-`config/dayz_inventory.properties` is created on first launch. Changes apply on the next start.
+`config/dayz_inventory.properties` is created on first launch (restarting applies changes):
 
-| Option | Default | |
+| Option | Default | Description |
 | :--- | :--- | :--- |
-| `autoPickup` | `false` | Walk-over item pickup, as in vanilla. Creative players always have it. |
-| `openContainersInDayZScreen` | `true` | Right-clicking a chest or barrel opens it in the DayZ screen. |
-| `vicinityRadius` | `3` | How far the Vicinity panel reaches, 1 to 8 blocks. Use the same value on the server and its clients. |
-| `replaceInventoryScreen` | `true` | The inventory key opens the DayZ screen. |
-| `showStatusEffects` | `true` | Status effect icons on the Survivor panel. |
-| `showVitals` | `true` | Health, food and thirst bars on the Survivor panel. |
-| `dragAndDrop` | `true` | Press on an item and release it over another slot to move it. Off while Mouse Tweaks is installed. |
+| `autoPickup` | `false` | Walk-over pickup like vanilla (Creative always keeps it) |
+| `openContainersInDayZScreen` | `true` | Right-clicking a chest or barrel opens the DayZ screen |
+| `vicinityRadius` | `3` | Vicinity scan radius in blocks (1–8; match server & client) |
+| `replaceInventoryScreen` | `true` | Inventory key opens the DayZ screen |
+| `showStatusEffects` | `true` | Show status effect icons on the Survivor panel |
+| `showVitals` | `true` | Show health, food, and thirst bars on the Survivor panel |
+| `dragAndDrop` | `true` | Click-and-release slot moves (disabled when Mouse Tweaks is present) |
 
-On a dedicated server the gameplay options (`autoPickup`, `openContainersInDayZScreen`,
-`vicinityRadius`) come from the server's file; in singleplayer your own file is used.
+On dedicated servers, `autoPickup`, `openContainersInDayZScreen`, and `vicinityRadius` are read from the server's config.
 
 ---
 
@@ -133,44 +104,17 @@ On a dedicated server the gameplay options (`autoPickup`, `openContainersInDayZS
 | **26.2** | ✅ | ✅ 26.2.0.88+ | — | 25 |
 | **26.3** | ✅ | ✅ 26.3.0.1-beta+ | — | 25 |
 
-**Fabric** also needs [Fabric API](https://modrinth.com/mod/fabric-api) for your Minecraft version
-and Fabric Loader 0.15 or newer.
-
-Why some cells are empty:
-
-- **NeoForge 1.20.1 – 1.20.5**: 1.20.1 predates NeoForge, and its 1.20.2 – 1.20.5 releases use APIs
-  this mod does not carry.
-- **Forge 1.20.2 – 1.20.5**: rarely played on Forge, and Forge never released 1.20.5.
-- **Forge 1.21.2**: Forge skipped that release.
-- **Forge 26.x**: NeoForge is the supported route there.
-
 ---
 
-## Building from source
+## Building from Source
 
-The Gradle launcher needs **JDK 25**; the Java 17 / 21 toolchains the older versions use are
-downloaded automatically.
+Requires **JDK 25** as the Gradle launcher (Java 17/21 toolchains download automatically). See [docs/BUILDING.md](docs/BUILDING.md) for details.
 
 ```bash
-# Every Minecraft version and loader.
-./gradlew chiseledBuild
-
-# One Minecraft version, all of its loaders (what CI does per job).
-./gradlew buildMods -Pdayz.versions=1.21.1
-
-# One target. Jars land in <loader>/versions/<mc>/build/libs/.
-./gradlew :fabric:26.2:build
-./gradlew :forge:1.20.1:build
+./gradlew chiseledBuild                      # Build all versions and loaders
+./gradlew buildMods -Pdayz.versions=1.21.1   # Build one MC version
+./gradlew :forge:1.20.1:build                # Build one specific target
 ```
-
-Jars are named `dayz-inventory-<loader>-<minecraft>-<version>.jar`, for example
-`dayz-inventory-forge-1.20.1-2.0.0+mc1.20.1.jar`.
-
-How the build works — the version matrix, the three loader toolchains, conditional compilation,
-adding a Minecraft version, CI and publishing — is in **[docs/BUILDING.md](docs/BUILDING.md)**.
-
-Releases are published by CI: pushing a `v<version>` tag builds every version, attaches the jars to
-the GitHub release and uploads them to Modrinth and CurseForge. Pull requests only build.
 
 ## License
 
