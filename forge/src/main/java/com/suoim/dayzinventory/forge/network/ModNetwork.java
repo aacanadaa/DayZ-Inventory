@@ -67,11 +67,9 @@ public class ModNetwork {
         channel = flow.build();
     }
 
-    /**
-     * Runs on the network thread, so it must not touch game state directly. The
-     * buffer is rebuilt here because {@link DayZInventoryPackets} reads it before
-     * scheduling its own work.
-     */
+    // Runs on the network thread, so it must not touch game state directly. The
+    // buffer is rebuilt here because DayZInventoryPackets reads it before
+    // scheduling its own work.
     private static void handle(DayZInventoryPayload payload, CustomPayloadEvent.Context context) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.wrappedBuffer(payload.data()));
         context.enqueueWork(() -> {
@@ -98,7 +96,7 @@ public class ModNetwork {
         PROTOCOL_VERSION::equals
     );
 
-    /** The 1.20.1 envelope: the same (sub-packet id, bytes) pair as the payload record. */
+    // The 1.20.1 envelope: the same (sub-packet id, bytes) pair as the payload record.
     private record Envelope(Identifier packetId, byte[] data) {
         void encode(FriendlyByteBuf buf) {
             buf.writeResourceLocation(this.packetId);

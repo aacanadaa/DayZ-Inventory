@@ -64,6 +64,12 @@ tasks.withType<JavaCompile>().configureEach {
 // `stonecutter { }` is only a DSL shorthand on scripts the plugin generates for;
 // inside a precompiled convention plugin the extension has to be reached through
 // the `sc` accessor from Utils.kt.
+//
+// A replacement works in both directions. Where its condition holds, the first
+// string becomes the second; where it does not, every occurrence of the *second*
+// string becomes the first. So the second string must never appear in the shared
+// sources on its own, or the newest versions get it rewritten: keep both sides
+// specific enough that they only match the code they are meant for.
 val versionRenames = sc.current.parsed < "26.1"
 
 // 1.21.9 made Level#isClientSide private, removed ServerPlayer#getServer in favour
@@ -104,11 +110,6 @@ sc.replacements.string(sc.current.parsed < "1.21.5") {
     replace("getInventory().getSelectedSlot()", "getInventory().selected")
 }
 
-// 1.20.5 moved mob effects behind registry holders: MobEffectInstance#getEffect
-// returns a Holder<MobEffect> from then on, and the MobEffect itself before.
-sc.replacements.string(sc.current.parsed < "1.20.5") {
-    replace("getEffect().value()", "getEffect()")
-}
 
 // 26.1 rewrote the GUI as a render-state pipeline: GuiGraphics became
 // GuiGraphicsExtractor, every render* method became extract*, and a handful of
@@ -119,7 +120,13 @@ sc.replacements.string(sc.current.parsed < "1.20.5") {
 sc.replacements.string(versionRenames) {
     replace("GuiGraphicsExtractor", "GuiGraphics")
     replace("extractBackground", "renderBackground")
-    replace("extractRenderState", "render")
+    // Spelled out in full rather than as a bare `extractRenderState` ->
+    // `render`: a replacement is applied in reverse on the versions where its
+    // condition is false, so a bare `render` would turn every "render" in the
+    // sources into "extractRenderState" on 26.x - including the
+    // `net.minecraft.client.renderer` package name.
+    replace("public void extractRenderState(", "public void render(")
+    replace("super.extractRenderState(", "super.render(")
     replace("extractLabels", "renderLabels")
     replace("extractTooltip", "renderTooltip")
     replace("extractEntityInInventoryFollowsMouse", "renderEntityInInventoryFollowsMouse")
