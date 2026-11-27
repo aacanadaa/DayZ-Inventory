@@ -4,19 +4,16 @@
 
 [![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
-[![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
-[![Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
-[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/suoim)
 
-Minecraft 인벤토리 UI를 전면 개편하여 DayZ 인벤토리 시스템의 look, feel, 메커닉을 Minecraft에
-가져옵니다: 근처 지면 아이템과 컨테이너를 나열하는 **Vicinity(주변)** 그리드, 활성 핫바 슬롯에
-연동되는 **Hands(손)** 부착 슬롯, 통합된 **2x2 제작 그리드**, 그리고 **Survivor(생존자)**
-패널에 드래그해 장비를 착용/교체하는 조작.
+DayZ 인벤토리의 모습과 손맛, 동작 방식을 Minecraft로 그대로 옮긴 인벤토리 UI 전면 개편입니다.
+주변 바닥 아이템과 보관함을 보여 주는 **주변(Vicinity)** 그리드, 선택한 핫바 칸과 연동되는 **손(Hands)**
+슬롯, 장비·상태 효과·생명 수치를 보여 주는 **생존자(Survivor)** 패널, 그리고 내장 **2x2 제작 그리드**를
+제공합니다.
 
-**[DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar) 와의 사용을 강력 추천합니다** —
-매끄럽게 통합됩니다. 둘은 짝으로 만들어져 HUD와 인벤토리 화면이 하나의 스타일을 공유합니다.
+**[DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)와 함께 쓰는 것을 강력히 추천합니다.** 두 모드는
+한 쌍으로 만들어져 HUD와 인벤토리 화면의 스타일이 같습니다.
 
 ## 지원 버전
 
@@ -24,167 +21,63 @@ Minecraft 인벤토리 UI를 전면 개편하여 DayZ 인벤토리 시스템의 
 | :--- | :--- |
 | **Fabric** | 1.20.1 – 26.3 |
 | **NeoForge** | 1.20.6 – 26.3 |
-| **Forge** | 1.20.6 – 1.21.11 |
+| **Forge** | 1.20.1, 1.20.6 – 1.21.11 |
 
-**Minecraft 버전 23개, 다운로드 53개**, 모두 하나의 소스 트리에서 나옵니다.
-각 파일에는 Minecraft 버전과 로더가 라벨로 표시되어 있습니다.
-모든 버전 목록은 아래 [전체 버전 매트릭스](#전체-버전-매트릭스)에,
-필요한 로더 버전은 [의존성](#의존성)에 있습니다.
+**Minecraft 23개 버전, 54개 파일**을 하나의 소스에서 만듭니다. 파일 이름에 Minecraft 버전과 로더가
+들어 있으며, 버전별 전체 표는 [영문 README](README.md#full-version-table)에 있습니다.
 
-![DayZ Inventory 화면: 근처 아이템의 VICINITY 그리드, 탄환이 담긴 채 열린 CHEST 서랍, 장비를 갖춘 플레이어의 SURVIVOR 패널, 헤더의 CURIOS 및 JEI 버튼, 2.0x HANDS 슬롯의 M1014 Battle Shotgun, 2x2 CRAFTING 그리드](docs/screenshots/ui-example.png)
-
----
+![DayZ Inventory 화면](docs/screenshots/ui-example.png)
 
 ## 기능
 
-### 통합 Vicinity 그리드와 확장 가능한 서랍
-- **근접 스캐너**: 10틱마다 반경 3 블록 이내의 지면 아이템과 컨테이너 블록(상자, 통, 셜커 박스)을 재스캔합니다.
-- **통합 컬럼**: 근처 지면 아이템과 저장 블록을 VICINITY 헤더 아래 하나의 스크롤 가능한 그리드로 공유합니다.
-- **컨테이너 선택기**: 컨테이너를 슬롯 아이콘으로 그려 좌표와 거리 툴팁을 표시합니다.
-- **인라인 서랍 그리드**: 컨테이너 선택기를 클릭하면 그리드 아래에 인라인으로 슬롯을 펼칩니다.
-
-### 동적 Hands 부착 슬롯
-- **활성 핫바 연동**: 현재 선택된 핫바 슬롯을 미러링합니다.
-- **큰 부착 슬롯**: 기본 슬롯을 대체하는 완전한 반투명 패널 본체입니다.
-- **2배 스케일 렌더**: 속한 아이템을 **2.0x**(32x32 px)로 패널 중앙에 그립니다.
-- **대문자 아이템명 배너**: 헤더 아래에 아이템 이름(예: `HUNTING KNIFE`)을 표시합니다.
-
-### 제작과 장비 교체
-- **바닐라 2x2 그리드**: 제작 그리드와 결과 슬롯이 커스텀 화면 안에 있으며, 결과는 서버 측에서 다시 계산됩니다.
-- **드래그로 장착**: 가운데 Survivor 패널에 방어구나 의류를 드래그하면 착용하거나 교체됩니다.
-
-### 선택적 모드 연동
-- **레시피 뷰어(JEI / REI / EMI)**: 헤더에 테마에 맞는 토글 버튼이 표시되며, 지원되는 뷰어가 설치된 경우에만 그려집니다.
-- **Curios API**: Survivor 헤더에 CURIOS 버튼을 추가합니다.
-- **Trinkets**: Survivor 헤더에 TRINKETS 버튼을 추가합니다.
-
-모든 연동은 런타임에 `isModLoaded`로 탐색합니다. 이것들이 **하나도** 설치되지 않아도
-모드는 시작하고, 화면을 열고, 완전히 작동합니다.
-
----
+- **주변 그리드**: 반경 3블록(설정 가능) 안의 바닥 아이템과 인벤토리가 있는 모든 블록(상자, 통,
+  셜커 상자 등)을 한 그리드에 보여 주며, 가까운 보관함부터 나열합니다. 보관함을 클릭하면 그리드 아래에
+  칸이 펼쳐지고, 정리하거나 `x`로 닫을 수 있습니다. 잠금, 막힌 상자, 전리품 테이블은 블록을 우클릭할 때와
+  똑같이 적용됩니다.
+- **손으로 줍기**: 걸어가서 줍는 기능은 꺼져 있습니다. 아이템을 칸으로 끌어다 놓거나, 생존자 패널에
+  놓아 바로 장착하거나, Shift+클릭으로 가져옵니다.
+- **상태 효과**: 생존자 패널에 아이콘으로 표시하고, 마우스를 올리면 이름·레벨·남은 시간을 보여 줍니다.
+  마지막 10초 동안 깜빡입니다.
+- **생명 수치**: 체력·배고픔·갈증 막대. 갈증은 **Tough As Nails**, **Thirst Was Taken**,
+  **Dehydration** 중 하나가 있을 때 표시됩니다.
+- **정리**: 덜 찬 묶음을 합치고 기본 인벤토리를 정렬합니다(핫바는 그대로). 저장용 보관함에도 정리 버튼이
+  있습니다.
+- **Shift+클릭**: 기본 인벤토리와 핫바 사이, 열린 보관함, 또는 장비 칸으로 옮깁니다.
+- **호환**: JEI / REI / EMI 표시 전환 버튼, Curios·Accessories·Trinkets 버튼, Mouse Tweaks 지원.
+  모두 선택 사항이며, 없어도 완전히 동작합니다.
 
 ## 설치
 
-1. 위 표에 Minecraft 버전이 있으면 됩니다: **Fabric**는 23개 버전 전부, **NeoForge**는 1.20.6 이상, **Forge**는 1.20.6–1.21.11입니다.
-2. 파일명의 Minecraft 버전과 로더가 *둘 다* 일치하는 파일을 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 또는 [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files)에서 다운로드합니다.
-3. `mods/`에 넣습니다.
+1. [전체 표](README.md#full-version-table)에서 내 Minecraft 버전과 로더를 확인합니다.
+2. [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 또는
+   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files)에서 **둘 다** 맞는 파일을
+   내려받습니다.
+3. `mods/` 폴더에 넣습니다. Fabric에서는 [Fabric API](https://modrinth.com/mod/fabric-api)도 필요합니다.
 
-> **잘 고르세요.** Fabric 빌드는 Forge나 NeoForge에서 로드되지 않고, NeoForge 빌드는 Forge에서 로드되지 않으며, 서로 다른 Minecraft 버전의 빌드는 호환되지 않습니다. 각 파일명에는 Minecraft 버전과 로더가 들어 있습니다.
+**서버와 모든 클라이언트에** 설치하세요. 화면, 줍기, 보관함 열기가 일부 서버에서 동작합니다.
 
----
+> Fabric 파일은 Forge / NeoForge에서, NeoForge 파일은 Forge에서 불러올 수 없으며,
+> Minecraft 버전이 다른 파일끼리도 호환되지 않습니다.
 
-## 전체 버전 매트릭스
+## 설정
 
-| Minecraft | Fabric | NeoForge | Forge | Java |
-| :--- | :---: | :---: | :---: | :---: |
-| **1.20.1** | ✅ | — | — | 17 |
-| **1.20.2** | ✅ | — | — | 17 |
-| **1.20.3** | ✅ | — | — | 17 |
-| **1.20.4** | ✅ | — | — | 17 |
-| **1.20.5** | ✅ | — | — | 21 |
-| **1.20.6** | ✅ | ✅ | ✅ | 21 |
-| **1.21** | ✅ | ✅ | ✅ | 21 |
-| **1.21.1** | ✅ | ✅ | ✅ | 21 |
-| **1.21.2** | ✅ | ✅ | — | 21 |
-| **1.21.3** | ✅ | ✅ | ✅ | 21 |
-| **1.21.4** | ✅ | ✅ | ✅ | 21 |
-| **1.21.5** | ✅ | ✅ | ✅ | 21 |
-| **1.21.6** | ✅ | ✅ | ✅ | 21 |
-| **1.21.7** | ✅ | ✅ | ✅ | 21 |
-| **1.21.8** | ✅ | ✅ | ✅ | 21 |
-| **1.21.9** | ✅ | ✅ | ✅ | 21 |
-| **1.21.10** | ✅ | ✅ | ✅ | 21 |
-| **1.21.11** | ✅ | ✅ | ✅ | 21 |
-| **26.1** | ✅ | ✅ | — | 25 |
-| **26.1.1** | ✅ | ✅ | — | 25 |
-| **26.1.2** | ✅ | ✅ | — | 25 |
-| **26.2** | ✅ | ✅ | — | 25 |
-| **26.3** | ✅ | ✅ | — | 25 |
+처음 실행하면 `config/dayz_inventory.properties`가 만들어집니다. 변경 사항은 다음 실행부터 적용됩니다.
 
-즉 **Minecraft 버전 23개, 배포 가능한 jar 53개**입니다: Fabric 23, NeoForge 18, Forge 12.
-Fabric과 NeoForge는 1.20.6 이상의 모든 버전을 커버합니다. 매트릭스에서 빠진 것은 다음과 같습니다:
-
-- **1.20.1–1.20.4**는 Fabric 전용입니다. 1.20.1은 NeoForge보다 먼저 나왔고；NeoForge의 1.20.2 릴리스는 아직 구 `SimpleChannel` 네트워킹 스택을 사용；1.20.3에는 NeoForge 릴리스가 아예 없었고；1.20.4의 payload API는 `StreamCodec`보다 먼저 도달해 자체 payload 타입이 필요했습니다. Forge 1.20.1은 추가로 SRG reobfuscation과 Searge mixin refmap이 필요하지만 현재 Forge 툴체인으로는 만들 수 없습니다.
-- **1.20.5**는 Fabric 전용입니다: NeoForge는 빌드에 필요한 메타데이터 없이 그 릴리스를 공개했고, Forge에는 1.20.5 릴리스가 없습니다.
-- **1.21.2**에는 Forge 빌드가 없습니다: Forge가 그 릴리스를 건너뛰었기 때문입니다.
-- **26.x에는 Forge 빌드가 없습니다**: Forge의 26.x 계열은 이 모드의 빌드 대상이 아니며, 그곳에서 지원되는 경로는 NeoForge입니다.
-
-모든 산출물은 **단일 소스 트리**에서 빌드됩니다: 멀티버전 전처리는 [Stonecutter](https://stonecutter.kikugie.dev/)가, 로더 추상화는 `common/` + 로더별 모듈이 담당합니다. 매트릭스는 `settings.gradle.kts`에 선언되어 있으며, 버전 추가는 그곳에 한 줄과 `versions/<mc>/gradle.properties` 파일 하나면 됩니다.
-
----
-
-## 의존성
-
-| Minecraft | 로더 | Java | 필수 | 선택 |
-| :--- | :--- | :---: | :--- | :--- |
-| **1.20.1** | Fabric | 17 | Fabric Loader `>=0.16.14`, Fabric API `0.92.12+1.20.1` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.20.2** | Fabric | 17 | Fabric Loader `>=0.16.14`, Fabric API `0.91.6+1.20.2` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.20.3** | Fabric | 17 | Fabric Loader `>=0.16.14`, Fabric API `0.91.1+1.20.3` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.20.4** | Fabric | 17 | Fabric Loader `>=0.16.14`, Fabric API `0.97.3+1.20.4` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.20.5** | Fabric | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.97.8+1.20.5` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.20.6** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.100.8+1.20.6`; NeoForge `20.6.141`; Forge `50.2.10` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.102.0+1.21`; NeoForge `21.0.167`; Forge `51.0.33` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.1** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.116.17+1.21.1`; NeoForge `21.1.250`; Forge `52.1.12` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.2** | Fabric / NeoForge | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.106.1+1.21.2`; NeoForge `21.2.1-beta` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.3** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.114.1+1.21.3`; NeoForge `21.3.97`; Forge `53.1.12` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.4** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.16.14`, Fabric API `0.119.4+1.21.4`; NeoForge `21.4.157`; Forge `54.1.18` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.5** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.128.2+1.21.5`; NeoForge `21.5.98`; Forge `55.1.13` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.6** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.128.2+1.21.6`; NeoForge `21.6.20-beta`; Forge `56.0.9` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.7** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.129.0+1.21.7`; NeoForge `21.7.25-beta`; Forge `57.0.3` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.8** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.136.1+1.21.8`; NeoForge `21.8.54`; Forge `58.1.22` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.9** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.134.1+1.21.9`; NeoForge `21.9.16-beta`; Forge `59.0.5` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.10** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.138.4+1.21.10`; NeoForge `21.10.64`; Forge `60.1.15` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **1.21.11** | Fabric / NeoForge / Forge | 21 | Fabric Loader `>=0.19.5`, Fabric API `0.141.6+1.21.11`; NeoForge `21.11.45`; Forge `61.2.1` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **26.1** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.145.1+26.1`; NeoForge `26.1.0.19-beta` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **26.1.1** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.145.4+26.1.1`; NeoForge `26.1.1.15-beta` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **26.1.2** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.155.3+26.1.2`; NeoForge `26.1.2.109` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **26.2** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.160.0+26.2`; NeoForge `26.2.0.88` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-| **26.3** | Fabric / NeoForge | 25 | Fabric Loader `>=0.19.5`, Fabric API `0.160.6+26.3`; NeoForge `26.3.0.1-beta` | JEI / REI / EMI, Trinkets (Fabric), Curios |
-
-선택 항목은 런타임에 탐색됩니다 — 모드는 절대 이것들을 요구하지 않으며, 없어도 충돌하지 않습니다.
-Trinkets는 Fabric 전용이고, NeoForge와 Forge에서는 Curios가 그 역할을 합니다.
-
----
+| 옵션 | 기본값 | 설명 |
+| :--- | :--- | :--- |
+| `autoPickup` | `false` | 바닐라처럼 걸어가서 줍기. 크리에이티브에서는 항상 켜짐. |
+| `openContainersInDayZScreen` | `true` | 상자나 통을 우클릭하면 DayZ 화면으로 엽니다. |
+| `vicinityRadius` | `3` | 주변 패널 범위(1–8블록). 서버와 클라이언트를 같은 값으로 맞추세요. |
+| `replaceInventoryScreen` | `true` | 인벤토리 키로 DayZ 화면을 엽니다. |
+| `showStatusEffects` | `true` | 생존자 패널에 상태 효과 표시. |
+| `showVitals` | `true` | 체력·배고픔·갈증 막대 표시. |
+| `dragAndDrop` | `true` | 아이템을 누른 채 다른 칸에서 놓으면 이동. Mouse Tweaks가 있으면 자동으로 꺼짐. |
 
 ## 소스에서 빌드
 
-Gradle 런처에는 **JDK 25**가 필요합니다. 매트릭스의 나머지가 필요로 하는 Java 17/21 툴체인은 foojay 리졸버가 자동으로 다운로드하므로 수동 설치가 필요 없습니다.
-
-```bash
-# Builds every Minecraft version x every mod loader in the matrix.
-./gradlew chiseledBuild
-
-# A single target (artifacts land in <loader>/versions/<mc>/build/libs/).
-./gradlew :fabric:26.2:build
-./gradlew :neoforge:1.21.11:build
-./gradlew :forge:1.21.11:build
-
-# List every node in the matrix.
-./gradlew matrix
-```
-
-산출물 이름은 `dayz-inventory-<loader>-<minecraft>-<mod version>.jar`이며, 예를 들어 `dayz-inventory-fabric-26.2-1.8.0+mc26.2.jar`입니다. Minecraft 버전을 파일명에 넣는 것은 의도적입니다: 같은 모드 버전이 여러 게임 버전용으로 출시되고, CurseForge는 프로젝트 내에서 표시 이름이 충돌하는 두 번째 파일을 거부하기 때문입니다.
-
-아키텍처, 조건부 컴파일 규약, 버전 추가 방법은 **[docs/BUILDING.en.md](docs/BUILDING.en.md)**에 문서화되어 있습니다.
-
-### CurseForge 및 Modrinth에 게시
-
-```bash
-MODRINTH_TOKEN=... CURSEFORGE_API_KEY=... \
-  ./gradlew publishAll -Ppublish.dry_run=false
-```
-
-- 각 노드는 `versions/<mc>/gradle.properties`에서 가져온 **자신의** 게임 버전과 로더로 태그되므로, jar가 잘못된 Minecraft 버전으로 업로드될 수 없습니다.
-- `publish.dry_run`의 기본값은 `true`입니다. 명시적으로 끄지 않으면 `publishMods`는 로그만 남깁니다.
-- **CurseForge 게시는 전송 후 확인할 수 없습니다.** 모든 파일은 사람의 검토를 거치고 API는 URL을 반환하지 않고 수락합니다. 따라서 성공한 CurseForge 태스크는 "공개됨"이 아니라 "제출됨"을 의미합니다.
-- 한 번에 한 플랫폼씩: `:fabric:26.2:publishModrinth` / `:fabric:26.2:publishCurseforge`.
-
-CI(`.github/workflows/build.yml`)는 `v*` 태그에서 전체 매트릭스를 빌드하고, 모든 jar를 GitHub Release에 첨부하며, 두 플랫폼 모두에 게시합니다.
-
-## 버저닝
-
-`gradle.properties`의 `mod.version`이 단일 진실 공급원입니다. `fabric.mod.json`, `neoforge.mods.toml`, `mods.toml`, `pack.mcmeta`에 전개됩니다. 올린 뒤 [CHANGELOG.md](CHANGELOG.md)를 갱신하세요.
+**JDK 25**가 필요합니다. `./gradlew chiseledBuild`는 모든 버전을, `./gradlew buildMods -Pdayz.versions=1.21.1`은
+한 버전만 빌드합니다. 빌드 구조는 **[docs/BUILDING.md](docs/BUILDING.md)**(영문)에 정리되어 있습니다.
 
 ## 라이선스
 
-Apache License 2.0 — [LICENSE](LICENSE) 참조.
+Apache License 2.0 — [LICENSE](LICENSE)를 참고하세요.
