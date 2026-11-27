@@ -4,15 +4,20 @@
 
 [![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
+[![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory?color=red)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/suoim)
 
-把 DayZ 物品栏的外观、手感和机制完整搬进 Minecraft：显示附近地面物品与容器的 **附近（Vicinity）**
-网格、绑定当前快捷栏格子的 **手持（Hands）** 槽位、展示装备、状态效果与生命体征的 **幸存者（Survivor）**
-面板，以及内置的 **2x2 合成格**。
+将 Minecraft 的背包界面替换为 DayZ 风格布局：包含周围地面物品与容器的 **附近（Vicinity）** 网格、展示装备/效果/体征的 **幸存者（Survivor）** 面板、**2x 手持（Hands）** 槽位以及 **2x2 合成格**。
 
-**强烈推荐搭配 [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar) 使用** —— 两者成对设计，HUD
-与物品栏界面风格统一。
+可搭配同款画风的 HUD 模组 [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar) 一起使用。
+
+![DayZ Inventory 界面截图](docs/screenshots/ui-example.png)
+
+---
 
 ## 支持的版本
 
@@ -22,56 +27,65 @@
 | **NeoForge** | 1.20.6 – 26.3 |
 | **Forge** | 1.20.1、1.20.6 – 1.21.11 |
 
-共 **23 个 Minecraft 版本、54 个文件**，全部出自同一套源码。每个文件名都标明了 Minecraft 版本和加载器；
-逐版本的完整列表见[英文 README](README.md#full-version-table)。
+共 23 个 Minecraft 版本、54 个构建文件，请下载同时匹配游戏版本和加载器的 jar。
 
-![DayZ Inventory 界面](docs/screenshots/ui-example.png)
+---
 
 ## 功能
 
-- **附近网格**：半径 3 格（可配置）内的掉落物和所有带物品栏的方块（箱子、木桶、潜影盒等）显示在同一个网格里，
-  最近的容器排在前面。点击容器即可在网格下方展开它的格子，可整理、可用 `x` 关闭。上锁的容器、被挡住的箱子和战利品表
-  的规则与右键方块时完全一致。
-- **手动拾取**：默认关闭走过自动拾取。把物品拖进格子、拖到幸存者面板上直接装备，或按住 Shift 点击收入背包。
-- **状态效果**：幸存者面板上显示效果图标，悬停可看名称、等级和剩余时间，最后十秒会闪烁。
-- **生命体征**：生命值、饥饿值和口渴值竖条。安装 **Tough As Nails**、**Thirst Was Taken** 或
-  **Dehydration** 时显示口渴值。
-- **整理**：合并不满的堆叠并排序主物品栏（快捷栏保持不动）；箱子等存储容器也有自己的整理按钮。
-- **Shift 点击**：在主物品栏与快捷栏之间移动、放进已打开的容器，或直接穿戴。
-- **兼容**：JEI / REI / EMI 的显示/隐藏按钮；Curios、Accessories、Trinkets 各有按钮；支持 Mouse Tweaks。
-  以上全部为可选，没有安装也能完整使用。
+### 附近（Vicinity）
+- **地面物品与容器：** 显示 3 格（可配置）内的掉落物与箱子、木桶、潜影盒等容器，最近的容器排在前面。
+- **手动拾取：** 生存模式下关闭踩踏自动拾取，通过拖拽到背包/幸存者面板或 Shift 点击拾取。
+- **内联抽屉：** 点击容器直接在附近网格下方展开其格子，支持整理并点 `x` 关闭；容器锁定、方块遮挡与战利品表均与原版右键打开一致。
+
+### 幸存者与背包
+- **装备、效果与体征：** 护甲与副手槽、药水效果图标（悬停查看名称与剩余时间，最后 10 秒闪烁），以及生命、饥饿和口渴条（安装 **Tough As Nails**、**Thirst Was Taken** 或 **Dehydration** 时显示）。
+- **手持与合成：** 2 倍大小的手持预览（绑定当前快捷栏），外加 2x2 合成格。
+- **整理与 Shift 点击：** 一键整理并合并零散堆叠（保留快捷栏不动），支持整理打开的容器。
+
+### 模组兼容（均为可选）
+- **JEI / REI / EMI：** 顶部按钮切换物品列表显示/隐藏。
+- **Curios / Accessories / Trinkets：** 幸存者面板上的快捷按钮。
+- **Mouse Tweaks：** 在 DayZ 界面内正常支持拖拽与滚轮移动物品。
+
+---
 
 ## 安装
 
-1. 在[完整版本表](README.md#full-version-table)中找到你的 Minecraft 版本和加载器。
-2. 从 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 或
-   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files) 下载文件名与 **两者**
-   都匹配的文件。
-3. 放进 `mods/` 文件夹。Fabric 还需要安装 [Fabric API](https://modrinth.com/mod/fabric-api)。
+1. 从 [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) 或 [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files) 下载对应你游戏版本和加载器的 jar。
+2. 同时放入**客户端和服务端**的 `mods/` 文件夹。
+3. **Fabric** 端还需安装 [Fabric API](https://modrinth.com/mod/fabric-api)（Fabric Loader 0.15+）。
 
-**服务端和每个客户端都需要安装**：物品栏界面、拾取和打开容器都有一部分在服务端运行。
+---
 
-> Fabric 版不能在 Forge / NeoForge 上加载，NeoForge 版不能在 Forge 上加载，不同 Minecraft 版本的文件也不能混用。
+## 配置文件
 
-## 配置
-
-首次启动时会生成 `config/dayz_inventory.properties`，修改后重启生效。
+首次启动会生成 `config/dayz_inventory.properties`（重启后生效）：
 
 | 选项 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| `autoPickup` | `false` | 原版的走过自动拾取。创造模式玩家始终保留。 |
-| `openContainersInDayZScreen` | `true` | 右键箱子或木桶时用 DayZ 界面打开。 |
-| `vicinityRadius` | `3` | 附近面板的范围，1–8 格。服务器与客户端请设为相同的值。 |
-| `replaceInventoryScreen` | `true` | 物品栏按键打开 DayZ 界面。 |
-| `showStatusEffects` | `true` | 在幸存者面板显示状态效果。 |
-| `showVitals` | `true` | 在幸存者面板显示生命值、饥饿值和口渴值。 |
-| `dragAndDrop` | `true` | 按住物品拖到另一个格子松开即可移动。安装 Mouse Tweaks 时自动关闭。 |
+| `autoPickup` | `false` | 像原版一样踩踏自动拾取（创造模式始终开启） |
+| `openContainersInDayZScreen` | `true` | 右键箱子或木桶时用 DayZ 界面打开 |
+| `vicinityRadius` | `3` | 附近扫描半径（1–8 格，服务端与客户端需一致） |
+| `replaceInventoryScreen` | `true` | 按背包键打开 DayZ 界面 |
+| `showStatusEffects` | `true` | 在幸存者面板显示药水效果 |
+| `showVitals` | `true` | 在幸存者面板显示生命/饥饿/口渴条 |
+| `dragAndDrop` | `true` | 点击并松开移动物品（安装 Mouse Tweaks 时自动关闭） |
+
+在独立服务器上，`autoPickup`、`openContainersInDayZScreen` 和 `vicinityRadius` 以服务端配置为准。
+
+---
 
 ## 从源码构建
 
-需要 **JDK 25**：`./gradlew chiseledBuild` 构建全部版本，`./gradlew buildMods -Pdayz.versions=1.21.1`
-只构建一个版本。构建说明见 **[docs/BUILDING.md](docs/BUILDING.md)**（英文）。
+需要 **JDK 25** 启动 Gradle（Java 17/21 工具链会自动下载），详见 [docs/BUILDING.md](docs/BUILDING.md)：
 
-## 许可证
+```bash
+./gradlew chiseledBuild                      # 构建全部版本与加载器
+./gradlew buildMods -Pdayz.versions=1.21.1   # 构建单个 MC 版本
+./gradlew :forge:1.20.1:build                # 构建单个目标
+```
 
-Apache License 2.0 —— 见 [LICENSE](LICENSE)。
+## 开源协议
+
+Apache License 2.0 — 见 [LICENSE](LICENSE)。

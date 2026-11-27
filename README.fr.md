@@ -4,19 +4,22 @@
 
 [![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
+[![Minecraft](https://img.shields.io/modrinth/game-versions/dayz-inventory?label=Minecraft)](https://modrinth.com/mod/dayz-inventory/versions)
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/dayz-inventory?label=Downloads&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
+[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1596267?label=Downloads&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Issues](https://img.shields.io/github/issues/aacanadaa/DayZ-Inventory?color=red)](https://github.com/aacanadaa/DayZ-Inventory/issues)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/suoim)
 
-Une refonte complète de l'inventaire de Minecraft, qui reprend l'apparence, les sensations et les
-mécaniques de l'inventaire de DayZ : une grille **Alentours (Vicinity)** des objets au sol et des
-conteneurs proches, un emplacement **Mains (Hands)** lié à l'emplacement actif de la barre rapide,
-le panneau **Survivant (Survivor)** avec votre équipement, vos effets et vos constantes vitales, et
-une **grille d'artisanat 2x2** intégrée.
+Remplace l'écran d'inventaire de Minecraft par une interface façon DayZ : grille **Proximité (Vicinity)** pour les objets au sol et conteneurs voisins, panneau **Survivant** avec équipement, effets et jauges vitales, emplacement **Mains** 2x et grille d'**artisanat 2x2**.
 
-**Vivement conseillé avec [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar)** : les deux mods sont
-conçus ensemble, le HUD et l'inventaire partagent le même style.
+Se marie avec [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar), qui partage le même style pour le HUD.
 
-## Versions prises en charge
+![Capture d'écran DayZ Inventory](docs/screenshots/ui-example.png)
+
+---
+
+## Versions supportées
 
 | Chargeur | Minecraft |
 | :--- | :--- |
@@ -24,68 +27,62 @@ conçus ensemble, le HUD et l'inventaire partagent le même style.
 | **NeoForge** | 1.20.6 – 26.3 |
 | **Forge** | 1.20.1, 1.20.6 – 1.21.11 |
 
-**23 versions de Minecraft, 54 fichiers**, tous issus d'un seul code source. Chaque nom de fichier
-indique sa version de Minecraft et son chargeur ; le [tableau complet](README.md#full-version-table)
-(en anglais) détaille chaque version.
+23 versions de Minecraft, 54 fichiers. Téléchargez le jar correspondant à votre version et à votre chargeur de mods.
 
-![L'écran DayZ Inventory](docs/screenshots/ui-example.png)
+---
 
 ## Fonctionnalités
 
-- **Alentours** : les objets au sol et tous les blocs à inventaire (coffres, tonneaux, boîtes de
-  Shulker…) dans un rayon de 3 blocs (réglable) partagent une même grille, le conteneur le plus proche
-  en premier. Un clic sur un conteneur affiche ses emplacements juste en dessous ; on peut le trier
-  et le refermer avec le `x`. Verrous, coffres bloqués et tables de butin fonctionnent comme avec un
-  clic droit sur le bloc.
-- **Ramassage à la main** : le ramassage en marchant dessus est désactivé. Glissez un objet dans un
-  emplacement, déposez-le sur le panneau Survivant pour l'équiper, ou faites Maj+clic pour le prendre.
-- **Effets** : les icônes des effets actifs sur le panneau Survivant, avec nom, niveau et temps
-  restant au survol ; elles clignotent pendant leurs dix dernières secondes.
-- **Constantes vitales** : barres de santé, de nourriture et de soif. La soif s'affiche avec
-  **Tough As Nails**, **Thirst Was Taken** ou **Dehydration**.
-- **Tri** : fusionne les piles incomplètes et trie l'inventaire principal (la barre rapide ne bouge
-  pas) ; les conteneurs de stockage ont leur propre bouton TRIER.
-- **Maj+clic** : entre l'inventaire principal et la barre rapide, vers un conteneur ouvert, ou
-  directement sur le personnage.
-- **Compatibilité** : bouton pour afficher/masquer JEI / REI / EMI ; un bouton pour Curios,
-  Accessories et Trinkets ; prise en charge de Mouse Tweaks. Tout est facultatif : le mod fonctionne
-  entièrement sans eux.
+### Proximité (Vicinity)
+- **Objets au sol et conteneurs :** Affiche les objets lâchés ainsi que les coffres, tonneaux, boîtes de Shulker et autres conteneurs dans un rayon de 3 blocs (configurable).
+- **Ramassage manuel :** Le ramassage automatique en marchant dessus est désactivé en Survie. Glissez ou Shift-cliquez pour récupérer les objets.
+- **Tiroirs intégrés :** Cliquez sur un conteneur pour ouvrir ses emplacements sous la grille, les trier et les fermer avec `x`. Verrous, coffres bloqués et tables de butin fonctionnent comme en vanilla.
+
+### Survivant & Inventaire
+- **Équipement, effets et jauges :** Armure, main secondaire, icônes d'effets avec infobulle (clignotant les 10 dernières secondes) et barres de vie, faim et soif (avec **Tough As Nails**, **Thirst Was Taken** ou **Dehydration**).
+- **Mains et artisanat :** Aperçu 2x de l'objet tenu et grille 2x2.
+- **Tri et Shift-clic :** Bouton de tri pour fusionner les piles et trier l'inventaire principal (sans toucher à la barre d'accès rapide) ou un conteneur ouvert.
+
+### Compatibilités (optionnelles)
+- **JEI / REI / EMI :** Bouton d'en-tête pour afficher/masquer la liste d'objets.
+- **Curios / Accessories / Trinkets :** Bouton d'accès rapide sur le panneau Survivant.
+- **Mouse Tweaks :** Glisser-déposer et molette pris en charge.
+
+---
 
 ## Installation
 
-1. Trouvez votre version de Minecraft et votre chargeur dans le
-   [tableau complet](README.md#full-version-table).
-2. Téléchargez le fichier qui correspond **aux deux** sur
-   [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) ou
-   [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
-3. Placez-le dans `mods/`. Sur Fabric, installez aussi [Fabric API](https://modrinth.com/mod/fabric-api).
+1. Téléchargez le jar correspondant à votre version de Minecraft et à votre chargeur sur [Modrinth](https://modrinth.com/mod/dayz-inventory/versions) ou [CurseForge](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory/files).
+2. Placez-le dans `mods/` côté **client et serveur**.
+3. Sur **Fabric**, installez aussi [Fabric API](https://modrinth.com/mod/fabric-api) (Fabric Loader 0.15+).
 
-Installez-le **sur le serveur et sur chaque client** : l'écran, le ramassage et l'ouverture des
-conteneurs passent en partie par le serveur.
-
-> Une version Fabric ne se charge pas sur Forge ou NeoForge, une version NeoForge ne se charge pas sur
-> Forge, et les fichiers de versions de Minecraft différentes ne sont pas interchangeables.
+---
 
 ## Configuration
 
-`config/dayz_inventory.properties` est créé au premier lancement ; les changements s'appliquent au
-démarrage suivant.
+`config/dayz_inventory.properties` est généré au premier lancement (redémarrage requis) :
 
-| Option | Défaut | |
+| Option | Défaut | Description |
 | :--- | :--- | :--- |
-| `autoPickup` | `false` | Ramassage en marchant dessus, comme en vanilla. Toujours actif en créatif. |
-| `openContainersInDayZScreen` | `true` | Un clic droit sur un coffre ou un tonneau l'ouvre dans l'écran DayZ. |
-| `vicinityRadius` | `3` | Portée du panneau Alentours, de 1 à 8 blocs. Même valeur sur le serveur et les clients. |
-| `replaceInventoryScreen` | `true` | La touche d'inventaire ouvre l'écran DayZ. |
-| `showStatusEffects` | `true` | Effets sur le panneau Survivant. |
-| `showVitals` | `true` | Barres de santé, de nourriture et de soif. |
-| `dragAndDrop` | `true` | Appuyer sur un objet et le relâcher sur un autre emplacement pour le déplacer. Désactivé avec Mouse Tweaks. |
+| `autoPickup` | `false` | Ramassage automatique comme en vanilla (toujours actif en Créatif) |
+| `openContainersInDayZScreen` | `true` | Ouvrir coffres et tonneaux dans l'écran DayZ |
+| `vicinityRadius` | `3` | Rayon de détection en blocs (1–8 ; identique client/serveur) |
+| `replaceInventoryScreen` | `true` | La touche d'inventaire ouvre l'écran DayZ |
+| `showStatusEffects` | `true` | Afficher les effets sur le panneau Survivant |
+| `showVitals` | `true` | Afficher vie, faim et soif sur le panneau Survivant |
+| `dragAndDrop` | `true` | Cliquer-relâcher entre cases (désactivé avec Mouse Tweaks) |
 
-## Compilation
+---
 
-Il faut le **JDK 25** : `./gradlew chiseledBuild` compile toutes les versions,
-`./gradlew buildMods -Pdayz.versions=1.21.1` une seule. Le fonctionnement du build est décrit dans
-**[docs/BUILDING.md](docs/BUILDING.md)** (en anglais).
+## Compiler depuis les sources
+
+Nécessite **JDK 25** pour Gradle (Java 17/21 téléchargés automatiquement), voir [docs/BUILDING.md](docs/BUILDING.md) :
+
+```bash
+./gradlew chiseledBuild                      # Tout compiler
+./gradlew buildMods -Pdayz.versions=1.21.1   # Compiler une version MC
+./gradlew :forge:1.20.1:build                # Compiler une cible précise
+```
 
 ## Licence
 
