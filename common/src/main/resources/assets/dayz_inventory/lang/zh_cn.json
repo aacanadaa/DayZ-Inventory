@@ -1,0 +1,21 @@
+{
+  "dayz_inventory.vicinity": "附近",
+  "dayz_inventory.survivor": "幸存者",
+  "dayz_inventory.inventory": "物品栏",
+  "dayz_inventory.crafting": "合成",
+  "dayz_inventory.hands": "手持",
+  "dayz_inventory.vicinity.empty": "附近没有物品",
+  "dayz_inventory.container.default": "容器",
+  "dayz_inventory.container.location": "位置：%s, %s, %s",
+  "dayz_inventory.container.distance": "距离：%s 米",
+  "dayz_inventory.button.sort": "整理",
+  "dayz_inventory.button.curios": "饰品",
+  "dayz_inventory.button.curios.short": "饰品",
+  "dayz_inventory.button.accessories": "配饰",
+  "dayz_inventory.button.accessories.short": "配饰",
+  "dayz_inventory.button.trinkets": "饰物",
+  "dayz_inventory.button.trinkets.short": "饰物",
+  "dayz_inventory.vitals.health": "生命值：%s / %s",
+  "dayz_inventory.vitals.food": "饥饿值：%s / %s",
+  "dayz_inventory.vitals.thirst": "口渴值：%s / %s"
+}

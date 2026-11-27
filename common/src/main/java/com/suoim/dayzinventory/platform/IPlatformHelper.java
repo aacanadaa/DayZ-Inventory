@@ -19,18 +19,43 @@ package com.suoim.dayzinventory.platform;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.inventory.MenuType;
+import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
+
+/**
+ * Everything the shared code needs from a mod loader. Each loader module
+ * installs its implementation into {@link Platform#HELPER} first thing during
+ * mod construction.
+ * <p>
+ * Keep this interface small: game logic belongs in the shared code, and only
+ * the calls that genuinely differ per loader belong here.
+ */
 public interface IPlatformHelper {
     boolean isModLoaded(String modId);
-    
+
+    /** The loader's config directory, where {@code dayz_inventory.properties} lives. */
+    Path getConfigDirectory();
+
     void sendPacketToServer(Identifier packetId, FriendlyByteBuf buf);
-    
-    void openPlayerInventory(ServerPlayer player);
-    
-    void openContainerInventory(ServerPlayer player, BlockPos pos);
-    
+
+    /**
+     * Client side only: whether the connected server has this mod. When it does
+     * not, the DayZ screen cannot be opened (the server would never answer), so
+     * the vanilla inventory is left alone.
+     */
+    boolean isServerModPresent();
+
+    /**
+     * Opens the DayZ menu for {@code player}: their own inventory when
+     * {@code container} is null, otherwise that container from {@code pos}.
+     */
+    void openMenu(ServerPlayer player, @Nullable Container container, @Nullable BlockPos pos, Component title);
+
     MenuType<DayZInventoryScreenHandler> getScreenHandlerType();
 }

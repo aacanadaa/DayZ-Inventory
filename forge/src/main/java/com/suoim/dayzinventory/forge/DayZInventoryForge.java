@@ -18,6 +18,7 @@ package com.suoim.dayzinventory.forge;
 
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.client.DayZInventoryScreen;
+import com.suoim.dayzinventory.config.DayZConfig;
 import com.suoim.dayzinventory.forge.network.ModNetwork;
 import com.suoim.dayzinventory.forge.platform.ForgePlatformHelper;
 import com.suoim.dayzinventory.platform.Platform;
@@ -55,16 +56,23 @@ public class DayZInventoryForge {
         () -> IForgeMenuType.create(DayZInventoryScreenHandler::new)
     );
 
-    // 1.21 takes the context as a constructor parameter. The 1.20.1 module read
-    // it from the static FMLJavaModLoadingContext.get(), which no longer exists.
+    // Forge passes the loading context to the constructor from 1.20.6 on. Forge
+    // 1.20.1 calls a no-argument constructor, and the context comes from the
+    // static FMLJavaModLoadingContext.get() there instead.
+//? if >=1.20.2 {
     public DayZInventoryForge(FMLJavaModLoadingContext context) {
+//?} else {
+    public DayZInventoryForge() {
+        FMLJavaModLoadingContext context = FMLJavaModLoadingContext.get();
+//?}
         // Initialize platform helper first - nothing else may run before this,
         // and anything reachable from a static initializer would see it as null.
         Platform.HELPER = new ForgePlatformHelper();
+        DayZConfig.load(Platform.HELPER.getConfigDirectory());
 
-        // Register registries. `DeferredRegister#register` takes the BusGroup on
-        // 1.21.6+ and an IEventBus below it, and the two types are unrelated -
-        // IEventBus does not exist at all in EventBus 7.
+        // `DeferredRegister#register` takes the BusGroup on 1.21.6+ and an
+        // IEventBus below it, and the two types are unrelated - IEventBus does
+        // not exist at all in EventBus 7.
         //? if >=1.21.6 {
         BusGroup modBusGroup = context.getModBusGroup();
         MENUS.register(modBusGroup);
@@ -73,7 +81,6 @@ public class DayZInventoryForge {
         MENUS.register(modEventBus);
         //?}
 
-        // Register setup events
         ModNetwork.register();
     }
 
@@ -82,10 +89,8 @@ public class DayZInventoryForge {
         @SubscribeEvent
         public static void clientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                // MenuScreens.register is private in vanilla 1.21. NeoForge added
-                // a RegisterMenuScreensEvent for this; Forge did not, and instead
-                // ships an access transformer that makes this method and its
-                // ScreenConstructor parameter public.
+                // MenuScreens.register is private in vanilla from 1.20.5 on;
+                // Forge ships an access transformer that makes it public again.
                 MenuScreens.register(
                     DAYZ_INVENTORY_SCREEN_HANDLER.get(),
                     DayZInventoryScreen::new
