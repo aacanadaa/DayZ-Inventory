@@ -1300,12 +1300,22 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     }
 
     private Component effectName(MobEffectInstance instance) {
-        net.minecraft.network.chat.MutableComponent name = instance.getEffect().value().getDisplayName().copy();
+        net.minecraft.world.effect.MobEffect effect = effectOf(instance);
+        net.minecraft.network.chat.MutableComponent name = effect.getDisplayName().copy();
         int amplifier = instance.getAmplifier();
         if (amplifier >= 1 && amplifier <= 9) {
             name.append(" ").append(Component.translatable("enchantment.level." + (amplifier + 1)));
         }
-        return name.withStyle(instance.getEffect().value().isBeneficial() ? ChatFormatting.WHITE : ChatFormatting.RED);
+        return name.withStyle(effect.isBeneficial() ? ChatFormatting.WHITE : ChatFormatting.RED);
+    }
+
+    /** 1.20.5 put mob effects behind registry holders; before that the instance holds the effect itself. */
+    private static net.minecraft.world.effect.MobEffect effectOf(MobEffectInstance instance) {
+//? if >=1.20.5 {
+        return instance.getEffect().value();
+//?} else {
+        return instance.getEffect();
+//?}
     }
 
     private static String formatDuration(MobEffectInstance instance) {

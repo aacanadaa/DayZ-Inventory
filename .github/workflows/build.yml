@@ -90,8 +90,21 @@ jobs:
         with:
           cache-disabled: true
 
+      # Configuring a node downloads that Minecraft release, its mappings and
+      # the loader toolchain. With every version building at once, one of those
+      # downloads occasionally fails on a busy repository, so configuration is
+      # done - and retried - on its own before anything is compiled.
+      - name: Configure ${{ matrix.minecraft }}
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} --stacktrace && exit 0
+            echo "::warning::Configuration attempt $attempt failed; retrying"
+            sleep 30
+          done
+          exit 1
+
       - name: Build ${{ matrix.minecraft }}
-        run: ./gradlew chiseledBuild -Pdayz.versions=${{ matrix.minecraft }} --continue --stacktrace
+        run: ./gradlew buildMods -Pdayz.versions=${{ matrix.minecraft }} --continue --stacktrace
 
       - name: Upload mod jars
         uses: actions/upload-artifact@v7
@@ -238,6 +251,15 @@ jobs:
             missing=1
           fi
           exit $missing
+
+      - name: Configure ${{ matrix.minecraft }}
+        run: |
+          for attempt in 1 2 3; do
+            ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} --stacktrace && exit 0
+            echo "::warning::Configuration attempt $attempt failed; retrying"
+            sleep 30
+          done
+          exit 1
 
       - name: Publish ${{ matrix.minecraft }}
         env:
