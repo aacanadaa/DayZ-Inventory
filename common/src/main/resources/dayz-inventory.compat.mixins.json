@@ -1,0 +1,14 @@
+{
+	"required": false,
+	"minVersion": "0.8",
+	"package": "com.suoim.dayzinventory.client.mixin.compat",
+	"plugin": "com.suoim.dayzinventory.client.compat.CompatMixinPlugin",
+	"compatibilityLevel": "${mixin_compat}",
+	"client": [
+		"KeyMappingAccessor",
+		"MouseTweaksCompatMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	}
+}

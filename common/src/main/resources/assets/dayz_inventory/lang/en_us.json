@@ -1,0 +1,21 @@
+{
+  "dayz_inventory.vicinity": "VICINITY",
+  "dayz_inventory.survivor": "SURVIVOR",
+  "dayz_inventory.inventory": "INVENTORY",
+  "dayz_inventory.crafting": "CRAFTING",
+  "dayz_inventory.hands": "HANDS",
+  "dayz_inventory.vicinity.empty": "No items nearby",
+  "dayz_inventory.container.default": "CONTAINER",
+  "dayz_inventory.container.location": "Location: %s, %s, %s",
+  "dayz_inventory.container.distance": "Distance: %sm",
+  "dayz_inventory.button.sort": "SORT",
+  "dayz_inventory.button.curios": "CURIOS",
+  "dayz_inventory.button.curios.short": "CUR",
+  "dayz_inventory.button.accessories": "ACCESSORIES",
+  "dayz_inventory.button.accessories.short": "ACC",
+  "dayz_inventory.button.trinkets": "TRINKETS",
+  "dayz_inventory.button.trinkets.short": "TRK",
+  "dayz_inventory.vitals.health": "Health: %s / %s",
+  "dayz_inventory.vitals.food": "Food: %s / %s",
+  "dayz_inventory.vitals.thirst": "Thirst: %s / %s"
+}

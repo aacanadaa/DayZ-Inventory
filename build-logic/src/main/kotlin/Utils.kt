@@ -38,6 +38,18 @@ val Project.branch: String get() = sc.node.branch.id
 /** The mod's user-facing slug, e.g. `dayz-inventory`. */
 val Project.modSlug: String get() = prop("mod.id").replace('_', '-')
 
+/**
+ * Forge 1.20.1: the one Forge node that still runs on SRG names, so it is built
+ * with ModDevGradle Legacy, reobfuscated, and ships a Searge mixin refmap.
+ */
+val Project.isLegacyForge: Boolean get() = branch == "forge" && sc.current.parsed < "1.20.2"
+
+/**
+ * True for every node whose shippable jar runs on remapped names and therefore
+ * needs a mixin refmap: Fabric below 26.1 (intermediary) and Forge 1.20.1 (SRG).
+ */
+val Project.needsRefmap: Boolean get() = (branch == "fabric" && sc.current.parsed < "26") || isLegacyForge
+
 // ---------------------------------------------------------------------------
 // Per-version properties
 // ---------------------------------------------------------------------------
@@ -99,3 +111,23 @@ fun Project.firstEnv(vararg names: String): Provider<String> =
             System.getenv(name)?.takeIf { it.isNotBlank() }
         }
     }
+
+/**
+ * The section of `CHANGELOG.md` for [version]: from its `# DayZ Inventory <version>`
+ * heading up to the next top-level heading or `---` separator.
+ *
+ * Publishing a version that has no section is refused when [required] is set, so
+ * a release can never go out with the previous release's notes.
+ */
+fun changelogSection(file: java.io.File, version: String, required: Boolean): String {
+    val lines = if (file.isFile) file.readLines(Charsets.UTF_8) else emptyList()
+    val heading = Regex("""^# .*(?<![\w.])${Regex.escape(version)}(?![\w.])""")
+    val start = lines.indexOfFirst { heading.containsMatchIn(it) }
+    if (start < 0) {
+        check(!required) { "CHANGELOG.md has no '# DayZ Inventory $version' section to publish" }
+        return "See CHANGELOG.md."
+    }
+    val end = (start + 1 until lines.size)
+        .firstOrNull { lines[it].startsWith("# ") || lines[it].trim() == "---" } ?: lines.size
+    return lines.subList(start, end).joinToString("\n").trim()
+}

@@ -52,15 +52,15 @@ if (isActiveNode) {
         runs {
             named("client") {
                 client()
-                ideConfigGenerated(true)
-                runDir("../../run")
-                configName = "Fabric Client ($mc)"
+                generateRunConfig.set(true)
+                runDirectory.set(rootProject.layout.projectDirectory.dir("run"))
+                displayName.set("Fabric Client ($mc)")
             }
             named("server") {
                 server()
-                ideConfigGenerated(true)
-                runDir("../../run")
-                configName = "Fabric Server ($mc)"
+                generateRunConfig.set(true)
+                runDirectory.set(rootProject.layout.projectDirectory.dir("run"))
+                displayName.set("Fabric Server ($mc)")
             }
         }
     }

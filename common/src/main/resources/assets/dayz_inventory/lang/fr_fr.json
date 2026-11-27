@@ -1,0 +1,21 @@
+{
+  "dayz_inventory.vicinity": "ALENTOURS",
+  "dayz_inventory.survivor": "SURVIVANT",
+  "dayz_inventory.inventory": "INVENTAIRE",
+  "dayz_inventory.crafting": "FABRICATION",
+  "dayz_inventory.hands": "MAINS",
+  "dayz_inventory.vicinity.empty": "Aucun objet à proximité",
+  "dayz_inventory.container.default": "CONTENEUR",
+  "dayz_inventory.container.location": "Position : %s, %s, %s",
+  "dayz_inventory.container.distance": "Distance : %s m",
+  "dayz_inventory.button.sort": "TRIER",
+  "dayz_inventory.button.curios": "CURIOS",
+  "dayz_inventory.button.curios.short": "CUR",
+  "dayz_inventory.button.accessories": "ACCESSOIRES",
+  "dayz_inventory.button.accessories.short": "ACC",
+  "dayz_inventory.button.trinkets": "TRINKETS",
+  "dayz_inventory.button.trinkets.short": "TRK",
+  "dayz_inventory.vitals.health": "Santé : %s / %s",
+  "dayz_inventory.vitals.food": "Nourriture : %s / %s",
+  "dayz_inventory.vitals.thirst": "Soif : %s / %s"
+}

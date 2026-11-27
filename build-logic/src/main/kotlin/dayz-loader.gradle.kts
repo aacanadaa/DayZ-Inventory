@@ -24,6 +24,7 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import java.util.jar.Manifest
 import java.util.zip.ZipFile
 
 plugins {
@@ -65,17 +66,17 @@ tasks.named<ProcessResources>("processResources") {
     from(commonGeneratedResources)
     dependsOn("$commonPath:stonecutterGenerate")
 
-    // Fabric below 26.1 runs on intermediary names, so its mixin configs must
-    // name the generated refmap or Mixin leaves every selector in official
-    // names it cannot resolve ("No refMap loaded", a launch crash). NeoForge,
-    // Forge and 26.x run on official names and ship no refmap, so the entry
-    // must NOT be there for them: a declared-but-missing refmap is semantically
-    // wrong and warns in every log.
+    // Fabric below 26.1 runs on intermediary names and Forge 1.20.1 on SRG
+    // names, so their mixin configs must name the generated refmap or Mixin
+    // leaves every selector in official names it cannot resolve ("No refMap
+    // loaded", a launch crash). NeoForge, modern Forge and 26.x run on official
+    // names and ship no refmap, so the entry must NOT be there for them: a
+    // declared-but-missing refmap is semantically wrong and warns in every log.
     //
     // The configs live in `common`, whose node cannot tell which loader is
     // building it, so the entry is added here, per loader, on the processed
     // copy. `verifyJar` then checks both the file and this reference.
-    if (branch == "fabric" && sc.current.parsed < "26") {
+    if (needsRefmap) {
         filesMatching(listOf("*.mixins.json", "*.client.mixins.json")) {
             filter { line ->
                 if (line.trimStart().startsWith("\"package\"")) {
@@ -86,6 +87,18 @@ tasks.named<ProcessResources>("processResources") {
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Compile-only API stand-ins
+// ---------------------------------------------------------------------------
+// `common` carries a copy of Mouse Tweaks' API interface so the compat mixin can
+// be compiled. It must never ship: the real interface comes with Mouse Tweaks,
+// and a second copy in this jar would clash with it (on Forge and NeoForge, a
+// split package is a crash). The remapping jar tasks read `jar`'s output, so
+// excluding it here covers every loader.
+tasks.withType<Jar>().configureEach {
+    exclude("yalter/**")
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +123,14 @@ val loaderName = when (branch) {
 // the development jar gets published. That is exactly what happened on 1.7.1 -
 // the two Fabric nodes below 26.1 went up as `...-dev.jar`. The version
 // condition is the same one `loom-back-compat` uses to pick the Loom flavour.
-val modJarTaskName = if (branch == "fabric" && sc.current.parsed < "26") "remapJar" else "jar"
+//
+// Forge 1.20.1 is the same story with ModDevGradle Legacy: `jar` is the
+// official-named development jar and `reobfJar` writes the SRG-named one.
+val modJarTaskName = when {
+    branch == "fabric" && sc.current.parsed < "26" -> "remapJar"
+    isLegacyForge -> "reobfJar"
+    else -> "jar"
+}
 
 val modrinthToken = firstEnv("MODRINTH_TOKEN", "MODRINTH_PAT")
 val curseforgeToken = firstEnv("CURSEFORGE_API_KEY", "CURSEFORGE_TOKEN")
@@ -134,7 +154,9 @@ extensions.configure<ModPublishExtension>("publishMods") {
     // game versions into the same project.
     version.set("${prop("mod.version")}+$mc")
     displayName.set("${prop("mod.name")} ${prop("mod.version")} for MC $mc")
-    changelog.set(rootProject.file("CHANGELOG.md").let { if (it.exists()) it.readText() else "" })
+    // Only this release's section: each platform shows the changelog on the
+    // version page, and the whole file is far too long for that.
+    changelog.set(provider { changelogSection(rootProject.file("CHANGELOG.md"), prop("mod.version"), publishingForReal) })
 
     type.set(ReleaseType.STABLE)
     // CurseForge puts every upload through human review, so a publish there is
@@ -205,7 +227,7 @@ val expectedEntrypoints = when (branch) {
 // loader.
 val modJarProvider: Provider<Jar> = provider { tasks.named<Jar>(modJarTaskName).get() }
 
-val verifyJar by tasks.registering {
+val verifyJar = tasks.register("verifyJar") {
     group = "verification"
     description = "Resolves every entrypoint and mixin class named by this node's jar metadata"
     dependsOn(modJarProvider)
@@ -238,6 +260,21 @@ val verifyJar by tasks.registering {
             }
             expectedEntrypoints.filterNot(::hasClass).forEach { missing += "entrypoint -> $it" }
 
+            // Compile-only stand-ins for other mods' APIs must never ship.
+            names.filter { it.startsWith("yalter/") }.forEach { missing += "compile-only stub '$it' is in the jar" }
+
+            // Forge only loads mixins named by the MixinConfigs manifest attribute.
+            // Checked on the shipped jar, so a remapping step that rebuilt the
+            // manifest cannot silently switch every mixin off.
+            if (branch == "forge") {
+                val manifest = zip.getEntry("META-INF/MANIFEST.MF")
+                    ?.let { entry -> zip.getInputStream(entry).use { Manifest(it) } }
+                val declared = manifest?.mainAttributes?.getValue("MixinConfigs")
+                    ?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
+                val shipped = names.filter { it.endsWith(".mixins.json") && !it.contains('/') }
+                shipped.filterNot { it in declared }.forEach { missing += "mixin config '$it' is not in the MixinConfigs manifest attribute" }
+            }
+
             // Every mixin config shipped in the jar must resolve to classes in
             // that same jar, on every loader.
             names.filter { it.endsWith(".mixins.json") }.sorted().forEach { configName ->
@@ -257,13 +294,13 @@ val verifyJar by tasks.registering {
                 }
             }
 
-            // Fabric below 26.1 runs on intermediary names, so each mixin config
-            // must name the generated refmap. A config that omits it leaves every
-            // selector in official names Fabric cannot resolve, and the mod dies at
-            // launch with "No refMap loaded" - which is exactly what 1.8.1 shipped.
-            // The other loaders run on official names and ship no refmap; the name
-            // resolves to no file there and Mixin uses its no-op mapper.
-            if (branch == "fabric" && sc.current.parsed < "26") {
+            // Fabric below 26.1 (intermediary) and Forge 1.20.1 (SRG) run on
+            // remapped names, so each mixin config must name the generated refmap.
+            // A config that omits it leaves every selector in official names the
+            // runtime cannot resolve, and the mod dies at launch with "No refMap
+            // loaded" - which is exactly what 1.8.1 shipped. The other loaders run
+            // on official names and ship no refmap.
+            if (needsRefmap) {
                 val refmapName = "dayz-inventory.refmap.json"
                 if (!names.contains(refmapName)) {
                     missing += "refmap '$refmapName' is not in the jar"

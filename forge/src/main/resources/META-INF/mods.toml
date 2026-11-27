@@ -39,3 +39,10 @@ mandatory=false
 versionRange="*"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="accessories"
+mandatory=false
+versionRange="*"
+ordering="AFTER"
+side="BOTH"

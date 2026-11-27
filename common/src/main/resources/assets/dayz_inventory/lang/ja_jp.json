@@ -1,0 +1,21 @@
+{
+  "dayz_inventory.vicinity": "周辺",
+  "dayz_inventory.survivor": "サバイバー",
+  "dayz_inventory.inventory": "インベントリ",
+  "dayz_inventory.crafting": "クラフト",
+  "dayz_inventory.hands": "手持ち",
+  "dayz_inventory.vicinity.empty": "近くにアイテムはありません",
+  "dayz_inventory.container.default": "コンテナ",
+  "dayz_inventory.container.location": "位置: %s, %s, %s",
+  "dayz_inventory.container.distance": "距離: %sm",
+  "dayz_inventory.button.sort": "整理",
+  "dayz_inventory.button.curios": "CURIOS",
+  "dayz_inventory.button.curios.short": "CUR",
+  "dayz_inventory.button.accessories": "アクセサリー",
+  "dayz_inventory.button.accessories.short": "ACC",
+  "dayz_inventory.button.trinkets": "TRINKETS",
+  "dayz_inventory.button.trinkets.short": "TRK",
+  "dayz_inventory.vitals.health": "体力: %s / %s",
+  "dayz_inventory.vitals.food": "満腹度: %s / %s",
+  "dayz_inventory.vitals.thirst": "水分: %s / %s"
+}

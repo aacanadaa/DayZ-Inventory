@@ -26,5 +26,5 @@ dependencies {
     // node and emit swaps/constants.
     implementation("dev.kikugie:stonecutter:0.9.8")
     // us.modmuss50's Mod Publish Plugin (Modrinth + CurseForge + GitHub + Discord).
-    implementation("me.modmuss50:mod-publish-plugin:2.1.1")
+    implementation("me.modmuss50:mod-publish-plugin:2.2.1")
 }

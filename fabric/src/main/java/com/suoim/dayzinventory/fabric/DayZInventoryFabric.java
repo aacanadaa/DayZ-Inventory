@@ -18,6 +18,7 @@ package com.suoim.dayzinventory.fabric;
 
 import com.suoim.dayzinventory.DayZInventoryPackets;
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
+import com.suoim.dayzinventory.config.DayZConfig;
 import com.suoim.dayzinventory.fabric.platform.FabricPlatformHelper;
 import com.suoim.dayzinventory.platform.Platform;
 import net.fabricmc.api.ModInitializer;
@@ -50,6 +51,7 @@ public class DayZInventoryFabric implements ModInitializer {
 
         // Initialize platform helper first
         Platform.HELPER = new FabricPlatformHelper();
+        DayZConfig.load(Platform.HELPER.getConfigDirectory());
 
         // Register the menu type. From 1.20.5 the extended variant takes the codec
         // for its opening data as a second argument; before that the opening data
@@ -94,6 +96,10 @@ public class DayZInventoryFabric implements ModInitializer {
 
         ServerPlayNetworking.registerGlobalReceiver(DayZInventoryPackets.QUICK_PICKUP_ITEM_PACKET, (server, player, handler, buf, responseSender) -> {
             DayZInventoryPackets.handlePacketOnServer(DayZInventoryPackets.QUICK_PICKUP_ITEM_PACKET, player, buf);
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(DayZInventoryPackets.SORT_PACKET, (server, player, handler, buf, responseSender) -> {
+            DayZInventoryPackets.handlePacketOnServer(DayZInventoryPackets.SORT_PACKET, player, buf);
         });
 //?}
     }

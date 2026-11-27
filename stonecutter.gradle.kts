@@ -90,6 +90,20 @@ tasks.register("publishCurseforgeAll") {
     dependsOn(platformTasks("publishCurseforge"))
 }
 
+/**
+ * Builds every loader node, without the `common` nodes on their own.
+ *
+ * The loader nodes compile `common`'s sources themselves, so building `common`
+ * separately only repeats that work. CI uses this with `-Pdayz.versions=<mc>`,
+ * where the tree also holds the active version's `common` node (see
+ * settings.gradle.kts) that the job is not meant to build.
+ */
+tasks.register("buildMods") {
+    group = "build"
+    description = "Builds every loader node in the (possibly -Pdayz.versions-limited) tree"
+    dependsOn(platformTasks("build"))
+}
+
 // CurseForge accepts one upload at a time gracefully; a burst comes back as a
 // rate-limit error rather than being queued, so the nodes are ordered.
 //

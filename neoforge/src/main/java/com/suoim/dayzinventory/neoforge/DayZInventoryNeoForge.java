@@ -18,6 +18,7 @@ package com.suoim.dayzinventory.neoforge;
 
 import com.suoim.dayzinventory.DayZInventoryScreenHandler;
 import com.suoim.dayzinventory.client.DayZInventoryScreen;
+import com.suoim.dayzinventory.config.DayZConfig;
 import com.suoim.dayzinventory.neoforge.platform.NeoForgePlatformHelper;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.core.registries.Registries;
@@ -46,6 +47,7 @@ public class DayZInventoryNeoForge {
     public DayZInventoryNeoForge(IEventBus modEventBus, ModContainer modContainer) {
         // Initialize platform helper first
         Platform.HELPER = new NeoForgePlatformHelper();
+        DayZConfig.load(Platform.HELPER.getConfigDirectory());
 
         MENUS.register(modEventBus);
     }

@@ -33,6 +33,10 @@
 		{
 			"config": "dayz-inventory.client.mixins.json",
 			"environment": "client"
+		},
+		{
+			"config": "dayz-inventory.compat.mixins.json",
+			"environment": "client"
 		}
 	],
 	"depends": {
@@ -46,6 +50,8 @@
 		"roughlyenoughitems": "*",
 		"emi": "*",
 		"trinkets": "*",
-		"curios": "*"
+		"curios": "*",
+		"accessories": "*",
+		"mousetweaks": "*"
 	}
 }
