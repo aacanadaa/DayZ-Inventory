@@ -24,6 +24,7 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import java.util.jar.Manifest
 import java.util.zip.ZipFile
 
 plugins {
@@ -267,7 +268,7 @@ val verifyJar = tasks.register("verifyJar") {
             // manifest cannot silently switch every mixin off.
             if (branch == "forge") {
                 val manifest = zip.getEntry("META-INF/MANIFEST.MF")
-                    ?.let { entry -> zip.getInputStream(entry).use { java.util.jar.Manifest(it) } }
+                    ?.let { entry -> zip.getInputStream(entry).use { Manifest(it) } }
                 val declared = manifest?.mainAttributes?.getValue("MixinConfigs")
                     ?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
                 val shipped = names.filter { it.endsWith(".mixins.json") && !it.contains('/') }
