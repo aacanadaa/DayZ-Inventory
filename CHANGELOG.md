@@ -1,18 +1,88 @@
-# DayZ Inventory 1.8.3 — the refmap entry only where the refmap exists
+# DayZ Inventory 2.0.0 — Forge 1.20.1 is back, the Curios and JEI buttons work, and a config file
 
-1.8.2 named `dayz-inventory.refmap.json` in both mixin configs on **every** loader. Only Fabric below
-26.1 has that file: NeoForge, Forge and 26.x run on official names and ship no refmap, so on those
-the entry pointed at a file that does not exist and Mixin logged a warning on every launch:
+**If you play Forge 1.20.1, this is the first new file for you since 1.4.3.** 1.20.1 Forge returns to
+the build, and the CURIOS and JEI buttons that never worked there now do. Every version and loader
+also gets a config file, status effects and vitals on the Survivor panel, sorting, Accessories and
+Mouse Tweaks support, and a long list of fixes.
 
-```
-Reference map 'dayz-inventory.refmap.json' for dayz-inventory.mixins.json could not be read.
-```
+| Minecraft | Fabric | NeoForge | Forge |
+| :--- | :---: | :---: | :---: |
+| 1.20.1 | ✅ | — | ✅ |
+| 1.20.2 – 1.20.5 | ✅ | — | — |
+| 1.20.6 – 1.21.1 | ✅ | ✅ | ✅ |
+| 1.21.2 | ✅ | ✅ | — |
+| 1.21.3 – 1.21.11 | ✅ | ✅ | ✅ |
+| 26.1 – 26.3 | ✅ | ✅ | — |
 
-Harmless, but wrong, and it made a normal launch look like a broken install. The entry is now added
-at build time for Fabric below 26.1 only, which is exactly the set of nodes that generate the file,
-and `verifyJar` checks both the file and the reference on those nodes.
+23 Minecraft versions, 54 files. Pick the one whose name matches both your Minecraft version and your
+loader.
 
-No mod behaviour changed.
+## New
+
+- **Forge 1.20.1.** Built from the same sources as every other version, so it has all of the below.
+  Any Forge 47.x build works.
+- **A config file**, `config/dayz_inventory.properties`, created on first launch:
+  - `autoPickup` — walk-over pickup, as in vanilla (default `false`: pick up through the Vicinity panel)
+  - `openContainersInDayZScreen` — right-clicking a chest or barrel opens the DayZ screen (default `true`)
+  - `vicinityRadius` — how far the Vicinity panel reaches, 1 to 8 blocks (default `3`)
+  - `replaceInventoryScreen` — the inventory key opens the DayZ screen (default `true`)
+  - `showStatusEffects`, `showVitals`, `dragAndDrop` — the new panels and drag-and-drop (default `true`)
+- **Status effects** on the Survivor panel, as icons beside the player model. Hover one for its name,
+  level and time left; it blinks in its last ten seconds.
+- **Vitals**: health, food and thirst bars beside the armour slots, with exact values on hover.
+  Thirst appears when **Tough As Nails**, **Thirst Was Taken** or **Dehydration** is installed.
+- **Sorting.** A SORT button in the INVENTORY header merges partial stacks and sorts the main
+  inventory (the hotbar is left alone). Open chests, barrels, shulker boxes, dispensers, droppers and
+  hoppers get their own SORT button.
+- **Accessories** support: an ACCESSORIES button on the Survivor panel, next to CURIOS and TRINKETS.
+- **Mouse Tweaks** support. Its drags and scroll-wheel moves now work in the DayZ screen, including
+  when the screen is scaled down to fit a small window.
+- **Translations** for Chinese, French, Japanese and Korean.
+
+## Fixed
+
+- **The CURIOS button did nothing, or closed the inventory without opening Curios.** It now presses
+  Curios' own "open" key mapping directly. The old way went through the game's key lookup, which
+  skipped Curios' key while a screen was open.
+- **The JEI / REI / EMI button did nothing.** It now asks the recipe viewer to show or hide its item
+  list. Simulating its key could never work: all three read their keys from key events, and JEI's
+  default binding needs Ctrl held as well.
+- **Shift-click did nothing in the plain inventory.** It now moves items between the main inventory
+  and the hotbar, and puts armour and shields into their empty slots.
+- **Containers opened from the Vicinity panel accepted anything in any slot** — any item in a furnace's
+  fuel slot, or a shulker box inside a shulker box. Each container's own slot rules now apply.
+- **The Vicinity panel opened locked containers and chests with a blocked lid**, and rolled loot
+  without the player's luck. It now applies the same checks as right-clicking the block.
+- **Armour with Curse of Binding could be taken off** outside creative mode.
+- **Shift-clicking a ground item into a nearly full inventory deleted the rest of the stack.** The part
+  that does not fit now stays on the ground.
+- **Dragging a ground item into an empty armour slot put the whole stack there** (64 carved pumpkins
+  on your head). Armour slots take one.
+- **The crafting result briefly appeared in the first inventory slot** after every change to the grid.
+- **Drag-and-drop between slots broke vanilla gestures**: shift-click followed by a small mouse move
+  picked up a second item, and drag-to-split stopped working when it started on a full slot.
+- **The Vicinity panel was cut off on small windows** (1.21.4 and later): its clip area was scaled
+  twice whenever the screen was scaled down to fit.
+- **Creative players could not pick items up at all**: the creative inventory has no Vicinity panel.
+  They now keep vanilla pickup.
+- **On a server without this mod, the inventory key did nothing** (Fabric). It now opens the vanilla
+  inventory.
+- **A "reference map could not be read" warning** was logged on every launch on NeoForge, Forge and
+  26.x. The refmap is now only named where it exists.
+
+## Under the hood
+
+- Every Minecraft version builds in its own CI job. The single job that built all 53 files had run
+  out of disk space, so the last few builds of `main` failed.
+- The version list lives in one place: `versions/<mc>/gradle.properties` says which loaders each
+  version is built for, and the build and CI both read it.
+- Toolchain updated (Gradle 9.9.2, Loom 1.19.4, ModDevGradle 2.0.149, ForgeGradle 7.0.41), and each
+  version now builds against the newest Fabric API, NeoForge and Forge for it. The minimum loader
+  versions you need have not changed, except that Forge 1.20.1 accepts any 47.x and Fabric Loader
+  0.15 or newer is enough everywhere.
+- Each file is about 130 KB instead of 950 KB: the mod icon was a 922×922 image.
+- Modrinth and CurseForge now show only this release's notes on the version page, not the whole
+  changelog.
 
 ---
 

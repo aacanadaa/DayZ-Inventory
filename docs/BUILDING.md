@@ -1,155 +1,148 @@
-# 构建 DayZ Inventory
+# Building DayZ Inventory
 
-**中文** | [English](BUILDING.en.md)
-
-本文说明统一后的多版本 / 多加载器构建是怎么搭起来的、为什么长这样，以及怎么再加一个 Minecraft 版本。
-
----
-
-## 1. 为什么从"一版一分支"改成单源码树
-
-这个项目原来每个 Minecraft 版本一个分支（`main` 是 1.20.1，另有 `1.21.1`、`1.21.11`、`26.2`）。
-每个 bug 修复都要往所有分支合一遍，每个分支还要单独构建、单独测试。
-
-现在是一个分支、一份源码树。版本相关的代码用 `//? if <条件>` 注释内联标注，
-构建则按 **node**（节点）产出产物 —— 一个 node 就是一对（模块, Minecraft 版本），例如 `:fabric:26.2`。
-当前矩阵覆盖 **23 个 Minecraft 版本**（1.20.1 至 26.3），共 **53 个可发布 jar**：Fabric 23 个、NeoForge 18 个、Forge 12 个。
-
-关于实现方式有两条路。[Stonecutter 官方文档](https://stonecutter.kikugie.dev/) 描述了两种布局：
-**扁平式**（一份 `src/`，node 同时承载版本与加载器，加载器差异用构建常量切换）和
-**分支式**（共享 `common/` + 各加载器模块，每个模块各有一套版本 node）。本项目用的是分支式，因为
-两个加载器确实需要各自的工具链（Fabric Loom 与 NeoForge ModDevGradle），而且它能保留代码库原本就有的
-`common/` / `fabric/` / `neoforge/` 划分。
-
-[Architectury](https://docs.architectury.dev/) 作为加载器抽象层被评估过，但**没有采用**，两个原因：
-
-1. Architectury API 会成为每一份下载的硬运行时依赖。本模组已经有一个手写的、对用户零成本的
-   平台抽象（`IPlatformHelper` / `Platform`）。
-2. 从 26.1 起 Minecraft **不再混淆**，Fabric Loom 也拆成了 `fabric-loom`（26.1+）与
-   `fabric-loom-remap`（<26.1）。Architectury Loom 在这一层之上又叠了一层，而在 26.x 上
-   没有成熟的先例 —— 而 26.x 恰恰是最重要的目标。
+How the multi-version, multi-loader build is put together, why it is shaped this way, how to add a
+Minecraft version, and the list of things that have actually broken here before. Read it before
+changing the build or anything under `client/`.
 
 ---
 
-## 2. 目录结构
+## 1. Overview
+
+One branch, one source tree, **23 Minecraft versions (1.20.1 – 26.3) and 54 jars**: 23 Fabric,
+18 NeoForge and 13 Forge. Version differences are marked inline with
+[Stonecutter](https://stonecutter.kikugie.dev/) `//? if` comments, and the build produces one jar
+per *node* - a (loader, Minecraft version) pair such as `:fabric:26.2`.
+
+| Minecraft | Fabric | NeoForge | Forge | Java |
+| :--- | :---: | :---: | :---: | :---: |
+| 1.20.1 | ✅ | — | ✅ | 17 |
+| 1.20.2 – 1.20.4 | ✅ | — | — | 17 |
+| 1.20.5 | ✅ | — | — | 21 |
+| 1.20.6 – 1.21.1 | ✅ | ✅ | ✅ | 21 |
+| 1.21.2 | ✅ | ✅ | — | 21 |
+| 1.21.3 – 1.21.11 | ✅ | ✅ | ✅ | 21 |
+| 26.1 – 26.3 | ✅ | ✅ | — | 25 |
+
+Why the gaps exist is in [section 7](#7-enabled-targets-and-the-gaps-that-remain).
+
+The project uses Stonecutter's **branched** layout (a shared `common/` plus one module per loader,
+each with its own version nodes) rather than the flat one, because the loaders need different
+toolkits. [Architectury](https://docs.architectury.dev/) was evaluated and is not used: it would be a
+hard runtime dependency for every player, and a small hand-written platform abstraction
+(`IPlatformHelper`) does the job.
+
+## 2. Layout
 
 ```
-settings.gradle.kts          Stonecutter 树 + 插件管理 + 版本矩阵
-stonecutter.gradle.kts       控制器脚本：当前激活版本、聚合任务
-gradle.properties            模组元数据、发布 ID、共享工具版本
-build-logic/                 所有 node 共用的约定插件
-versions/<mc>/gradle.properties   每个版本的依赖坐标
+settings.gradle.kts           Stonecutter tree, built from versions/ (+ plugin versions)
+stonecutter.gradle.kts        Controller: active version, chiseledBuild, buildMods, publishAll, matrix
+gradle.properties             Mod metadata, publishing ids, toolchain versions
+build-logic/                  Convention plugins: dayz-common, dayz-loader, Utils.kt
+versions/<mc>/gradle.properties   Everything about one Minecraft version, including its loaders
 
-common/                      与加载器无关的代码（界面、菜单、网络包、mixin）
-  build.gradle.kts           每个 Minecraft 版本各执行一次
-  src/main/java              共享源码，内含 `//? if` 标记
-fabric/                      Fabric 入口 + FabricPlatformHelper
-neoforge/                    NeoForge 入口 + NeoForgePlatformHelper
-forge/                       Forge 入口 + ForgePlatformHelper（构建 1.20.6–1.21.11，见第 6、7 节）
+common/     Loader-neutral code: screen, menu, packets, config, mixins, platform interface
+fabric/     Fabric entrypoints + FabricPlatformHelper
+neoforge/   NeoForge entrypoint, payload registration + NeoForgePlatformHelper
+forge/      Forge entrypoint, channel + ForgePlatformHelper (1.20.1 and 1.20.6 - 1.21.11)
 ```
 
-Stonecutter 以 Minecraft 版本给每个 node 命名，并把它们放在分支目录下，
-所以 `:fabric:26.2` 的工程目录是 `fabric/versions/26.2/`。这些目录都是构建产物，
-受版本控制的只有 `versions/<mc>/gradle.properties`。
+`<branch>/versions/<mc>/` are build directories (gitignored). Only `versions/<mc>/gradle.properties`
+at the root is source.
 
-## 3. Gradle 构建是怎么串起来的
+## 3. How the build fits together
 
-### `settings.gradle.kts`
+### The version matrix
 
-声明树与矩阵：
+There is no list of versions in any build script. Each `versions/<mc>/gradle.properties` declares
+which loaders that version is built for:
 
-```kotlin
-val fabricVersions = listOf("1.20.1", "1.20.2", "1.20.3", "1.20.4", "1.20.5", "1.20.6", "1.21",
-    "1.21.1", "1.21.2", "1.21.3", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9",
-    "1.21.10", "1.21.11", "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
-val neoforgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4",
-    "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11",
-    "26.1", "26.1.1", "26.1.2", "26.2", "26.3")
-val forgeVersions = listOf("1.20.6", "1.21", "1.21.1", "1.21.3", "1.21.4", "1.21.5", "1.21.6",
-    "1.21.7", "1.21.8", "1.21.9", "1.21.10", "1.21.11")
-val commonVersions = (fabricVersions + neoforgeVersions + forgeVersions).distinct()
-
-stonecutter {
-    create(rootProject) {
-        branch("common") { versions(*commonVersions.toTypedArray()) }
-        branch("fabric") { versions(*fabricVersions.toTypedArray()) }
-        branch("neoforge") { versions(*neoforgeVersions.toTypedArray()) }
-        branch("forge") { versions(*forgeVersions.toTypedArray()) }
-    }
-}
+```properties
+loaders=fabric,neoforge,forge
+deps.minecraft=1.21.1
+deps.java=21
+...
 ```
 
-这个文件里有两个容易踩的、属于"承重墙"级别的细节：
+`settings.gradle.kts` lists the `versions/` directory, sorts it numerically and builds the
+Stonecutter tree from it; CI lists the same directory to create one job per version. Adding a
+version is one new directory.
 
-- **根分支是刻意留空的。** 它存在（Stonecutter 一定有一个根分支），但不注册任何版本。
-  给它注册版本会为每个 Minecraft 版本生成一个没有构建脚本、没有产物的空工程，
-  而控制器里那些按项目排布的发布任务无法跨越"根本没有该任务"的工程工作。
-- **`pluginManagement.plugins {}` 必须同时声明两个 Loom。**
-  `dev.kikugie.loom-back-compat` 是**以编程方式**应用 `net.fabricmc.fabric-loom` 或
-  `net.fabricmc.fabric-loom-remap` 之一的，而编程式的 `pluginManager.apply(id)` 走的是该工程的
-  buildscript 仓库、而不是 `pluginManagement.repositories`。在这里写上两个 id，
-  再在 `stonecutter.gradle.kts` 里以 `apply false` 声明，才能让每个 node 都解析得到。
+`-Pdayz.versions=1.21.1,26.2` limits the tree to those versions. Configuring a node downloads and
+prepares that Minecraft release, so a full configuration is heavy; CI builds one version per job this
+way. In a limited tree the `common` branch also keeps the active version (`stonecutter active` must
+name a version that exists), which `buildMods` does not build.
 
-### `stonecutter.gradle.kts`
+### Controller tasks (`stonecutter.gradle.kts`)
 
-控制器脚本。保存当前激活版本，注册 `chiseledBuild` / `publishAll` / `matrix`，
-并以 `apply false` 声明各加载器插件，让 node 工程继承它们到 buildscript classpath。
+| Task | What it does |
+| :--- | :--- |
+| `chiseledBuild` | builds every node, `common` included |
+| `buildMods` | builds every loader node - what CI runs |
+| `publishAll` / `publishModrinthAll` / `publishCurseforgeAll` | publishes every loader node, ordered one at a time |
+| `matrix` | prints the node list |
 
-### `build-logic/`
+### Convention plugins (`build-logic/`)
 
-两个预编译约定插件：
-
-| 插件 | 应用对象 | 职责 |
+| Plugin | Applied to | Responsibility |
 | :--- | :--- | :--- |
-| `dayz-common` | 每个 node | 版本字符串、Java 工具链、仓库、manifest 展开、版本重命名、jar 内许可证、生成源码接线 |
-| `dayz-loader` | fabric / neoforge / forge | 共享 `common` node 的源码，并配置 `publishMods` |
+| `dayz-common` | every node | versions, Java toolchain, repositories, manifest expansion, version replacements, licence in the jar, generated-source wiring |
+| `dayz-loader` | fabric / neoforge / forge | compiling `common`'s sources into the jar, refmap entries, the `verifyJar` packaging check, publishing |
 
-`build-logic/src/main/kotlin/Utils.kt` 里是 `prop()` / `mc` / `branch` 等访问器。
-注意：在预编译脚本插件里**不能**直接写 `stonecutter { }`，必须通过 `sc` 访问器取扩展。
+`Utils.kt` holds the `prop()` / `mc` / `branch` / `isLegacyForge` / `needsRefmap` helpers and
+`changelogSection()`. Inside a precompiled script plugin, Stonecutter's extension is reached through
+the `sc` accessor; `stonecutter { }` is not available there.
 
-## 4. 版本预处理后的源码
+`prop()` reads `findProperty` first (so `-P` and the root `gradle.properties` win) and then
+`versions/<mc>/gradle.properties` directly: Gradle only merges a project's own properties file with
+the root one, and the node directories are not where the version files live.
 
-Stonecutter 会预处理共享的 `src/` 目录树，并把结果写到：
+### The three loader toolchains
 
-```
-<分支>/versions/<mc>/build/generated/stonecutter/<sourceSet>/{java,resources}
-```
+| Loader | Plugin | Notes |
+| :--- | :--- | :--- |
+| Fabric | Fabric Loom via `dev.kikugie.loom-back-compat` | picks `fabric-loom-remap` below 26.1 and `fabric-loom` from 26.1; the remapped jar is `remapJar` below 26.1, `jar` above |
+| NeoForge | ModDevGradle (`net.neoforged.moddev`) | official names since 1.20.2: no refmap, no reobfuscation |
+| Forge 1.20.6+ | ForgeGradle 7 | official names: no refmap, no reobfuscation |
+| Forge 1.20.1 | ModDevGradle Legacy (`net.neoforged.moddev.legacyforge`) | SRG names: `reobfJar` writes the shipped jar to `build/libs` (the dev jar goes to `build/devlibs`), and the Mixin annotation processor writes the Searge refmap |
 
-`dayz-common` 让 `compileJava` 指向这棵生成树，而**不是**原始源码 —— 因为原始树里同时躺着所有版本的代码，
-Stonecutter 只在它生成的副本里把非激活分支注释掉。直接编译生成树还有一个好处：
-"当前激活版本"和其它 node 的行为完全一致，不再依赖工作区是否已经 chisel 到它。
+`forge/build.gradle.kts` declares both Forge plugins with `apply false` and applies one per node.
+What was tried for Forge, so nobody has to try it again:
 
-`dayz-loader` 再把 **common** node 的生成树加到加载器自己的编译任务里，
-于是每个加载器 jar 里只有一份共享类、一份共享 mixin 配置。这不只是整洁问题：
-26.1 以下 Fabric 与 Forge 需要 **mixin refmap**，而 refmap 只能由 Mixin 注解处理器扫描被注解的
-**源码**产生。给它一个编译好的 `common.jar`，得到的类 Mixin 永远无法重映射。
+| Toolkit | Verdict |
+| :--- | :--- |
+| ForgeGradle 6 | Gradle 8 only; Loom needs Gradle 9 |
+| ModDevGradle Legacy | builds 1.20.1 (and older); cannot build 1.20.2+, which have no `universal-srg` artifact |
+| ForgeGradle 7 | builds 1.20.6+; has no reobfuscation or mixin support, so it cannot build 1.20.1 |
 
-### 每版本属性
+ForgeGradle 7 is stateless: it does nothing until `minecraft.dependency(...)` is declared, and it does
+not add its own repositories once another plugin has. `forge/build.gradle.kts` therefore adds the
+mavenizer repository and Mojang's library repository itself. Without them the Forge dependency
+resolves to an empty module and every `net.minecraft.*` import fails - which looks like a broken
+source tree and is not one.
 
-`versions/<mc>/gradle.properties` 是声明某个 Minecraft 版本坐标的唯一位置
-（加载器版本、Java 级别、mixin 兼容级别、pack format、发布版本区间）。
-Stonecutter 只会为注册在**根分支**上的版本读取这些文件，而这里的根分支是空的，
-所以 `Utils.kt` 自己读：
+## 4. Version-processed sources
 
-```kotlin
-fun Project.propOrNull(key: String): String? =
-    findProperty(key)?.toString()?.takeIf { it.isNotBlank() }
-        ?: versionProperties()[key]?.takeIf { it.isNotBlank() }
-```
+Stonecutter writes each node's processed copy of the shared sources to
+`<branch>/versions/<mc>/build/generated/stonecutter/main/{java,resources}`. `dayz-common` compiles
+that generated tree, never the raw `src/`, which holds every version's code side by side.
 
-这样每个 Minecraft 版本只有一个文件，而不是每个（分支, 版本）组合一个，
-同时 `-P` 覆盖和根 `gradle.properties` 依然优先。
+`dayz-loader` adds the **`common` node's** generated tree to each loader's compile, so every class and
+mixin config exists once, inside the loader jar. Do not "simplify" this to
+`implementation(project(":common"))`: that puts a second copy of every class and mixin config on the
+classpath, and a refmap can only be produced by running the Mixin annotation processor over the
+annotated sources - a precompiled `common.jar` would give Mixin classes it cannot remap.
 
-## 5. 条件编译
+**Keep every loader source under `src/main/java`.** A `src/client/java` root is invisible to this
+pipeline: 1.8.0 shipped every Fabric jar without its client entrypoint that way.
 
-用了两套机制，怎么选是风格约定而不是硬性要求。
+## 5. Conditional compilation
 
-### `//? if` 注释
+### `//? if` comments
 
-用于任何**结构性**差异 —— 签名不同、hook 目标不同、方法被删掉：
+For anything structural - a different signature, hook target or removed method:
 
 ```java
-//? if >=26.2 {
+//? if >=26.1 {
     private void drawDayZPanels(GuiGraphicsExtractor guiGraphics, float partialTick, int mouseX, int mouseY) {
 //?} else {
     @Override
@@ -157,192 +150,154 @@ fun Project.propOrNull(key: String): String? =
 //?}
 ```
 
-三分支可以用 `elif`。**不要在条件块内部写注释** —— 处理器会重写注释标记，
-残留的 `//` 有可能被吃掉，于是一行注释变成一行代码。这种错误很隐蔽，
-表现为生成文件里的语法错误。
+- `elif` is available; **conditions cannot nest** - write a flat `if / elif / else` chain.
+- Keep `//` comments *before* a `//? if` line where you can, and never put `/* */` or `/** */`
+  comments inside a conditional block.
 
-### `replacements`
+### Replacements
 
-对于纯重命名（否则同一个标识符要包几十个 `//? if`），约定插件里声明批量替换：
+Pure renames are bulk replacements in `dayz-common.gradle.kts`, written against the **newest** names
+and applied backwards to older nodes:
 
 ```kotlin
 sc.replacements.string(sc.current.parsed < "1.21.11") {
     replace("Identifier", "ResourceLocation")
-    replace("isClientSide()", "isClientSide")
 }
 ```
 
-源码一律按**最新**命名书写（`Identifier`、`isClientSide()`、`GuiGraphicsExtractor`、`ContainerInput`……），
-重命名只对更老的 node **反向**应用。把基准文本留在当前正式版上，意味着最新目标完全不需要被改写 ——
-而那通常是最常动的目标。
+**A replacement works in both directions.** Where its condition holds, the first string becomes the
+second. Where it does not, every occurrence of the *second* string becomes the first. So the second
+string must never appear in the sources on its own: a bare `render` once turned the
+`net.minecraft.client.renderer` package into `extractRenderStateer` on 26.x. Keep both sides
+specific (`"super.extractRenderState("` rather than `"extractRenderState"`), and use a `//? if`
+block for anything that is not a plain rename.
 
-## 6. 版本矩阵
+### Per-version properties
 
-| Minecraft | Fabric | NeoForge | Forge | Java |
-| :--- | :---: | :---: | :---: | :---: |
-| **1.20.1** | ✅ | — | — | 17 |
-| **1.20.2** | ✅ | — | — | 17 |
-| **1.20.3** | ✅ | — | — | 17 |
-| **1.20.4** | ✅ | — | — | 17 |
-| **1.20.5** | ✅ | — | — | 21 |
-| **1.20.6** | ✅ | ✅ | ✅ | 21 |
-| **1.21** | ✅ | ✅ | ✅ | 21 |
-| **1.21.1** | ✅ | ✅ | ✅ | 21 |
-| **1.21.2** | ✅ | ✅ | — | 21 |
-| **1.21.3** | ✅ | ✅ | ✅ | 21 |
-| **1.21.4** | ✅ | ✅ | ✅ | 21 |
-| **1.21.5** | ✅ | ✅ | ✅ | 21 |
-| **1.21.6** | ✅ | ✅ | ✅ | 21 |
-| **1.21.7** | ✅ | ✅ | ✅ | 21 |
-| **1.21.8** | ✅ | ✅ | ✅ | 21 |
-| **1.21.9** | ✅ | ✅ | ✅ | 21 |
-| **1.21.10** | ✅ | ✅ | ✅ | 21 |
-| **1.21.11** | ✅ | ✅ | ✅ | 21 |
-| **26.1** | ✅ | ✅ | — | 25 |
-| **26.1.1** | ✅ | ✅ | — | 25 |
-| **26.1.2** | ✅ | ✅ | — | 25 |
-| **26.2** | ✅ | ✅ | — | 25 |
-| **26.3** | ✅ | ✅ | — | 25 |
+`versions/<mc>/gradle.properties` holds `loaders`, `deps.minecraft`, `deps.java`,
+`deps.mixin-compat`, `deps.pack-format`, the loader versions and `meta.minecraft-range`. Optional
+`meta.<loader>-range` entries set the minimum loader version players need; without one it is the
+build version. The root `gradle.properties` sets `meta.fabric-loader-range` for every version.
 
-合计：**23 个 Minecraft 版本、53 个可发布 jar**（Fabric 23、NeoForge 18、Forge 12）。
+## 6. Per-version API boundaries
 
-Fabric 侧的 Loom 变体分界线仍在 `26.1`：`fabric-loom-remap` 用于 26.1 以下（1.21.11 及更早），
-`fabric-loom` 从 26.1 起接管不混淆版本。`loom-back-compat` 依据 `sc.current.parsed < "26"` 选择变体，
-并为不混淆版 Loom 删掉的 `mod*` 配置提供别名，因此一份构建脚本同时覆盖这条分界线两侧。
-
-### 每版本 API 边界
-
-下面这张表记录每个 API **从哪个版本起**发生变化，是这份文档里最值钱的部分：
-下一次移植新版本时照着它就知道要改什么，不必逐个方法去试。
-每一行都是**直接检查对应版本的 jar 与 mappings 得到的，不是从版本号推断出来的**。
+Which version each API changed in. Every row was established from that version's real jar or
+sources, not inferred from the version number - check before trusting a guess.
 
 | Since | Change |
 | :--- | :--- |
-| 1.20.2 | 引入 `RecipeHolder`：`RecipeManager#getRecipeFor` 现在返回 `Optional<RecipeHolder<CraftingRecipe>>`，`RecipeCraftingHolder#setRecipeUsed` 接收 `RecipeHolder<?>` 而不是裸的 `Recipe<?>`；`mouseScrolled` 增加了横向轴；`renderBackground` 增加了 4 参数形式；`renderEntityInInventoryFollowsMouse` 取代了 `renderEntityInInventory` |
-| 1.20.5 | `CustomPacketPayload` 增加了嵌套的 `Type` 与 `StreamCodec` 体系；出现 `RegistryFriendlyByteBuf`；`ItemStack#getTag` 被移除，改用 `isSameItemSameComponents`；`Block#use` 拆成 `useItemOn`（手持物品）与 `useWithoutItem`（空手），所以开容器的 mixin 从这里起改为针对 `useWithoutItem`，更老的 `use`（多一个 `InteractionHand` 参数）留在下面 |
-| 1.21 | `CraftingInput`；`ResourceLocation.fromNamespaceAndPath`（公开构造器变为私有） |
-| 1.21.2 | 移除 `InteractionResult.sidedSuccess`；`ResultSlot#setRecipeUsed` 去掉了 `Level` 参数 |
-| 1.21.5 | `Inventory#selected` 变为私有，改由 `getSelectedSlot()` 提供 |
-| 1.21.6 | GUI 栈换成 `Matrix3x2f`（`pushPose`→`pushMatrix`，3 参数 `translate`/`scale` 去掉 z）；`setTooltipForNextFrame` 取代 `renderTooltip(Font, ItemStack, …)`；**`renderContents` 从 `render` 中拆出，`hoveredSlot` 的赋值也随之移动**，所以虚拟 Hands 悬停 mixin 从这里起针对 `renderContents`；**`renderBackground` 从 `render` 移入 `renderWithTooltip`**（后者先执行），因此依赖屏幕自身缩放栈的绘制必须改到 `render` 里；Forge 转向 EventBus 7：`net.minecraftforge.eventbus.api` 拆成 `bus`/`listener`，`FMLJavaModLoadingContext#getModEventBus()` 换成返回 `BusGroup` 的 `getModBusGroup()`。`BusGroup` 不是 `IEventBus`，EventBus 7 里也根本不存在 `IEventBus`，所以取 bus 与 `DeferredRegister#register` 的**语句**同样按版本分支，不只是导入 |
-| 1.21.7 | NeoForge 把客户端包分发器移到 `ClientPacketDistributor` |
-| 1.21.9 | `Level#isClientSide` 变为私有；移除 `ServerPlayer#getServer`；`Window#getWindow` 更名为 `handle`；输入改用 `MouseButtonEvent` 对象 |
-| 1.21.11 | `ResourceLocation` 更名为 `Identifier` |
-| 26.1 | Minecraft 不再混淆：没有 mappings、没有 refmap、没有 remap 步骤；`GuiGraphics` → `GuiGraphicsExtractor`，所有 `render*` → `extract*`；`Minecraft#setScreen` 仍然存在；Fabric 的 `screenhandler` API 更名为 `menu`；`ExtendedScreenHandlerFactory` → `ExtendedMenuProvider` |
-| 26.2 | 删除 `Minecraft#setScreen`（背包重定向 hook 移到 `Gui#setScreen`）；`Recipe#assemble` 去掉 `RegistryAccess` |
-| 26.3 | Minecraft 从 GLFW 转向 SDL3（`org.lwjgl.glfw` 离开 classpath；改用 `org.lwjgl.sdl.SDLMouse.SDL_WarpMouseInWindow`）；裸修饰键位变成 SDL keymods，所以要用 `InputWithModifiers#hasShiftDown`；`InputConstants.Type.KEYSYM` → `KEYBOARD`；`Player#drop` 增加 `Prediction` 参数 |
+| 1.20.2 | `RecipeHolder`: `getRecipeFor` returns `Optional<RecipeHolder<CraftingRecipe>>`, `setRecipeUsed` takes a `RecipeHolder<?>`. `mouseScrolled` gains a horizontal axis; `renderBackground` a 4-argument form; `renderEntityInInventoryFollowsMouse` replaces `renderEntityInInventory`. Forge stops using SRG names |
+| 1.20.5 | Typed payloads (`CustomPacketPayload.Type`, `StreamCodec`, `RegistryFriendlyByteBuf`); `ItemStack#getTag` removed (`isSameItemSameComponents`); `Block#use` split into `useItemOn` / `useWithoutItem`; `MobEffectInstance#getEffect` returns a `Holder<MobEffect>` |
+| 1.21 | `CraftingInput`; `ResourceLocation.fromNamespaceAndPath`; Curse of Binding becomes the `PREVENT_ARMOR_CHANGE` enchantment component |
+| 1.21.2 | `InteractionResult.sidedSuccess` removed; `ResultSlot#setRecipeUsed` loses its `Level`; `blitSprite` takes a render-type function |
+| 1.21.4 | `GuiGraphics#enableScissor` transforms its rectangle through the current pose |
+| 1.21.5 | `Inventory#selected` becomes private (`getSelectedSlot()`) |
+| 1.21.6 | GUI pose stack becomes `Matrix3x2f`; `setTooltipForNextFrame`; `renderContents` split out of `render` **with the `hoveredSlot` assignment**; `renderBackground` moves into `renderWithTooltip`, before `render`; `blitSprite` takes a `RenderPipeline`; mob effect icons become GUI sprites (`Gui.getMobEffectSprite`); Forge moves to EventBus 7 (`bus`/`listener` packages, `getModBusGroup()` returning a `BusGroup`, no `IEventBus`) |
+| 1.21.7 | NeoForge's client packet distributor moves to `ClientPacketDistributor` |
+| 1.21.9 | `Level#isClientSide` private; `ServerPlayer#getServer` removed; `Window#getWindow` → `handle`; `MouseButtonEvent` input objects |
+| 1.21.11 | `ResourceLocation` → `Identifier` |
+| 26.1 | Unobfuscated: no mappings, refmaps or remap step. `GuiGraphics` → `GuiGraphicsExtractor`, `render*` → `extract*`, `renderBg` removed, `ClickType` → `ContainerInput`, `imageWidth`/`imageHeight` final; Fabric `screenhandler` API → `menu`, `playC2S` → `serverboundPlay` |
+| 26.2 | `Minecraft#setScreen` deleted (hook `Gui#setScreen`); `Recipe#assemble` loses `RegistryAccess`; `getMobEffectSprite` moves to `Hud` |
+| 26.3 | GLFW → SDL3 (`org.lwjgl.glfw` gone; use `SDL_WarpMouseInWindow` and `hasShiftDown()`); `InputConstants.Type.KEYSYM` → `KEYBOARD`; `Player#drop` takes a `Prediction` |
 
-### Forge 用的工具链
+## 7. Enabled targets and the gaps that remain
 
-Forge 没有能直接用的插件，所以把试过的都记下来：
+- **NeoForge 1.20.1 - 1.20.5:** 1.20.1 predates NeoForge; 1.20.2 used the old `SimpleChannel` stack;
+  1.20.3 had no NeoForge release; 1.20.4 predates `StreamCodec`; 1.20.5's release lacks the
+  `moddev-config.json` ModDevGradle needs.
+- **Forge 1.20.2 - 1.20.5:** 1.20.2 - 1.20.4 would need their own networking variant and are rarely
+  played on Forge; Forge never released 1.20.5.
+- **Forge 1.21.2:** Forge never released it.
+- **Forge 26.x:** not a target; NeoForge is the supported route.
 
-| 工具链 | 可用 | 原因 |
-| :--- | :--- | :--- |
-| ForgeGradle 6 | 否 | 只支持 Gradle 8，而 Loom 1.18.1 需要 Gradle 9 |
-| ModDevGradle `legacyforge` | 否 | 会去找 `net.minecraftforge:forge:<v>:universal-srg`，而这个 classifier 只存在于 1.20.2 之前的 SRG 体系，根本构建不了 1.21.1 |
-| **ForgeGradle 7** | **可以** | 支持 Gradle 9.3+ 的重写版，通过自带的 mavenizer 解析 Forge |
+## 8. Runtime rules
 
-ForgeGradle 7 是**无状态**的：不写 `minecraft.dependency(...)` 它什么都不做；而且一旦有别的插件
-声明过仓库，它就不会再自己添加仓库。所以 `forge/build.gradle.kts` 显式注册了 mavenizer 仓库和
-Mojang 的 libraries 仓库。少了这两步，Forge 依赖会解析成一个空模块，
-所有 `net.minecraft.*` 导入全部报错 —— 看起来像源码问题，其实不是。
+1. **`Platform.HELPER` is null until the loader entrypoint runs.** Never touch it from a static
+   initialiser or early mixin; use `Platform.isReady()` / `Platform.isModLoaded()`.
+2. **New loader-specific behaviour goes through `IPlatformHelper`**, implemented in all three loader
+   helpers. Never branch on the loader inside `common/`.
+3. **Optional mods are never referenced directly.** JEI, REI, EMI, Curios, Accessories, Trinkets,
+   Mouse Tweaks and the thirst mods are reached through reflection or key mappings
+   (`client/compat/`), and the mod must launch and work with none of them.
+4. **Mouse Tweaks' API interface** is compiled from a stand-in in `common/src/main/java/yalter/`.
+   `dayz-loader` strips it from every jar (and `verifyJar` fails if it ships), and the mixin that adds
+   it to the screen lives in `dayz-inventory.compat.mixins.json`, a non-required config whose plugin
+   only applies it when Mouse Tweaks is installed.
+5. **The main and client mixin configs are `required: true`.** A target that moved is a crash at
+   launch, not a no-op. When a target moves, find the method every call site goes through rather than
+   guessing; `ScreenRedirectMixin` hooks `Gui#setScreen` on 26.2+ for that reason.
+6. **`@Shadow` on `AbstractContainerScreen` does not resolve in production.** The screen reads its
+   inherited fields itself; mixins call into it.
+7. **The screen draws under its own scale** whenever the window is narrower than the 540 x 220
+   panel. Anything that hands real screen coordinates to vanilla (the player preview, the Vicinity
+   scissor) cancels that scale first, which is correct whether or not `enableScissor` applies the
+   pose.
+8. **Settings** live in `config/dayz_inventory.properties` (`DayZConfig`), loaded by each loader's
+   entrypoint right after the platform helper is installed.
 
-## 7. 已支持的目标与仍然存在的空缺
+Features that must survive refactors: the Vicinity grid and its 10-tick rescan, inline container
+drawers, the 2x2 crafting grid with the server-side result, the 2x Hands slot bound to the selected
+hotbar slot, drag-to-equip onto the Survivor panel, and the CURIOS / ACCESSORIES / TRINKETS and
+recipe-viewer buttons.
 
-矩阵里的 23 个版本并非每个加载器在每个版本上都有节点。剩下的缺口不多，每一条都有具体原因。
-本节原先列出的两类缺口现在已经补上，这里也一并说明，免得当初的原因被忘掉。
+## 9. Adding a Minecraft version
 
-### 1.20.1：Fabric 已支持，Forge 未支持
+1. Copy the closest `versions/<mc>/gradle.properties` to a new directory and update `loaders`,
+   `deps.*` and `meta.minecraft-range`.
+2. Build it alone: `./gradlew buildMods -Pdayz.versions=<mc>`. Port what breaks - with a `//? if`
+   block, or a replacement when it is a pure rename (mind the reverse rule in section 5).
+3. Add the version to the README tables and `docs/store-descriptions/`.
 
-**1.20.1 在 Fabric 上是支持的** —— 它就在 `fabricVersions` 里，走的是 1.20.5 之前的网络实现
-（`DayZInventoryPayload` / `DayZInventoryOpenData` 上的 `//? if >=1.20.5` 守卫就是这条分界）。
+CI and publishing pick the version up from the directory; game version and loader tags come from the
+node.
 
-缺的是 **Forge 1.20.1**，原因很具体：Forge 1.20.1 跑在 SRG 名字上，所以既需要 reobfuscation，
-又需要一份 Searge mixin refmap。ForgeGradle 7 两样都没有 —— 它的 reobf 要额外的 "Renamer Gradle"
-配套插件，mixin 支持则完全没有；ForgeGradle 6 虽然两样都有，却只支持 Gradle 8，而 Loom 1.18.1
-需要 Gradle 9。要接上它意味着嵌一套 Gradle 8 构建，而不是再开一个 node。
+## 10. CI and publishing
 
-### Forge 1.21.6–1.21.11：已不再是缺口
+`.github/workflows/build.yml`:
 
-这几个版本的 Forge **已经完成**。Forge 在 1.21.6 转向 EventBus 7：它把
-`net.minecraftforge.eventbus.api` 拆成 `bus` / `listener` 两个子包，并把
-`FMLJavaModLoadingContext#getModEventBus()` 换成了返回 `BusGroup` 的 `getModBusGroup()`。
-`DayZInventoryForge` 现在在 `//? if >=1.21.6` 上同时切换导入块**和**取 bus / 注册的语句，
-因为 `BusGroup` 不是 `IEventBus`，而 EventBus 7 里根本不存在 `IEventBus`。因此 Forge
-现在覆盖 1.20.6 到 1.21.11。
+- **Pull requests and pushes to `main`** build every version, one job each, and upload the jars as
+  artifacts. A job named `Build` reports the overall result. Pull requests never publish.
+- **A `v*` tag** builds everything, then creates the GitHub release with every jar and this
+  version's CHANGELOG section, then publishes each version to Modrinth and CurseForge - only after
+  every build has passed.
+- **Manual runs** can publish (optionally to one platform, for finishing a partial upload) or
+  delete Modrinth versions.
 
-### 1.20.2–1.20.4 的 Fabric：已完成，已进矩阵
+Publishing uses `me.modmuss50.mod-publish-plugin`, configured once in `dayz-loader`:
 
-这三个版本已经以 Fabric 节点进入矩阵。它们走的是 1.20.5 之前的网络实现
-（`CustomPacketPayload` 已经存在，但没有 `Type`、也没有 `StreamCodec`，所以 1.20.1 用的那套
-裸 `ResourceLocation` + `FriendlyByteBuf` channel 依然适用）。额外需要满足两个条件：
-`RecipeHolder` 这条分界是 1.20.2 而不是 1.20.5，而 `Block#use` → `useWithoutItem` 的拆分是 1.20.5。
+- Tokens come from the environment: `MODRINTH_TOKEN` (or `MODRINTH_PAT`) and `CURSEFORGE_API_KEY`
+  (or `CURSEFORGE_TOKEN`). Store them as repository **secrets**, not variables.
+- `publish.dry_run` defaults to `true`; CI passes `-Ppublish.dry_run=false`.
+- The version page text is the version's section of `CHANGELOG.md`; publishing refuses to run when
+  that section is missing.
+- **CurseForge never replies with a URL** - every upload goes to human review, so a green task means
+  *submitted*.
+- Project descriptions are **not** published by the build. `docs/store-descriptions/*.md` are the
+  copy-paste sources for both pages and are edited by hand.
 
-### NeoForge 1.20.2–1.20.4
+Release checklist: bump `mod.version` in `gradle.properties`, add the CHANGELOG section, update the
+README and store descriptions, merge, then tag `v<version>`.
 
-1.20.1 早于 NeoForge。NeoForge 20.2.x 仍然使用旧的 `NetworkRegistry` / `SimpleChannel` 体系，
-而这棵树里没有带这套实现。1.20.3 **根本没有 NeoForge 发布**（NeoForge 从 20.2.x 直接跳到
-20.4.x）。NeoForge 20.4.x 有注册器 API（`RegisterPayloadHandlerEvent` → `IPayloadRegistrar`），
-但早于 `StreamCodec`，所以共享 payload 还得再写一个形态。这三个版本的 Fabric 都已经覆盖。
+## 11. Gotchas
 
-### Forge 1.21.2
-
-Forge 从未发布 1.21.2 版本。
-
-### 26.x 的 Forge
-
-这不在本模组的构建目标里；26.x 这一线走 NeoForge。
-
-### 1.20.5：只有 Fabric
-
-NeoForge 为那个版本发布的产物里没有 ModDevGradle 需要的 `moddev-config.json`，
-而 Forge 根本没有 1.20.5 版本，所以这一版只有 Fabric 节点。
-
-Fabric 与 NeoForge 合起来覆盖 1.20.6 及以上的所有版本，1.20.1–1.20.5 则只有 Fabric。
-
-## 8. 新增一个 Minecraft 版本
-
-1. 加 `versions/<mc>/gradle.properties`，照抄最接近的版本，改掉 `deps.minecraft`、`deps.java`、
-   `deps.mixin-compat`、`deps.pack-format`、各加载器版本以及 `meta.minecraft-range`。
-2. 把版本号加进 `settings.gradle.kts` 里对应的列表。
-3. 跑 `./gradlew :common:<mc>:compileJava`，然后照着报错移植。只有当目标版本落在 Forge 当前可构建的
-   区间（1.20.6–1.21.11，见第 7 节；1.21.2 跳过，Forge 从未发布该版本）内时，才把它加进 `forgeVersions`。
-4. 把版本号补进 `README.md` / `README.en.md` 以及 `docs/store-descriptions/`。
-5. `./gradlew chiseledBuild` 确认整个矩阵仍然能构建。
-
-发布会自动带上新版本：游戏版本标签和加载器标签是从 node 读的，不是每次发版手写的。
-
-## 9. 发布
-
-`dayz-loader` 会为每个加载器 node 配置 `me.modmuss50.mod-publish-plugin`：
-
-- Modrinth 项目 `8asZxzdc`，CurseForge 项目 `1596267`。
-- Token 从环境变量读取：`MODRINTH_TOKEN`（回退 `MODRINTH_PAT`）与
-  `CURSEFORGE_API_KEY`（回退 `CURSEFORGE_TOKEN`）。
-- `publish.dry_run` 默认 `true`，所以误跑 `publishMods` 不会真的提交任何东西。
-- `publishAll` 依赖每个 node 的 `publishMods`，并做了排序，让 CurseForge 一次只收到一个上传而不是一串。
-
-**CurseForge 永远不会回链接。** 每个上传都进入人工审核；API 收下文件就返回。
-所以 `publishCurseforge` 变绿只代表**已提交**。Modrinth 是立即返回的。
-
-CurseForge 的项目**描述**无法从构建更新 —— 上传 token 是 legacy upload-only 的，
-而负责改元数据的 Eternal API 会拒绝它。`docs/store-descriptions/curseforge.md` 是那个页面的
-复制粘贴来源，需要手工保持同步。Modrinth 的描述**是**通过 API 推送的。
-
-## 10. 坑
-
-1. **`gradlew` 必须保持可执行**（权限 `100755`）。CI 里也会跑 `chmod +x ./gradlew`。
-2. **Gradle wrapper 是 9.7.0。** Fabric Loom 1.18.1 声明的
-   `org.gradle.plugin.api-version` 是 `9.7.0`；更老的 wrapper 会在解析时报 variant 匹配错误，
-   而错误信息里完全不提 Gradle 版本。
-3. **不要硬编码 `org.gradle.java.home`。** 它和机器绑定，会打挂 CI。启动 JDK 通过 `JAVA_HOME` 提供；
-   各版本的工具链来自 `versions/<mc>/gradle.properties`，缺失时由 foojay resolver 自动下载。
-4. **`prop()` 读两个来源。** 先 `findProperty`（所以 `-P` 和根 `gradle.properties` 优先），
-   再读 `versions/<mc>/gradle.properties`。如果某个属性"消失了"，先确认 node 的文件名和
-   `sc.current.project` 对得上。
-5. **绝不要在 `//? if` 块里写注释** —— 见第 5 节。
-6. **mixin 的目标被改名不会降级，而是直接崩。** 客户端 mixin 配置是 `required: true` 的。
-   目标搬家时先 grep 调用点，选**所有路径都会经过**的那个方法，不要猜。
-7. **MixinConfigs 的兼容级别是按版本变的。** 它由 `processResources` 从 `deps.mixin-compat`
-   展开进 mixin 配置；在 Java 21 的 node 上硬编码 `JAVA_25` 会过不了 Mixin 自己的校验。
-8. **加载器初始化之前不要碰 `Platform.HELPER`。** 入口点跑之前它是 `null`。
-   请用空安全的 `Platform.isModLoaded(...)` / `Platform.isReady()`。
+1. **`gradlew` must stay executable** (mode `100755`).
+2. **Do not hardcode `org.gradle.java.home`.** The launcher JDK (25) comes from `JAVA_HOME`; the
+   Java 17 / 21 toolchains are downloaded by the foojay resolver.
+3. **Loom needs a recent Gradle.** Loom publishes the minimum Gradle API it supports, and too old a
+   wrapper fails with a variant-matching error that never mentions Gradle.
+4. **`fabric.mod.json` does not understand Maven ranges.** `[1.21.5,1.21.6)` matches nothing and
+   produces "requires version [1.21.5,1.21.6) ... but only the wrong version is present: 1.21.5".
+   Fabric gets the comparison form (`>=1.21.5 <1.21.6`) from `minecraft_range_fabric`; the toml files
+   use the Maven form.
+5. **Every manifest value is a placeholder** expanded by `processResources`; an unknown token fails
+   the build on purpose. A hardcoded `version` once shipped a 1.4.1 jar that called itself 1.4.0.
+6. **The refmap entry is added per loader.** Fabric below 26.1 and Forge 1.20.1 need
+   `"refmap": "dayz-inventory.refmap.json"` in the mixin configs (`dayz-loader` adds it); everything
+   else must not have it. `verifyJar` checks both the file and the reference.
+7. **The mixin compatibility level is per version** (`deps.mixin-compat`); `JAVA_25` on a Java 21
+   node fails Mixin's validation.
+8. **Below 26.1, a Fabric node's shippable jar is `remapJar`, and Forge 1.20.1's is `reobfJar`.**
+   Never detect `remapJar` with `tasks.names`: Loom registers it later, and the development jar went to
+   Modrinth that way in 1.7.1.
+9. **`KeyMapping` fields are obfuscated in production.** Use the `KeyMappingAccessor` mixin or public
+   methods (`getName`, `saveString`), never reflection by field name.
