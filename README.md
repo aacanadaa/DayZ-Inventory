@@ -1,6 +1,6 @@
-﻿# DayZ Inventory
+# DayZ Inventory
 
-**English** Â· [ä¸­æ–‡](README.zh.md) Â· [FranÃ§ais](README.fr.md) Â· [æ—¥æœ¬èªž](README.ja.md) Â· [í•œêµ­ì–´](README.ko.md)
+**English** · [中文](README.zh.md) · [Français](README.fr.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
 [![Modrinth](https://img.shields.io/modrinth/v/dayz-inventory?label=Modrinth&logo=modrinth)](https://modrinth.com/mod/dayz-inventory)
 [![CurseForge](https://img.shields.io/curseforge/v/1596267?label=CurseForge&logo=curseforge&color=F16436)](https://www.curseforge.com/minecraft/mc-mods/dayz-inventory)
@@ -23,9 +23,9 @@ Pairs well with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar), which uses 
 
 | Loader | Minecraft |
 | :--- | :--- |
-| **Fabric** | 1.20.1 â€“ 26.3 |
-| **NeoForge** | 1.20.6 â€“ 26.3 |
-| **Forge** | 1.20.1, 1.20.6 â€“ 1.21.11 |
+| **Fabric** | 1.20.1 – 26.3 |
+| **NeoForge** | 1.20.6 – 26.3 |
+| **Forge** | 1.20.1, 1.20.6 – 1.21.11 |
 
 23 Minecraft versions, 54 builds. Download the jar matching both your game version and mod loader (see [Full version table](#full-version-table)).
 
@@ -66,7 +66,7 @@ Pairs well with [DayZ Hotbar](https://modrinth.com/mod/dayz-hotbar), which uses 
 | :--- | :--- | :--- |
 | `autoPickup` | `false` | Walk-over pickup like vanilla (Creative always keeps it) |
 | `openContainersInDayZScreen` | `true` | Right-clicking a chest or barrel opens the DayZ screen |
-| `vicinityRadius` | `3` | Vicinity scan radius in blocks (1â€“8; match server & client) |
+| `vicinityRadius` | `3` | Vicinity scan radius in blocks (1–8; match server & client) |
 | `replaceInventoryScreen` | `true` | Inventory key opens the DayZ screen |
 | `showStatusEffects` | `true` | Show status effect icons on the Survivor panel |
 | `showVitals` | `true` | Show health, food, and thirst bars on the Survivor panel |
@@ -80,29 +80,29 @@ On dedicated servers, `autoPickup`, `openContainersInDayZScreen`, and `vicinityR
 
 | Minecraft | Fabric | NeoForge (min.) | Forge (min.) | Java |
 | :--- | :---: | :---: | :---: | :---: |
-| **1.20.1** | âœ… | â€” | âœ… any 47.x | 17 |
-| **1.20.2** | âœ… | â€” | â€” | 17 |
-| **1.20.3** | âœ… | â€” | â€” | 17 |
-| **1.20.4** | âœ… | â€” | â€” | 17 |
-| **1.20.5** | âœ… | â€” | â€” | 21 |
-| **1.20.6** | âœ… | âœ… 20.6.141+ | âœ… 50.2.10+ | 21 |
-| **1.21** | âœ… | âœ… 21.0.167+ | âœ… 51.0.33+ | 21 |
-| **1.21.1** | âœ… | âœ… 21.1.250+ | âœ… 52.1.12+ | 21 |
-| **1.21.2** | âœ… | âœ… 21.2.1-beta+ | â€” | 21 |
-| **1.21.3** | âœ… | âœ… 21.3.97+ | âœ… 53.1.12+ | 21 |
-| **1.21.4** | âœ… | âœ… 21.4.157+ | âœ… 54.1.18+ | 21 |
-| **1.21.5** | âœ… | âœ… 21.5.98+ | âœ… 55.1.13+ | 21 |
-| **1.21.6** | âœ… | âœ… 21.6.20-beta+ | âœ… 56.0.9+ | 21 |
-| **1.21.7** | âœ… | âœ… 21.7.25-beta+ | âœ… 57.0.3+ | 21 |
-| **1.21.8** | âœ… | âœ… 21.8.54+ | âœ… 58.1.22+ | 21 |
-| **1.21.9** | âœ… | âœ… 21.9.16-beta+ | âœ… 59.0.5+ | 21 |
-| **1.21.10** | âœ… | âœ… 21.10.64+ | âœ… 60.1.15+ | 21 |
-| **1.21.11** | âœ… | âœ… 21.11.45+ | âœ… 61.2.1+ | 21 |
-| **26.1** | âœ… | âœ… 26.1.0.19-beta+ | â€” | 25 |
-| **26.1.1** | âœ… | âœ… 26.1.1.15-beta+ | â€” | 25 |
-| **26.1.2** | âœ… | âœ… 26.1.2.109+ | â€” | 25 |
-| **26.2** | âœ… | âœ… 26.2.0.88+ | â€” | 25 |
-| **26.3** | âœ… | âœ… 26.3.0.1-beta+ | â€” | 25 |
+| **1.20.1** | ✅ | — | ✅ any 47.x | 17 |
+| **1.20.2** | ✅ | — | — | 17 |
+| **1.20.3** | ✅ | — | — | 17 |
+| **1.20.4** | ✅ | — | — | 17 |
+| **1.20.5** | ✅ | — | — | 21 |
+| **1.20.6** | ✅ | ✅ 20.6.141+ | ✅ 50.2.10+ | 21 |
+| **1.21** | ✅ | ✅ 21.0.167+ | ✅ 51.0.33+ | 21 |
+| **1.21.1** | ✅ | ✅ 21.1.250+ | ✅ 52.1.12+ | 21 |
+| **1.21.2** | ✅ | ✅ 21.2.1-beta+ | — | 21 |
+| **1.21.3** | ✅ | ✅ 21.3.97+ | ✅ 53.1.12+ | 21 |
+| **1.21.4** | ✅ | ✅ 21.4.157+ | ✅ 54.1.18+ | 21 |
+| **1.21.5** | ✅ | ✅ 21.5.98+ | ✅ 55.1.13+ | 21 |
+| **1.21.6** | ✅ | ✅ 21.6.20-beta+ | ✅ 56.0.9+ | 21 |
+| **1.21.7** | ✅ | ✅ 21.7.25-beta+ | ✅ 57.0.3+ | 21 |
+| **1.21.8** | ✅ | ✅ 21.8.54+ | ✅ 58.1.22+ | 21 |
+| **1.21.9** | ✅ | ✅ 21.9.16-beta+ | ✅ 59.0.5+ | 21 |
+| **1.21.10** | ✅ | ✅ 21.10.64+ | ✅ 60.1.15+ | 21 |
+| **1.21.11** | ✅ | ✅ 21.11.45+ | ✅ 61.2.1+ | 21 |
+| **26.1** | ✅ | ✅ 26.1.0.19-beta+ | — | 25 |
+| **26.1.1** | ✅ | ✅ 26.1.1.15-beta+ | — | 25 |
+| **26.1.2** | ✅ | ✅ 26.1.2.109+ | — | 25 |
+| **26.2** | ✅ | ✅ 26.2.0.88+ | — | 25 |
+| **26.3** | ✅ | ✅ 26.3.0.1-beta+ | — | 25 |
 
 ---
 
@@ -118,4 +118,4 @@ Requires **JDK 25** as the Gradle launcher (Java 17/21 toolchains download autom
 
 ## License
 
-Apache License 2.0 â€” see [LICENSE](LICENSE).
+Apache License 2.0 — see [LICENSE](LICENSE).
