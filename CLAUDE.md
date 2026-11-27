@@ -1,6 +1,12 @@
+
+
 # CLAUDE.md
 
 Guidance for Claude Code when working in this repository.
+
+- Do not add "Co-authored-by: Claude <noreply@anthropic.com>" or any attribution to git commits or pull request descriptions.
+- Keep git commit messages and PR descriptions standard and focused entirely on the changes without mentioning AI assistance or tools used.
+
 
 ## Project Overview
 
