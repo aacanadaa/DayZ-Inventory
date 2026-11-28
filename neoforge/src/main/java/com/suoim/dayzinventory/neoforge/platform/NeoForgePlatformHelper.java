@@ -64,17 +64,10 @@ public class NeoForgePlatformHelper implements IPlatformHelper {
 
     @Override
     public void openMenu(ServerPlayer player, @Nullable Container container, @Nullable BlockPos pos, Component title) {
-        boolean hasContainer = container != null && pos != null;
-        int containerSize = hasContainer ? container.getContainerSize() : 0;
         player.openMenu(new SimpleMenuProvider(
             (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, container, pos),
             title
-        ), buf -> {
-            buf.writeBoolean(hasContainer);
-            if (hasContainer) buf.writeInt(containerSize);
-            buf.writeBoolean(hasContainer);
-            if (hasContainer) buf.writeBlockPos(pos);
-        });
+        ), buf -> DayZInventoryScreenHandler.writeOpenData(buf, container, pos));
     }
 
     @Override

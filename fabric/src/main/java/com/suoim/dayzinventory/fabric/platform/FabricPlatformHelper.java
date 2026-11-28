@@ -84,9 +84,10 @@ public class FabricPlatformHelper implements IPlatformHelper {
         player.openMenu(new ExtendedMenuProvider<DayZInventoryOpenData>() {
             @Override
             public DayZInventoryOpenData getScreenOpeningData(ServerPlayer player) {
+                String itemSizes = com.suoim.dayzinventory.ItemSizes.serverRules().serialize();
                 return container != null && pos != null
-                    ? DayZInventoryOpenData.forContainer(containerSize, pos)
-                    : DayZInventoryOpenData.none();
+                    ? DayZInventoryOpenData.forContainer(containerSize, pos, itemSizes)
+                    : DayZInventoryOpenData.none(itemSizes);
             }
 
             @Override
@@ -104,11 +105,7 @@ public class FabricPlatformHelper implements IPlatformHelper {
         player.openMenu(new ExtendedScreenHandlerFactory() {
             @Override
             public void writeScreenOpeningData(ServerPlayer player, FriendlyByteBuf buf) {
-                boolean hasContainer = container != null && pos != null;
-                buf.writeBoolean(hasContainer);
-                if (hasContainer) buf.writeInt(containerSize);
-                buf.writeBoolean(hasContainer);
-                if (hasContainer) buf.writeBlockPos(pos);
+                DayZInventoryScreenHandler.writeOpenData(buf, container, pos);
             }
 
             @Override

@@ -65,3 +65,43 @@ configurations {
     named("runtimeClasspath") { exclude(group = "net.fabricmc", module = "sponge-mixin") }
     named("runtimeElements") { exclude(group = "net.fabricmc", module = "sponge-mixin") }
 }
+
+// ---------------------------------------------------------------------------
+// Unit tests for the item size grid
+// ---------------------------------------------------------------------------
+// `com.suoim.dayzinventory.grid` is plain Java with no Minecraft types, so its
+// tests compile that package alone instead of the whole of `common` (which CI
+// never builds on its own: the loader nodes compile these sources themselves).
+// They run once per build, on the active node - every CI job configures that
+// node anyway - and `buildMods` depends on them.
+if (isActiveNode) {
+    val gridTestLibraries = configurations.create("gridTestLibraries")
+    dependencies {
+        gridTestLibraries(platform("org.junit:junit-bom:5.14.5"))
+        gridTestLibraries("org.junit.jupiter:junit-jupiter")
+        gridTestLibraries("org.junit.platform:junit-platform-launcher")
+    }
+
+    val gridTestSources = extensions.getByType<SourceSetContainer>().create("gridTest") {
+        java.setSrcDirs(listOf(
+            rootProject.file("common/src/main/java/com/suoim/dayzinventory/grid"),
+            rootProject.file("common/src/gridTest/java"),
+        ))
+        compileClasspath = gridTestLibraries
+        runtimeClasspath = output + gridTestLibraries
+    }
+
+    val gridTest = tasks.register<Test>("gridTest") {
+        group = "verification"
+        description = "Runs the unit tests of the item size grid"
+        testClassesDirs = gridTestSources.output.classesDirs
+        classpath = gridTestSources.runtimeClasspath
+        useJUnitPlatform()
+        testLogging {
+            events("failed")
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
+
+    rootProject.tasks.named("buildMods") { dependsOn(gridTest) }
+}

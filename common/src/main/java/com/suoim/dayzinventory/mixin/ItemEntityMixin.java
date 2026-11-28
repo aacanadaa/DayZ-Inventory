@@ -16,6 +16,7 @@
  */
 package com.suoim.dayzinventory.mixin;
 
+import com.suoim.dayzinventory.ItemSizes;
 import com.suoim.dayzinventory.config.DayZConfig;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -31,14 +32,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * Creative players keep vanilla pickup - they use the creative inventory, which
  * has no Vicinity panel, so they would otherwise have no way to pick anything
  * up - and {@code autoPickup=true} in the config restores it for everyone.
+ * <p>
+ * With item sizes on, an item is only picked up when it has room. Vanilla would
+ * still take it into the first empty slot even where its footprint does not
+ * fit, and the item would then be moved straight back out.
  */
 @Mixin(ItemEntity.class)
 public class ItemEntityMixin {
     @Inject(method = "playerTouch", at = @At("HEAD"), cancellable = true)
     private void onPlayerTouch(Player player, CallbackInfo ci) {
-        if (DayZConfig.get().autoPickup || player.isCreative()) {
+        if (player.isCreative()) {
             return;
         }
-        ci.cancel();
+        if (!DayZConfig.get().autoPickup) {
+            ci.cancel();
+            return;
+        }
+        if (!player.level().isClientSide() && !ItemSizes.hasRoom(player, ((ItemEntity) (Object) this).getItem())) {
+            ci.cancel();
+        }
     }
 }

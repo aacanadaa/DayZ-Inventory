@@ -16,6 +16,7 @@
  */
 package com.suoim.dayzinventory.config;
 
+import com.suoim.dayzinventory.grid.ItemSizeRules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ import java.util.Properties;
  */
 public final class DayZConfig {
     public static final String FILE_NAME = "dayz_inventory.properties";
+    public static final String ITEM_SIZES_FILE_NAME = "dayz_inventory_item_sizes.txt";
 
     private static final Logger LOGGER = LoggerFactory.getLogger("dayz_inventory");
     private static volatile DayZConfig current = new DayZConfig();
@@ -52,6 +54,8 @@ public final class DayZConfig {
     public boolean openContainersInDayZScreen = true;
     /** How far, in blocks, the Vicinity panel reaches for ground items and containers. */
     public int vicinityRadius = 3;
+    /** Items take several cells of the main inventory, as set in {@link #ITEM_SIZES_FILE_NAME}. Off by default. */
+    public boolean itemSizes = false;
 
     // Interface (client side)
     /** Pressing the inventory key opens the DayZ screen instead of the vanilla inventory. */
@@ -63,12 +67,24 @@ public final class DayZConfig {
     /** Press on an item and release over another slot to move it there. */
     public boolean dragAndDrop = true;
 
+    /** The size rules in effect: {@link ItemSizeRules#DISABLED} unless {@link #itemSizes} is on. */
+    private ItemSizeRules itemSizeRules = ItemSizeRules.DISABLED;
+
     public static final int MIN_RADIUS = 1;
     public static final int MAX_RADIUS = 8;
 
     /** The active settings. Never null: defaults apply until {@link #load} runs. */
     public static DayZConfig get() {
         return current;
+    }
+
+    /**
+     * The item size rules this side enforces. On a dedicated server and in
+     * singleplayer these are the ones that count; a client on a server uses the
+     * rules the server sends with the DayZ screen instead.
+     */
+    public ItemSizeRules itemSizeRules() {
+        return this.itemSizeRules;
     }
 
     /**
@@ -95,9 +111,36 @@ public final class DayZConfig {
         config.showStatusEffects = bool(properties, "showStatusEffects", config.showStatusEffects);
         config.showVitals = bool(properties, "showVitals", config.showVitals);
         config.dragAndDrop = bool(properties, "dragAndDrop", config.dragAndDrop);
+        config.itemSizes = bool(properties, "itemSizes", config.itemSizes);
+        config.itemSizeRules = loadItemSizes(configDirectory.resolve(ITEM_SIZES_FILE_NAME), config.itemSizes);
 
         current = config;
         config.write(file);
+    }
+
+    /**
+     * Reads the item size rules, creating the file with the defaults when it is
+     * missing - also while sizes are off, so the file is there to look at before
+     * turning them on. An unreadable file falls back to the defaults.
+     */
+    private static ItemSizeRules loadItemSizes(Path file, boolean enabled) {
+        String text = ItemSizeRules.defaultFileText();
+        if (Files.isRegularFile(file)) {
+            try {
+                text = Files.readString(file, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                LOGGER.warn("[dayz_inventory] Could not read {}, using the default item sizes", file, e);
+            }
+        } else {
+            try {
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, text, StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                LOGGER.warn("[dayz_inventory] Could not write {}", file, e);
+            }
+        }
+        return ItemSizeRules.parse(text, enabled,
+            message -> LOGGER.warn("[dayz_inventory] {} {}", ITEM_SIZES_FILE_NAME, message));
     }
 
     private void write(Path file) {
@@ -120,6 +163,14 @@ public final class DayZConfig {
             "# containers (" + MIN_RADIUS + " to " + MAX_RADIUS + "). On a server, set the same value on the server",
             "# and on every client.",
             "vicinityRadius=" + this.vicinityRadius,
+            "",
+            "# Items take more than one cell of the main inventory: a sword 1x2, a",
+            "# chestplate 2x2, and so on. The sizes are in " + ITEM_SIZES_FILE_NAME + ".",
+            "# The hotbar, armour and offhand keep one item per slot. Items that no longer",
+            "# fit when this is turned on are moved where they fit, or to an empty hotbar",
+            "# slot; nothing is ever dropped or deleted. Creative players are not limited.",
+            "# On a server, only the server's setting and sizes count.",
+            "itemSizes=" + this.itemSizes,
             "",
             "# --- Interface (client only) ---",
             "",

@@ -63,8 +63,6 @@ public class ForgePlatformHelper implements IPlatformHelper {
 
     @Override
     public void openMenu(ServerPlayer player, @Nullable Container container, @Nullable BlockPos pos, Component title) {
-        boolean hasContainer = container != null && pos != null;
-        int containerSize = hasContainer ? container.getContainerSize() : 0;
         SimpleMenuProvider provider = new SimpleMenuProvider(
             (syncId, playerInventory, p) -> new DayZInventoryScreenHandler(syncId, playerInventory, container, pos),
             title
@@ -77,10 +75,7 @@ public class ForgePlatformHelper implements IPlatformHelper {
 //?} else {
         net.minecraftforge.network.NetworkHooks.openScreen(player, provider, buf -> {
 //?}
-            buf.writeBoolean(hasContainer);
-            if (hasContainer) buf.writeInt(containerSize);
-            buf.writeBoolean(hasContainer);
-            if (hasContainer) buf.writeBlockPos(pos);
+            DayZInventoryScreenHandler.writeOpenData(buf, container, pos);
         });
     }
 

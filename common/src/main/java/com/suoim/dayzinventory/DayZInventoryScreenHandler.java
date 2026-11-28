@@ -16,6 +16,8 @@
  */
 package com.suoim.dayzinventory;
 
+import com.suoim.dayzinventory.grid.GridLayout;
+import com.suoim.dayzinventory.grid.ItemSizeRules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
@@ -61,12 +63,18 @@ import java.util.Optional;
  * </pre>
  * The client screen positions these slots itself; their menu coordinates are
  * placeholders.
+ * <p>
+ * With item sizes on, the main inventory slots are {@link GridSlot}s: they
+ * accept an item only where its whole footprint fits. The menu carries the
+ * rules it enforces - the server's own, or on the client the ones the server
+ * sent when it opened the menu - so the screen predicts what the server does.
  */
 public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     private final Container containerInventory;
     private final BlockPos containerPos;
     private final Inventory playerInventory;
     private final int containerSize;
+    private final ItemSizeRules itemSizes;
 
     private final net.minecraft.world.inventory.CraftingContainer craftSlots = new net.minecraft.world.inventory.TransientCraftingContainer(this, 2, 2);
     private final net.minecraft.world.inventory.ResultContainer resultSlots = new net.minecraft.world.inventory.ResultContainer();
@@ -75,10 +83,12 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     // IForgeMenuType still hand over a FriendlyByteBuf, whereas Fabric's
     // extended menu type passes typed opening data - so both shapes exist and
     // each loader binds to its own.
+    // The arguments are read in order: see writeOpenData for the layout.
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, FriendlyByteBuf buf) {
         this(syncId, playerInventory,
              buf.readBoolean() ? new SimpleContainer(buf.readInt()) : null,
-             buf.readBoolean() ? buf.readBlockPos() : null);
+             buf.readBoolean() ? buf.readBlockPos() : null,
+             ItemSizeRules.deserialize(buf.readUtf()));
     }
 
 //? if >=1.20.5 {
@@ -87,17 +97,23 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, DayZInventoryOpenData data) {
         this(syncId, playerInventory,
              data.hasContainer() ? new SimpleContainer(data.containerSize()) : null,
-             data.hasPos() ? data.pos() : null);
+             data.hasPos() ? data.pos() : null,
+             ItemSizeRules.deserialize(data.itemSizes()));
     }
 //?}
 
-    // Main constructor (used by client-side builder and server-side opener)
+    // Server-side constructor: the server's own item size rules.
     public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, @Nullable Container containerInventory, @Nullable BlockPos containerPos) {
+        this(syncId, playerInventory, containerInventory, containerPos, ItemSizes.serverRules());
+    }
+
+    public DayZInventoryScreenHandler(int syncId, Inventory playerInventory, @Nullable Container containerInventory, @Nullable BlockPos containerPos, ItemSizeRules itemSizes) {
         super(com.suoim.dayzinventory.platform.Platform.HELPER.getScreenHandlerType(), syncId);
         this.playerInventory = playerInventory;
         this.containerInventory = containerInventory;
         this.containerPos = containerPos;
         this.containerSize = containerInventory != null ? containerInventory.getContainerSize() : 0;
+        this.itemSizes = itemSizes;
 
         // 1. Container slots
         if (containerInventory != null) {
@@ -109,10 +125,10 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
             }
         }
 
-        // 2. Main inventory (27 slots)
+        // 2. Main inventory (27 slots), the grid item sizes apply to
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, 0, 0));
+                this.addSlot(new GridSlot(playerInventory, col + row * 9 + 9));
             }
         }
 
@@ -152,6 +168,43 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     public int resultIndex() { return this.containerSize + 41; }
     public int craftStart() { return this.containerSize + 42; }
     public int craftEnd() { return this.containerSize + 46; }
+
+    /**
+     * Writes what the client's constructor reads: the container's size and
+     * position, if one is open, then the item size rules this server enforces.
+     * Used by every loader that hands the client a buffer.
+     */
+    public static void writeOpenData(FriendlyByteBuf buf, @Nullable Container container, @Nullable BlockPos pos) {
+        boolean hasContainer = container != null && pos != null;
+        buf.writeBoolean(hasContainer);
+        if (hasContainer) buf.writeInt(container.getContainerSize());
+        buf.writeBoolean(hasContainer);
+        if (hasContainer) buf.writeBlockPos(pos);
+        buf.writeUtf(ItemSizes.serverRules().serialize());
+    }
+
+    // ------------------------------------------------------------------
+    // Item sizes
+    // ------------------------------------------------------------------
+
+    /** The item size rules this menu works with. */
+    public ItemSizeRules itemSizes() {
+        return this.itemSizes;
+    }
+
+    /** Whether item sizes limit the player of this menu. */
+    public boolean itemSizesApply() {
+        return ItemSizes.applies(this.playerInventory.player, this.itemSizes);
+    }
+
+    public ItemSizeRules.Size sizeOf(ItemStack stack) {
+        return ItemSizes.sizeOf(stack, this.itemSizes);
+    }
+
+    /** The main inventory's grid: cell {@code n} is menu slot {@code inventoryStart() + n}. */
+    public GridLayout mainLayout() {
+        return ItemSizes.layout(this.playerInventory, this.itemSizes);
+    }
 
     /** The menu slot an item equips into, or -1. */
     public int equipmentSlotIndex(Player player, ItemStack stack) {
@@ -363,21 +416,25 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
 
     /** Sorts the main inventory (not the hotbar), merging partial stacks. */
     public void sortPlayerInventory() {
-        sortSlots(inventoryStart(), hotbarStart());
+        sortSlots(inventoryStart(), hotbarStart(), itemSizesApply());
     }
 
     /** Sorts the open container, if it is plain storage. */
     public void sortContainer() {
         if (this.containerSize > 0 && DayZMenus.isSortable(this.containerInventory)) {
-            sortSlots(0, this.containerSize);
+            sortSlots(0, this.containerSize, false);
         }
     }
 
     /**
      * Merges and sorts the items in {@code [from, to)} by item id, then name.
      * Nothing is changed unless every resulting stack fits the slot it lands in.
+     * <p>
+     * With {@code packed} - the main inventory under item sizes - the largest
+     * items go first and each one is placed where its footprint first fits, so
+     * the result is a tidy grid; if it cannot all be packed, nothing changes.
      */
-    private void sortSlots(int from, int to) {
+    private void sortSlots(int from, int to, boolean packed) {
         List<ItemStack> merged = new ArrayList<>();
         for (int i = from; i < to; i++) {
             ItemStack stack = this.slots.get(i).getItem();
@@ -405,6 +462,10 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
         if (merged.size() > to - from) {
             return;
         }
+        if (packed) {
+            placePacked(from, to, merged);
+            return;
+        }
         for (int i = 0; i < merged.size(); i++) {
             Slot target = this.slots.get(from + i);
             ItemStack stack = merged.get(i);
@@ -416,6 +477,43 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
             int offset = i - from;
             this.slots.get(i).set(offset < merged.size() ? merged.get(offset) : ItemStack.EMPTY);
         }
+        this.broadcastChanges();
+    }
+
+    private void placePacked(int from, int to, List<ItemStack> merged) {
+        // Largest first; the sort is stable, so the id order holds within a size.
+        List<ItemStack> order = new ArrayList<>(merged);
+        order.sort(Comparator.comparingInt((ItemStack stack) -> {
+            ItemSizeRules.Size size = sizeOf(stack);
+            return -(size.width() * size.height());
+        }));
+        int[] widths = new int[order.size()];
+        int[] heights = new int[order.size()];
+        for (int i = 0; i < order.size(); i++) {
+            ItemSizeRules.Size size = sizeOf(order.get(i));
+            widths[i] = size.width();
+            heights[i] = size.height();
+        }
+        int[] anchors = GridLayout.pack(ItemSizes.COLUMNS, ItemSizes.ROWS, widths, heights);
+        if (anchors == null) {
+            return;
+        }
+        ItemStack[] placed = new ItemStack[to - from];
+        java.util.Arrays.fill(placed, ItemStack.EMPTY);
+        for (int i = 0; i < order.size(); i++) {
+            ItemStack stack = order.get(i);
+            if (stack.getCount() > this.slots.get(from + anchors[i]).getMaxStackSize(stack)) {
+                return;
+            }
+            placed[anchors[i]] = stack;
+        }
+        // Set on the container directly: each slot's own size check would judge
+        // the new arrangement against the old one, half-way through.
+        for (int i = from; i < to; i++) {
+            Slot slot = this.slots.get(i);
+            slot.container.setItem(slot.getContainerSlot(), placed[i - from]);
+        }
+        this.playerInventory.setChanged();
         this.broadcastChanges();
     }
 
@@ -431,6 +529,25 @@ public class DayZInventoryScreenHandler extends AbstractContainerMenu {
     // ------------------------------------------------------------------
     // Slots
     // ------------------------------------------------------------------
+
+    /**
+     * A main inventory slot under item sizes: it takes an item only where the
+     * item's whole footprint fits, judged with this menu's rules. On the server
+     * the {@code SlotMixin} checks the same again, for every screen.
+     */
+    private final class GridSlot extends Slot {
+        GridSlot(Inventory inventory, int index) {
+            super(inventory, index, 0, 0);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            if (itemSizesApply() && !ItemSizes.mayPlace(this.container, this.getContainerSlot(), stack, itemSizes)) {
+                return false;
+            }
+            return super.mayPlace(stack);
+        }
+    }
 
     /**
      * A container slot that honours the container's own rules. A plain
