@@ -75,12 +75,14 @@ jobs:
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
           echo "Building: $versions"
 
-  # build-logic is compiled with Gradle's `kotlin-dsl` plugin, which only the
-  # Gradle Plugin Portal hosts. Some runners are answered "not found" for it on
-  # every attempt while the rest of the portal works, so one job downloads
-  # build-logic's plugins and libraries and every other job restores them from
-  # the Actions cache. The key changes with the Gradle version and with
-  # build-logic's dependencies, so a hit is always complete.
+  # Some runners are answered "not found" by the Gradle Plugin Portal for every
+  # plugin, on every attempt. Most plugins are also on their own Maven
+  # repository, but `kotlin-dsl` (build-logic), the foojay toolchain resolver and
+  # the publish plugin only live on the portal. So one job resolves every
+  # plugin the build uses - build-logic's, the settings plugins and the root
+  # project's - and every other job restores them from the Actions cache. The
+  # key follows every file that names a plugin or its version, so a hit is
+  # always complete.
   gradle-plugins:
     name: Gradle plugins
     runs-on: ubuntu-24.04
@@ -101,13 +103,19 @@ jobs:
           path: |
             ~/.gradle/caches/modules-2/files-2.1
             ~/.gradle/caches/modules-2/metadata-*
-          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
+          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'gradle.properties', 'settings.gradle.kts', 'stonecutter.gradle.kts', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
 
+      # `-p build-logic jar` resolves and compiles build-logic on its own. `help`
+      # on the root with configure-on-demand evaluates the settings and the root
+      # project - every `plugins {}` block that names a version - without
+      # configuring a single Minecraft node.
       - name: Download Gradle plugins
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           for attempt in 1 2 3 4; do
-            ./gradlew -p build-logic jar --stacktrace && exit 0
+            ./gradlew -p build-logic jar --stacktrace \
+              && ./gradlew help --configure-on-demand --stacktrace \
+              && exit 0
             echo "::warning::Download attempt $attempt failed; retrying"
             sleep $((attempt * 30))
           done
@@ -164,7 +172,7 @@ jobs:
           path: |
             ~/.gradle/caches/modules-2/files-2.1
             ~/.gradle/caches/modules-2/metadata-*
-          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
+          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'gradle.properties', 'settings.gradle.kts', 'stonecutter.gradle.kts', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
 
       - name: Configure ${{ matrix.minecraft }}
         run: |
@@ -351,7 +359,7 @@ jobs:
           path: |
             ~/.gradle/caches/modules-2/files-2.1
             ~/.gradle/caches/modules-2/metadata-*
-          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
+          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'gradle.properties', 'settings.gradle.kts', 'stonecutter.gradle.kts', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
 
       - name: Configure ${{ matrix.minecraft }}
         run: |

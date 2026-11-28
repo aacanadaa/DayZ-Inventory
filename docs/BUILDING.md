@@ -264,9 +264,10 @@ node.
   (`versions`, e.g. `1.21.1,1.21.5`), which is how a partial upload is finished without uploading
   the other versions twice. They can also delete Modrinth versions. A push never cancels a manual
   run.
-- **Plugins.** A `Gradle plugins` job downloads build-logic's plugins once into the Actions cache
-  and every build restores them. Some runners are told the `kotlin-dsl` plugin does not exist on
-  the Gradle Plugin Portal, on every retry, so without the cache those builds fail at
+- **Plugins.** A `Gradle plugins` job resolves every Gradle plugin the build uses once into the
+  Actions cache, and every build and publish job restores them. Some runners are told by the
+  Gradle Plugin Portal that no plugin exists, on every retry; `kotlin-dsl`, the foojay resolver and
+  the publish plugin are only on the portal, so without the cache those builds fail at
   configuration.
 
 Publishing uses `me.modmuss50.mod-publish-plugin`, configured once in `dayz-loader`:
