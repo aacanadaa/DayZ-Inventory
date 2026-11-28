@@ -22,6 +22,8 @@ import com.suoim.dayzinventory.DayZMenus;
 import com.suoim.dayzinventory.client.compat.ModCompat;
 import com.suoim.dayzinventory.client.compat.ThirstCompat;
 import com.suoim.dayzinventory.config.DayZConfig;
+import com.suoim.dayzinventory.grid.GridLayout;
+import com.suoim.dayzinventory.grid.ItemSizeRules;
 import com.suoim.dayzinventory.mixin.SlotAccessor;
 import com.suoim.dayzinventory.platform.Platform;
 import net.minecraft.ChatFormatting;
@@ -102,6 +104,10 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
     private List<Component> pendingTooltip = null;
 
     private int thirst = -1;
+
+    // Item sizes: the main inventory's grid as of the last layout pass, or null
+    // while sizes do not apply (off, or a creative player).
+    private GridLayout sizeLayout = null;
 
     // Mouse Tweaks support (see MouseTweaksCompatMixin)
     private boolean skipNextReleaseFromCompat = false;
@@ -418,13 +424,29 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             }
         }
 
-        // 2. Main inventory (27 slots)
+        // 2. Main inventory (27 slots). With item sizes, an item covering several
+        // cells has its slot - and so its icon - in the middle of its footprint,
+        // and the empty cells it covers have no slot on screen at all: hovering
+        // anywhere on the footprint is hovering the item (see isHovering).
+        GridLayout layout = this.menu.itemSizesApply() ? this.menu.mainLayout() : null;
+        this.sizeLayout = layout;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                Slot slot = this.menu.slots.get(this.menu.inventoryStart() + col + row * 9);
+                int cell = col + row * 9;
+                Slot slot = this.menu.slots.get(this.menu.inventoryStart() + cell);
                 SlotAccessor accessor = (SlotAccessor) slot;
-                accessor.setX(rightColumnX + col * 18 - leftPos);
-                accessor.setY(30 + row * 18);
+                int x = rightColumnX + col * 18 - leftPos;
+                int y = 30 + row * 18;
+                if (layout != null && layout.isCovered(cell)) {
+                    accessor.setX(-2000);
+                    accessor.setY(-2000);
+                } else if (layout != null && layout.isAnchor(cell)) {
+                    accessor.setX(x + (layout.width(cell) - 1) * 9);
+                    accessor.setY(y + (layout.height(cell) - 1) * 9);
+                } else {
+                    accessor.setX(x);
+                    accessor.setY(y);
+                }
             }
         }
 
@@ -736,15 +758,123 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             return handsSlot;
         }
 
+        // The same test vanilla uses, so an item's whole footprint counts.
         for (Slot slot : this.menu.slots) {
-            if (slot.x >= 0) {
-                if (mouseX >= (leftPos + slot.x) && mouseX < (leftPos + slot.x + 18)
-                        && mouseY >= (topPos + slot.y) && mouseY < (topPos + slot.y + 18)) {
-                    return slot;
-                }
+            if (slot.x >= 0 && this.isHovering(slot.x, slot.y, 16, 16, mouseX, mouseY)) {
+                return slot;
             }
         }
         return null;
+    }
+
+    // ------------------------------------------------------------------
+    // Item sizes
+    // ------------------------------------------------------------------
+
+    /**
+     * Vanilla decides which slot the cursor is over - for clicks, drags, the
+     * highlight and the tooltip - by asking this for each slot's 16x16 square.
+     * An item covering several cells answers for its whole footprint instead,
+     * except where an item that does not fit sits on top of it.
+     */
+    @Override
+    protected boolean isHovering(int x, int y, int width, int height, double mouseX, double mouseY) {
+        GridLayout layout = this.sizeLayout;
+        if (layout != null && width == 16 && height == 16) {
+            int anchor = largeAnchorAt(layout, x, y);
+            if (anchor != GridLayout.NONE) {
+                int under = mainCellAt(mouseX, mouseY);
+                return footprintContains(layout, anchor, mouseX, mouseY)
+                    && !(under != GridLayout.NONE && under != anchor && layout.isOverflow(under));
+            }
+        }
+        return super.isHovering(x, y, width, height, mouseX, mouseY);
+    }
+
+    /** The cell of a multi-cell item whose slot is drawn at ({@code x}, {@code y}); NONE otherwise. */
+    private int largeAnchorAt(GridLayout layout, int x, int y) {
+        for (int cell = 0; cell < layout.cells(); cell++) {
+            if (layout.isAnchor(cell) && (layout.width(cell) > 1 || layout.height(cell) > 1)) {
+                Slot slot = this.menu.slots.get(this.menu.inventoryStart() + cell);
+                if (slot.x == x && slot.y == y) {
+                    return cell;
+                }
+            }
+        }
+        return GridLayout.NONE;
+    }
+
+    /** The main inventory cell under the cursor, NONE when the cursor is off the grid. */
+    private int mainCellAt(double mouseX, double mouseY) {
+        // Each cell answers for 18x18 pixels from one pixel above-left of its
+        // icon, as vanilla's slot hit-test does.
+        double gridX = mouseX - (getColumnX(2) - 1);
+        double gridY = mouseY - (topPos + 30 - 1);
+        if (gridX < 0 || gridY < 0 || gridX >= 9 * 18 || gridY >= 3 * 18) {
+            return GridLayout.NONE;
+        }
+        return (int) (gridY / 18) * 9 + (int) (gridX / 18);
+    }
+
+    private boolean footprintContains(GridLayout layout, int anchor, double mouseX, double mouseY) {
+        int left = getColumnX(2) + (anchor % 9) * 18 - 1;
+        int top = topPos + 30 + (anchor / 9) * 18 - 1;
+        return mouseX >= left && mouseX < left + layout.width(anchor) * 18
+            && mouseY >= top && mouseY < top + layout.height(anchor) * 18;
+    }
+
+    /**
+     * The main inventory's cells under item sizes: one panel per multi-cell
+     * item, a red cell under an item that does not fit where it is, and - while
+     * an item is carried over the grid - where it would go, green when it fits
+     * and red when it does not.
+     */
+    private void drawItemSizeGrid(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+        GridLayout layout = this.sizeLayout;
+        int gridX = getColumnX(2);
+        int gridY = topPos + 30;
+
+        for (int cell = 0; cell < layout.cells(); cell++) {
+            int x = gridX + (cell % 9) * 18;
+            int y = gridY + (cell / 9) * 18;
+            if (layout.isAnchor(cell) && (layout.width(cell) > 1 || layout.height(cell) > 1)) {
+                int right = x + layout.width(cell) * 18 - 2;
+                int bottom = y + layout.height(cell) * 18 - 2;
+                boolean hovered = footprintContains(layout, cell, mouseX, mouseY);
+                guiGraphics.fill(x, y, right, bottom, hovered ? 0x30FFFFFF : 0x20FFFFFF);
+                guiGraphics.fill(x, y, right, y + 1, 0x28FFFFFF);
+                guiGraphics.fill(x, bottom - 1, right, bottom, 0x28FFFFFF);
+                guiGraphics.fill(x, y + 1, x + 1, bottom - 1, 0x28FFFFFF);
+                guiGraphics.fill(right - 1, y + 1, right, bottom - 1, 0x28FFFFFF);
+            } else if (!layout.isCovered(cell) && !layout.isOverflow(cell)) {
+                guiGraphics.fill(x, y, x + 16, y + 16, 0x18FFFFFF);
+            }
+        }
+        // Drawn last, so an overflow item on top of a footprint still shows red.
+        for (int cell = 0; cell < layout.cells(); cell++) {
+            if (layout.isOverflow(cell)) {
+                int x = gridX + (cell % 9) * 18;
+                int y = gridY + (cell / 9) * 18;
+                guiGraphics.fill(x, y, x + 16, y + 16, 0x60B03030);
+            }
+        }
+
+        ItemStack carried = this.menu.getCarried();
+        int hovered = mainCellAt(mouseX, mouseY);
+        if (!carried.isEmpty() && hovered != GridLayout.NONE) {
+            // Over an empty cell of a footprint, a click lands on that item: a swap.
+            int target = layout.isCovered(hovered) ? layout.ownerOf(hovered) : hovered;
+            ItemSizeRules.Size size = this.menu.sizeOf(carried);
+            int column = target % 9;
+            int row = target / 9;
+            int width = Math.min(size.width(), 9 - column);
+            int height = Math.min(size.height(), 3 - row);
+            boolean fits = this.menu.slots.get(this.menu.inventoryStart() + target).mayPlace(carried)
+                && width == size.width() && height == size.height();
+            int x = gridX + column * 18;
+            int y = gridY + row * 18;
+            guiGraphics.fill(x, y, x + width * 18 - 2, y + height * 18 - 2, fits ? 0x4040C040 : 0x50C04040);
+        }
     }
 
     @Override
@@ -1183,15 +1313,21 @@ public class DayZInventoryScreen extends AbstractContainerScreen<DayZInventorySc
             }
         }
 
-        // 6. Slot backgrounds
+        // 6. Slot backgrounds. Under item sizes the main inventory draws its own,
+        // per cell rather than per slot.
+        boolean sizedGrid = this.sizeLayout != null;
         for (Slot slot : this.menu.slots) {
-            if (slot.x >= 0) {
+            boolean mainSlot = slot.index >= this.menu.inventoryStart() && slot.index < this.menu.hotbarStart();
+            if (slot.x >= 0 && !(sizedGrid && mainSlot)) {
                 guiGraphics.fill(
                     leftPos + slot.x, topPos + slot.y,
                     leftPos + slot.x + 16, topPos + slot.y + 16,
                     0x18FFFFFF
                 );
             }
+        }
+        if (sizedGrid) {
+            drawItemSizeGrid(guiGraphics, mouseX, mouseY);
         }
 
         // 7. Vicinity list

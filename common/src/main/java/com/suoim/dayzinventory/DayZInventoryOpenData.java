@@ -34,8 +34,11 @@ import net.minecraft.network.codec.StreamCodec;
  * {@link StreamCodec}. All fields are always encoded - absent values are
  * represented by {@link #none()} - which keeps the codec a plain composite
  * instead of a hand-rolled conditional reader.
+ * <p>
+ * {@code itemSizes} is the server's item size rules in
+ * {@code ItemSizeRules#serialize()} form, empty while sizes are off.
  */
-public record DayZInventoryOpenData(boolean hasContainer, int containerSize, boolean hasPos, BlockPos pos) {
+public record DayZInventoryOpenData(boolean hasContainer, int containerSize, boolean hasPos, BlockPos pos, String itemSizes) {
 
     public static final StreamCodec<RegistryFriendlyByteBuf, DayZInventoryOpenData> CODEC =
         StreamCodec.composite(
@@ -43,17 +46,18 @@ public record DayZInventoryOpenData(boolean hasContainer, int containerSize, boo
             ByteBufCodecs.VAR_INT, DayZInventoryOpenData::containerSize,
             ByteBufCodecs.BOOL, DayZInventoryOpenData::hasPos,
             BlockPos.STREAM_CODEC, DayZInventoryOpenData::pos,
+            ByteBufCodecs.STRING_UTF8, DayZInventoryOpenData::itemSizes,
             DayZInventoryOpenData::new
         );
 
     /** Opening the player's own inventory: no container, no position. */
-    public static DayZInventoryOpenData none() {
-        return new DayZInventoryOpenData(false, 0, false, BlockPos.ZERO);
+    public static DayZInventoryOpenData none(String itemSizes) {
+        return new DayZInventoryOpenData(false, 0, false, BlockPos.ZERO, itemSizes);
     }
 
     /** Opening a nearby container. */
-    public static DayZInventoryOpenData forContainer(int containerSize, BlockPos pos) {
-        return new DayZInventoryOpenData(true, containerSize, true, pos);
+    public static DayZInventoryOpenData forContainer(int containerSize, BlockPos pos, String itemSizes) {
+        return new DayZInventoryOpenData(true, containerSize, true, pos, itemSizes);
     }
 }
 //?}

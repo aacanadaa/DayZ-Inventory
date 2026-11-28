@@ -138,7 +138,7 @@ public class DayZInventoryPackets {
             placed.setCount(1);
             slot.set(placed);
             moved = 1;
-            player.getInventory().add(previous);
+            ItemSizes.add(player, previous);
             dropAtFeet(player, previous);
         }
 
@@ -147,14 +147,17 @@ public class DayZInventoryPackets {
         }
     }
 
-    /** Shift-click on a ground item: into the inventory, wherever it fits. */
+    /**
+     * Shift-click on a ground item: into the inventory, wherever it fits - with
+     * item sizes on, only where its footprint fits; the rest stays on the ground.
+     */
     private static void quickPickUp(ServerPlayer player, int entityId) {
         ItemEntity itemEntity = reachableItem(player, entityId);
         if (itemEntity == null) return;
 
         ItemStack stack = itemEntity.getItem();
         ItemStack remaining = stack.copy();
-        player.getInventory().add(remaining);
+        ItemSizes.add(player, remaining);
         int moved = stack.getCount() - remaining.getCount();
         // Inventory#add reports success when *any* of the stack fitted, so the
         // entity may only be removed once nothing is left - discarding it on a
