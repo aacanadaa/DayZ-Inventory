@@ -260,8 +260,14 @@ node.
 - **A `v*` tag** builds everything, then creates the GitHub release with every jar and this
   version's CHANGELOG section, then publishes each version to Modrinth and CurseForge - only after
   every build has passed.
-- **Manual runs** can publish (optionally to one platform, for finishing a partial upload) or
-  delete Modrinth versions.
+- **Manual runs** can publish, optionally to one platform and to some Minecraft versions only
+  (`versions`, e.g. `1.21.1,1.21.5`), which is how a partial upload is finished without uploading
+  the other versions twice. They can also delete Modrinth versions. A push never cancels a manual
+  run.
+- **Plugins.** A `Gradle plugins` job downloads build-logic's plugins once into the Actions cache
+  and every build restores them. Some runners are told the `kotlin-dsl` plugin does not exist on
+  the Gradle Plugin Portal, on every retry, so without the cache those builds fail at
+  configuration.
 
 Publishing uses `me.modmuss50.mod-publish-plugin`, configured once in `dayz-loader`:
 

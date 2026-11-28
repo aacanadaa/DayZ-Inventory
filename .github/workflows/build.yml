@@ -16,16 +16,21 @@ on:
         type: choice
         options: [all, modrinth, curseforge]
         default: all
+      versions:
+        description: "Comma-separated Minecraft versions to build (and publish), e.g. 1.21.1,1.21.5. Empty: all"
+        type: string
+        default: ""
       delete_modrinth_versions:
         description: "Comma-separated Modrinth version IDs to delete, then exit"
         type: string
         default: ""
 
 # A newer push to the same branch or pull request supersedes the running build.
-# Tag builds are releases and always run to the end.
+# Tag builds and manual runs can publish, so they always run to the end, and a
+# manual run is in a group of its own so a push cannot cancel it.
 concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+  group: build-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_dispatch' }}
 
 permissions:
   contents: read
@@ -37,6 +42,8 @@ env:
 jobs:
   # The Minecraft versions come from the `versions/` directory, the same place
   # settings.gradle.kts reads them from, so adding a version needs no CI edit.
+  # A manual run can narrow them with the `versions` input, which is how the
+  # upload of a few versions is finished without re-uploading the others.
   matrix:
     name: Version matrix
     runs-on: ubuntu-24.04
@@ -48,19 +55,75 @@ jobs:
 
       - name: List Minecraft versions
         id: list
+        env:
+          REQUESTED: ${{ inputs.versions }}
         run: |
-          versions=$(find versions -mindepth 2 -maxdepth 2 -name gradle.properties -printf '%h\n' \
-            | xargs -n1 basename | sort -V | jq -R . | jq -cs .)
+          all=$(find versions -mindepth 2 -maxdepth 2 -name gradle.properties -printf '%h\n' \
+            | xargs -n1 basename | sort -V)
+          if [ -n "$REQUESTED" ]; then
+            selected=""
+            for v in $(echo "$REQUESTED" | tr ',' ' '); do
+              if ! echo "$all" | grep -qxF "$v"; then
+                echo "::error::Unknown Minecraft version '$v': there is no versions/$v directory"
+                exit 1
+              fi
+              selected="$selected $v"
+            done
+            all=$(echo $selected | tr ' ' '\n' | sort -V -u)
+          fi
+          versions=$(echo "$all" | jq -R . | jq -cs .)
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
           echo "Building: $versions"
+
+  # build-logic is compiled with Gradle's `kotlin-dsl` plugin, which only the
+  # Gradle Plugin Portal hosts. Some runners are answered "not found" for it on
+  # every attempt while the rest of the portal works, so one job downloads
+  # build-logic's plugins and libraries and every other job restores them from
+  # the Actions cache. The key changes with the Gradle version and with
+  # build-logic's dependencies, so a hit is always complete.
+  gradle-plugins:
+    name: Gradle plugins
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: "25"
+          distribution: "temurin"
+
+      - name: Cache Gradle plugins
+        id: cache
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches/modules-2/files-2.1
+            ~/.gradle/caches/modules-2/metadata-*
+          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
+
+      - name: Download Gradle plugins
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          for attempt in 1 2 3 4; do
+            ./gradlew -p build-logic jar --stacktrace && exit 0
+            echo "::warning::Download attempt $attempt failed; retrying"
+            sleep $((attempt * 30))
+          done
+          exit 1
 
   # One job per Minecraft version. Configuring a node downloads and prepares
   # that Minecraft release, so building the whole matrix in one job ran the
   # runner out of disk; one version per job also builds them in parallel.
   build:
     name: Build ${{ matrix.minecraft }}
-    needs: matrix
-    if: github.event_name != 'workflow_dispatch' || inputs.delete_modrinth_versions == ''
+    needs: [matrix, gradle-plugins]
+    # Runs even when the plugin download failed: the cache is then simply not
+    # there, and the build asks the portal itself as before.
+    if: >-
+      !cancelled() && needs.matrix.result == 'success' &&
+      (github.event_name != 'workflow_dispatch' || inputs.delete_modrinth_versions == '')
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -82,9 +145,10 @@ jobs:
           java-version: "25"
           distribution: "temurin"
 
-      # Caches are not kept: two dozen jobs each holding a prepared Minecraft
-      # install would evict one another from the repository's cache budget
-      # anyway, and a cold build of one version is quick.
+      # setup-gradle's own cache stays off: two dozen jobs each holding a
+      # prepared Minecraft install would evict one another from the repository's
+      # cache budget, and a cold build of one version is quick. Only the small,
+      # shared plugin cache below is restored.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
@@ -94,12 +158,22 @@ jobs:
       # the loader toolchain. With every version building at once, one of those
       # downloads occasionally fails on a busy repository, so configuration is
       # done - and retried - on its own before anything is compiled.
+      - name: Restore Gradle plugins
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.gradle/caches/modules-2/files-2.1
+            ~/.gradle/caches/modules-2/metadata-*
+          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
+
       - name: Configure ${{ matrix.minecraft }}
         run: |
-          # Gradle remembers a failed download, so a retry has to ask again.
+          # A network error is retried as is. Gradle remembers a "not found",
+          # though, so the last two attempts ask every repository again - which
+          # also re-checks the restored plugins, so they are not the first try.
           for attempt in 1 2 3 4; do
             refresh=""
-            [ "$attempt" -gt 1 ] && refresh="--refresh-dependencies"
+            [ "$attempt" -gt 2 ] && refresh="--refresh-dependencies"
             ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} $refresh --stacktrace && exit 0
             echo "::warning::Configuration attempt $attempt failed; retrying"
             sleep $((attempt * 30))
@@ -195,12 +269,28 @@ jobs:
             exit 1
           fi
 
+      # Each artifact keeps the jars' paths inside the repository
+      # (fabric/versions/<mc>/build/libs/...), so they are gathered into one
+      # folder first. The v2.0.0 release went out with no files because the
+      # release step only looked at the top of dist/.
+      - name: Collect jars
+        run: |
+          mkdir -p release
+          find dist -name '*.jar' -exec cp -t release {} +
+          count=$(find release -name '*.jar' | wc -l)
+          echo "$count jars"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No jars were downloaded"
+            exit 1
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           name: DayZ Inventory ${{ github.ref_name }}
           body_path: release-notes.md
-          files: dist/*.jar
+          files: release/*.jar
+          fail_on_unmatched_files: true
 
   publish:
     name: Publish ${{ matrix.minecraft }}
@@ -255,12 +345,22 @@ jobs:
           fi
           exit $missing
 
+      - name: Restore Gradle plugins
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.gradle/caches/modules-2/files-2.1
+            ~/.gradle/caches/modules-2/metadata-*
+          key: gradle-plugins-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build-logic/build.gradle.kts', 'build-logic/settings.gradle.kts') }}
+
       - name: Configure ${{ matrix.minecraft }}
         run: |
-          # Gradle remembers a failed download, so a retry has to ask again.
+          # A network error is retried as is. Gradle remembers a "not found",
+          # though, so the last two attempts ask every repository again - which
+          # also re-checks the restored plugins, so they are not the first try.
           for attempt in 1 2 3 4; do
             refresh=""
-            [ "$attempt" -gt 1 ] && refresh="--refresh-dependencies"
+            [ "$attempt" -gt 2 ] && refresh="--refresh-dependencies"
             ./gradlew help -Pdayz.versions=${{ matrix.minecraft }} $refresh --stacktrace && exit 0
             echo "::warning::Configuration attempt $attempt failed; retrying"
             sleep $((attempt * 30))
